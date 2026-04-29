@@ -1,0 +1,72 @@
+﻿@model WebApplication1.Models.Ingredient
+@{
+    Layout = "_LayoutAdmin";
+    ViewData["Title"] = "Edit Bahan";
+}
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2 align-items-center">
+            <div class="col-sm-6">
+                <h1 class="m-0 fw-bold text-dark"><i class="bi bi-pencil-square me-2"></i>Edit Barang Bahan</h1>
+            </div>
+            <div class="col-sm-6 text-end">
+                <a asp-action="Index" class="btn btn-outline-secondary px-4">
+                    <i class="bi bi-arrow-left me-1"></i> Kembali
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid pb-4">
+        <div class="row">
+            <div class="col-lg-8 col-xl-7 mx-auto">
+                <div class="card shadow-lg border-0">
+                    <div class="card-header bg-white py-3">
+                        <h3 class="card-title fw-bold mb-0">Update Data Bahan</h3>
+                    </div>
+
+                    <form asp-controller="Ingredient" asp-action="Edit" method="post">
+                        <input type="hidden" asp-for="Id" />
+
+                        <div class="card-body p-4">
+                            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+                            <div class="mb-3">
+                                <label asp-for="ItemName" class="form-label fw-semibold">Nama Bahan</label>
+                                <input asp-for="ItemName" class="form-control" />
+                                <span asp-validation-for="ItemName" class="text-danger small"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Unit" class="form-label fw-semibold">Kategori</label>
+                                <input asp-for="Unit" class="form-control" />
+                                <span asp-validation-for="Unit" class="text-danger small"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Qty" class="form-label fw-semibold">Kuantitas</label>
+                                <input asp-for="Qty" class="form-control" type="number" min="0" />
+                                <span asp-validation-for="Qty" class="text-danger small"></span>
+                            </div>
+
+                            <div class="mb-1">
+                                <label asp-for="MinimumStock" class="form-label fw-semibold">Stok Minimum</label>
+                                <input asp-for="MinimumStock" class="form-control" />
+                                <span asp-validation-for="MinimumStock" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="card-footer bg-light py-3 text-end">
+                            <button type="submit" class="btn btn-primary px-4 shadow-sm">
+                                <i class="bi bi-save-fill me-1"></i> Update Bahan
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,60 @@
+@model WebApplication1.Models.Table
+@{
+    Layout = "_LayoutAdmin";
+    ViewData["Title"] = "Edit Meja";
+}
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2 align-items-center">
+            <div class="col-sm-6">
+                <h1 class="m-0 fw-bold text-dark"><i class="bi bi-pencil-square me-2"></i>Edit Meja</h1>
+            </div>
+            <div class="col-sm-6 text-end">
+                <a asp-action="Index" class="btn btn-outline-secondary px-4">
+                    <i class="bi bi-arrow-left me-1"></i> Kembali
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid pb-4">
+        <div class="row">
+            <div class="col-lg-8 col-xl-7 mx-auto">
+                <div class="card shadow-lg border-0">
+                    <div class="card-header bg-white py-3">
+                        <h3 class="card-title fw-bold mb-0">Update Data Meja</h3>
+                    </div>
+
+                    <form asp-controller="Table" asp-action="Edit" method="post">
+                        <input type="hidden" asp-for="Id" />
+
+                        <div class="card-body p-4">
+                            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+                            <div class="mb-3">
+                                <label asp-for="Number" class="form-label fw-semibold">Nomor Meja</label>
+                                <input asp-for="Number" class="form-control" type="number" min="1" />
+                                <span asp-validation-for="Number" class="text-danger small"></span>
+                            </div>
+
+                            <div class="mb-1">
+                                <label asp-for="Capacity" class="form-label fw-semibold">Kapasitas</label>
+                                <input asp-for="Capacity" class="form-control" type="number" min="1" max="20" />
+                                <span asp-validation-for="Capacity" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="card-footer bg-light py-3 text-end">
+                            <button type="submit" class="btn btn-primary px-4 shadow-sm">
+                                <i class="bi bi-save-fill me-1"></i> Update Meja
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

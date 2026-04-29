@@ -1,0 +1,89 @@
+﻿@model List<Ingredient>
+@{
+    Layout = "_LayoutAdmin";
+    ViewData["Title"] = "Ingredient";
+}
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2 align-items-center">
+            <div class="col-sm-6">
+                <h1 class="m-0 fw-bold text-dark"><i class="bi bi-basket2 me-2"></i>Manajemen Bahan</h1>
+            </div>
+            <div class="col-sm-6 text-end">
+                <a asp-action="Create" class="btn btn-primary shadow-sm px-4">
+                    <i class="bi bi-plus-lg me-1"></i> Tambah Bahan
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card shadow-lg border-0">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h3 class="card-title fw-bold mb-0">Daftar Bahan</h3>
+                <span class="badge bg-light text-dark border">Total: @Model.Count</span>
+            </div>
+
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light text-secondary text-uppercase small fw-bold">
+                            <tr>
+                                <th class="ps-4">Nama Bahan</th>
+                                <th>Satuan</th>
+                                <th class="text-center">Qty</th>
+                                <th>Minimum Stok</th>
+                                <th class="text-end pe-4">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.Count == 0)
+                            {
+                                <tr>
+                                    <td colspan="5" class="text-center py-5 text-muted">Belum ada data bahan.</td>
+                                </tr>
+                            }
+                            else
+                            {
+                                foreach (var ingredient in Model)
+                                {
+                                    var qtyClass = ingredient.Qty <= ingredient.MinimumStock
+                                        ? "bg-danger-subtle text-danger"
+                                        : ingredient.Qty <= ingredient.MinimumStock + 5
+                                            ? "bg-warning-subtle text-warning"
+                                            : "bg-success-subtle text-success";
+
+                                    <tr>
+                                        <td class="ps-4 fw-semibold text-dark">@ingredient.ItemName</td>
+                                        <td>@ingredient.Unit</td>
+                                        <td class="text-center"><span class="badge @qtyClass border">@ingredient.Qty</span></td>
+                                        <td>@ingredient.MinimumStock</td>
+                                        <td class="text-end pe-4">
+                                            <div class="btn-group shadow-sm" role="group">
+                                                <a asp-action="Edit" asp-route-id="@ingredient.Id" class="btn btn-outline-warning btn-sm" title="Edit Bahan">
+                                                    <i class="bi bi-pencil-square"></i>
+                                                </a>
+                                                <form asp-action="Delete" asp-route-id="@ingredient.Id" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit"
+                                                            class="btn btn-outline-danger btn-sm"
+                                                            onclick="return confirm('Yakin mau hapus bahan @ingredient.ItemName?')"
+                                                            title="Delete Bahan">
+                                                        <i class="bi bi-trash3-fill"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

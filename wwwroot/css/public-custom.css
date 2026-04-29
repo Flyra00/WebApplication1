@@ -1,0 +1,42 @@
+:root {
+    --public-accent: #d06b34;
+    --public-accent-dark: #af5426;
+}
+
+/* Keep navbar behavior from original web.css for responsiveness */
+
+.home {
+    background:
+        radial-gradient(circle at 15% 20%, rgba(208, 107, 52, 0.2), transparent 35%),
+        radial-gradient(circle at 85% 10%, rgba(6, 156, 84, 0.15), transparent 30%);
+}
+
+.home__title {
+    background: linear-gradient(120deg, #d06b34, #069c54);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.button,
+.button:visited,
+.button:active,
+.button:focus {
+    background: linear-gradient(120deg, var(--public-accent), #f09a4a);
+}
+
+.button:hover {
+    background: linear-gradient(120deg, var(--public-accent-dark), #db8539);
+}
+
+.menu__content {
+    border: 1px solid rgba(216, 178, 147, 0.34);
+}
+
+.menu__name {
+    font-size: 1rem;
+}
+
+.footer {
+    border-top: 1px solid rgba(210, 170, 140, 0.3);
+}

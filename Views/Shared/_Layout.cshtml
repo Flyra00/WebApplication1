@@ -1,0 +1,321 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Bootstrap CSS (Required for Modals) -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <!-- BoxIcons -->
+    <link href='https://cdn.jsdelivr.net/npm/boxicons@2.0.5/css/boxicons.min.css' rel='stylesheet'>
+
+    <!-- Theme CSS -->
+    @* Pastikan file web.css Anda ada di wwwroot/css/ *@
+    <link rel="stylesheet" href="~/css/web.css">
+
+    <!-- Custom Site CSS -->
+    <link rel="stylesheet" href="~/css/site.css">
+    <link rel="stylesheet" href="~/css/public-custom.css">
+
+    <title>@ViewData["Title"] - Responsive website food</title>
+</head>
+
+@using Microsoft.AspNetCore.Identity
+@using WebApplication1.Models
+@inject UserManager<ApplicationUser> UserManager
+
+@{
+    var _controller = ViewContext?.RouteData?.Values?["controller"]?.ToString() ?? "";
+    var _isAdminPage = string.Equals(_controller, "Admin", System.StringComparison.OrdinalIgnoreCase);
+}
+
+<body data-auth="@((User?.Identity?.IsAuthenticated ?? false).ToString().ToLower())"
+    data-username="@(User?.Identity?.Name ?? "")"
+    data-isadmin="@((User?.IsInRole("Admin") ?? false).ToString().ToLower())"
+    data-adminpage="@(_isAdminPage.ToString().ToLower())">
+
+    <a href="#" class="scrolltop" id="scroll-top">
+        <i class='bx bx-chevron-up scrolltop__icon'></i>
+    </a>
+
+    <header class="l-header" id="header">
+        <nav class="nav bd-container">
+            <a href="/" class="nav__logo">Tasty</a>
+
+            <div class="nav__menu" id="nav-menu">
+                <ul class="nav__list">
+                    <li class="nav__item"><a href="/#home" class="nav__link active-link">Home</a></li>
+                    <li class="nav__item"><a href="/#about" class="nav__link">About</a></li>
+                    <li class="nav__item"><a href="/#services" class="nav__link">Services</a></li>
+                    <li class="nav__item"><a href="/#menu" class="nav__link">Menu</a></li>
+                    <li class="nav__item"><a href="/#contact" class="nav__link">Contact us</a></li>
+
+                    <!-- Table & Order Now Buttons (Merged) -->
+                    <li class="nav__item">
+                        <a href="javascript:void(0)" id="tableBadge" class="nav__link" data-bs-toggle="modal"
+                            data-bs-target="#tableModal">
+                            Table: <span id="tableBadgeValue">-</span>
+                        </a>
+                    </li>
+                    <li class="nav__item">
+                        <a href="javascript:void(0)" id="orderNowLink" class="nav__link" data-bs-toggle="modal"
+                            data-bs-target="#tableModal">Order Now</a>
+                    </li>
+
+                    <li><i class='bx bx-moon change-theme' id="theme-button"></i></li>
+
+                    @if (User?.Identity?.IsAuthenticated ?? false)
+                    {
+                        <li class="nav__item">
+                            <a href="#" class="nav__link">Hi, @(User?.Identity?.Name)</a>
+                        </li>
+                        @if (User?.IsInRole("Admin") ?? false)
+                        {
+                            <li class="nav__item"><a class="nav__link" href="/Admin">Dashboard</a></li>
+                        }
+                        <li class="nav__item">
+                            <form method="post" action="/Auth/Logout" class="d-inline">
+                                <button type="submit" class="btn btn-link nav__link"
+                                    style="text-decoration:none; padding:0; border:none; vertical-align:baseline;">Logout</button>
+                            </form>
+                        </li>
+                    }
+                </ul>
+            </div>
+
+            <div class="nav__toggle" id="nav-toggle">
+                <i class='bx bx-menu'></i>
+            </div>
+        </nav>
+    </header>
+
+    <main class="l-main">
+        @RenderBody()
+    </main>
+
+    <!-- Khusus untuk pop up Nomor Meja -->
+    <div class="modal fade table-modal" id="tableModal" tabindex="-1" aria-labelledby="tableModalLabel"
+        aria-hidden="true" style="z-index: 10000;">
+        <div class="modal-dialog modal-dialog-centered">
+            <!-- Added bg-dark text-white to ensure visibility if theme is dark, or let styles handle it. Using generic modal-content. -->
+            <div class="modal-content table-modal-content"
+                style="background-color: var(--body-color); color: var(--text-color);">
+                <div class="modal-header border-0 pb-0">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="table-modal-icon">
+                            <i
+                                class="bi bi-journal-text"></i><!-- You might need bootstrap-icons or replace with boxicons -->
+                            <i class='bx bx-receipt'></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title mb-0" id="tableModalLabel">Table Number</h5>
+                            <small class="text-muted table-modal-subtitle">Save once for a faster checkout.</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body pt-3">
+                    <label for="tableNumberInput" class="form-label table-modal-label">Table Number</label>
+                    <input type="text" inputmode="numeric" min="1" class="form-control table-modal-input"
+                        id="tableNumberInput" name="nr_table_number" autocomplete="off" placeholder="e.g. 5">
+                    <div class="invalid-feedback">Please enter a valid table number.</div>
+                    <div class="table-modal-hint">Stored in cookies. Can be reset at any time.</div>
+
+                    <div class="mt-4">
+                        <div class="table-modal-label mb-2">Membership Status</div>
+                        <div class="btn-group w-100 table-modal-toggle" role="group" aria-label="Membership Status">
+                            <input type="radio" class="btn-check" name="membershipStatus" id="membershipGuest"
+                                autocomplete="off" value="Guest" checked>
+                            <label class="btn btn-outline-primary" for="membershipGuest">Guest</label>
+
+                            <input type="radio" class="btn-check" name="membershipStatus" id="membershipMember"
+                                autocomplete="off" value="Member">
+                            <label class="btn btn-outline-primary" for="membershipMember">Member</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 pt-0 d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary table-modal-reset" id="tableResetBtn">Reset</button>
+                    <button type="button" class="btn btn-primary table-modal-save" id="tableSaveBtn"
+                        style="background-color: var(--first-color); border:none;">Save &amp; Continue</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Khusus untuk pop up Guest dan Member Login/Register  -->
+    <div class="modal fade auth-modal" id="authModal" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true"
+        style="z-index: 10001;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content auth-modal-content"
+                style="background-color: var(--body-color); color: var(--text-color);">
+                <div class="modal-header border-0 pb-0">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="auth-modal-icon">
+                            <i class='bx bx-user'></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title mb-0" id="authModalLabel">Member Access</h5>
+                            <small class="text-muted auth-modal-subtitle">Login or register to continue as a
+                                member.</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body pt-3">
+                    <ul class="nav nav-pills auth-tabs mb-3" id="authTab" role="tablist">
+                        <li class="nav-item w-50" role="presentation">
+                            <button class="nav-link active w-100" id="login-tab" data-bs-toggle="tab"
+                                data-bs-target="#login-pane" type="button" role="tab" aria-controls="login-pane"
+                                aria-selected="true" style="color:var(--first-color)">Login</button>
+                        </li>
+                        <li class="nav-item w-50" role="presentation">
+                            <button class="nav-link w-100" id="register-tab" data-bs-toggle="tab"
+                                data-bs-target="#register-pane" type="button" role="tab" aria-controls="register-pane"
+                                aria-selected="false" style="color:var(--first-color)">Register</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="authTabContent">
+                        <!-- Login -->
+                        <div class="tab-pane fade show active" id="login-pane" role="tabpanel"
+                            aria-labelledby="login-tab" tabindex="0">
+                            <div class="mb-3">
+                                <label for="loginUsername" class="form-label auth-modal-label">Username</label>
+                                <input type="text" class="form-control auth-modal-input" id="loginUsername"
+                                    name="nr_login_username" placeholder="username" autocomplete="off"
+                                    autocapitalize="off" autocorrect="off" spellcheck="false">
+                                <div class="invalid-feedback">Username is required.</div>
+                            </div>
+                            <div class="mb-2">
+                                <label for="loginPassword" class="form-label auth-modal-label">Password</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control auth-modal-input" id="loginPassword"
+                                        name="nr_login_password" placeholder="••••••••" autocomplete="new-password"
+                                        autocapitalize="off" autocorrect="off" spellcheck="false">
+                                    <button class="btn btn-outline-secondary" type="button"
+                                        data-toggle-password="#loginPassword" aria-label="Show or hide password">
+                                        <i class="bx bx-show" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                                <div class="invalid-feedback">Password is required.</div>
+                            </div>
+
+                        </div>
+
+                        <!-- Register -->
+                        <div class="tab-pane fade" id="register-pane" role="tabpanel" aria-labelledby="register-tab"
+                            tabindex="0">
+                            <div class="mb-3">
+                                <label for="regName" class="form-label auth-modal-label">Full Name</label>
+                                <input type="text" class="form-control auth-modal-input" id="regName"
+                                    placeholder="Your name">
+                                <div class="invalid-feedback">Name is required.</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="regUsername" class="form-label auth-modal-label">Username</label>
+                                <input type="text" class="form-control auth-modal-input" id="regUsername"
+                                    name="nr_register_username" placeholder="username" autocomplete="off"
+                                    autocapitalize="off" autocorrect="off" spellcheck="false">
+                                <div class="invalid-feedback">Username is required.</div>
+                            </div>
+                            <div class="mb-2">
+                                <label for="regPassword" class="form-label auth-modal-label">Password</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control auth-modal-input" id="regPassword"
+                                        name="nr_register_password" placeholder="Create password"
+                                        autocomplete="new-password" autocapitalize="off" autocorrect="off"
+                                        spellcheck="false">
+                                    <button class="btn btn-outline-secondary" type="button"
+                                        data-toggle-password="#regPassword" aria-label="Show or hide password">
+                                        <i class="bx bx-show" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                                <div class="invalid-feedback">Password is required.</div>
+                            </div>
+                            <div class="auth-modal-hint">Akun baru otomatis masuk role <b>Customer</b>.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 pt-0 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary auth-modal-secondary"
+                        data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary auth-modal-primary" id="authContinueBtn"
+                        style="background-color: var(--first-color); border:none;">Continue</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer section bd-container">
+        <div class="footer__container bd-grid">
+            <div class="footer__content">
+                <a href="#" class="footer__logo">Tasty Food</a>
+                <span class="footer__description">Restaurant</span>
+                <div>
+                    <a href="#" class="footer__social"><i class='bx bxl-facebook'></i></a>
+                    <a href="#" class="footer__social"><i class='bx bxl-instagram'></i></a>
+                    <a href="#" class="footer__social"><i class='bx bxl-twitter'></i></a>
+                </div>
+            </div>
+
+            <div class="footer__content">
+                <h3 class="footer__title">Services</h3>
+                <ul>
+                    <li><a href="#" class="footer__link">Delivery</a></li>
+                    <li><a href="#" class="footer__link">Pricing</a></li>
+                    <li><a href="#" class="footer__link">Fast food</a></li>
+                    <li><a href="#" class="footer__link">Reserve your spot</a></li>
+                </ul>
+            </div>
+
+            <div class="footer__content">
+                <h3 class="footer__title">Information</h3>
+                <ul>
+                    <li><a href="#" class="footer__link">Event</a></li>
+                    <li><a href="#" class="footer__link">Contact us</a></li>
+                    <li><a href="#" class="footer__link">Privacy policy</a></li>
+                    <li><a href="#" class="footer__link">Terms of services</a></li>
+                </ul>
+            </div>
+
+            <div class="footer__content">
+                <h3 class="footer__title">Adress</h3>
+                <ul>
+                    <li>Chandu - India</li>
+                    <li>Web-Developer</li>
+                    <li>9640186272</li>
+                    <li>chanduabbireddy247@gmail.com</li>
+                </ul>
+            </div>
+        </div>
+
+        <p class="footer__copy">&#169; 2025 Venkata Chandu. All right reserved</p>
+    </footer>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- <script src="https://unpkg.com/scrollreveal"></script> -->
+    <script src="~/js/web.js"></script>
+
+    <!-- Auth flags for JS -->
+    <script>
+        (function () {
+            const body = document.body;
+            window.nrIsAuthenticated = body?.dataset?.auth === "true";
+            window.nrUserName = body?.dataset?.username || "";
+            window.nrIsAdmin = body?.dataset?.isadmin === "true";
+        })();
+    </script>
+    <script src="~/js/site.js"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+
+</html>

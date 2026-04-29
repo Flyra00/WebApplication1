@@ -1,0 +1,99 @@
+:root {
+    --admin-primary: #b84c2a;
+    --admin-primary-soft: #fff1ec;
+    --admin-surface: #fffdfa;
+    --admin-border: #eadfd8;
+    --admin-text: #2a2420;
+    --admin-muted: #7e7168;
+}
+
+body {
+    background:
+        radial-gradient(circle at 10% 10%, rgba(184, 76, 42, 0.08) 0%, transparent 35%),
+        radial-gradient(circle at 90% 0%, rgba(255, 196, 140, 0.18) 0%, transparent 40%),
+        #f6f3ef;
+}
+
+.app-main {
+    padding: 1.25rem;
+}
+
+.app-content-header h3,
+.content-header h1 {
+    letter-spacing: 0.01em;
+    color: var(--admin-text);
+}
+
+.card {
+    border: 1px solid var(--admin-border);
+    border-radius: 1rem;
+    box-shadow: 0 10px 30px rgba(59, 33, 20, 0.08);
+    background-color: var(--admin-surface);
+}
+
+.card-header {
+    border-bottom: 1px solid var(--admin-border);
+    background: linear-gradient(180deg, rgba(255, 248, 244, 0.95), rgba(255, 253, 250, 0.95));
+}
+
+.btn-primary {
+    background: linear-gradient(120deg, #b84c2a, #cf6a2f);
+    border-color: #b84c2a;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(120deg, #a84627, #bf622b);
+    border-color: #a84627;
+}
+
+.btn-outline-warning,
+.btn-outline-danger,
+.btn-outline-secondary {
+    border-width: 1px;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table thead th {
+    border-bottom: 1px solid var(--admin-border);
+    color: var(--admin-muted);
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+}
+
+.table tbody td {
+    border-color: #efe7e1;
+    color: var(--admin-text);
+}
+
+.table-hover tbody tr:hover {
+    background-color: var(--admin-primary-soft);
+}
+
+.form-control,
+.form-select {
+    border: 1px solid #decfc4;
+    border-radius: 0.75rem;
+    background-color: #fff;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #cf7a55;
+    box-shadow: 0 0 0 0.2rem rgba(184, 76, 42, 0.14);
+}
+
+.badge {
+    font-weight: 600;
+}
+
+.app-sidebar .nav-link.active {
+    background: linear-gradient(120deg, rgba(184, 76, 42, 0.9), rgba(207, 106, 47, 0.9));
+    color: #fff;
+}
+
+.app-sidebar .nav-link.active .nav-icon {
+    color: #fff;
+}

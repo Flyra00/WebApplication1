@@ -1,0 +1,122 @@
+﻿@model WebApplication1.Models.Product
+@{
+    Layout = "_LayoutAdmin";
+    ViewData["Title"] = "Edit Menu";
+}
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0 fw-bold text-dark">Manajemen Menu</h1>
+            </div>
+            <div class="col-sm-6 text-end">
+                <small class="text-muted">Restoran Management System v1.0</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid pb-5">
+        <div class="row">
+            <div class="col-md-10 mx-auto">
+                <div class="card card-primary card-outline shadow-lg border-0">
+                    <div class="card-header bg-white py-3">
+                        <h3 class="card-title fw-bold text-primary">
+                            <i class="bi bi-plus-circle-fill me-2"></i> Edit Menu Restoran
+                        </h3>
+                    </div>
+
+                    <form asp-controller="Products" asp-action="Edit" method="post" enctype="multipart/form-data">
+                        <input type="hidden" asp-for="Id" />
+                        <input type="hidden" asp-for="ImageFileName" />
+
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3 fw-bold"></div>
+
+                        <div class="card-body p-4">
+                            <div class="row">
+                                <div class="col-md-7">
+                                    <div class="mb-4">
+                                        <label asp-for="Name" class="form-label fw-bold text-secondary">Nama Menu</label>
+                                        <div class="input-group shadow-sm">
+                                            <span class="input-group-text bg-light"><i class="bi bi-egg-fried"></i></span>
+                                            <input asp-for="Name" class="form-control" />
+                                        </div>
+                                        <span asp-validation-for="Name" class="text-danger small"></span>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6 mb-4">
+                                            <label asp-for="Category" class="form-label fw-bold text-secondary">Kategori</label>
+                                            <select asp-for="Category" class="form-select shadow-sm">
+                                                <option value="Makanan">Makanan Utama</option>
+                                                <option value="Minuman">Minuman Segar</option>
+                                                <option value="Snack">Camilan / Snack</option>
+                                            </select>
+                                            <span asp-validation-for="Category" class="text-danger small"></span>
+                                        </div>
+
+                                        <div class="col-md-6 mb-4">
+                                            <label asp-for="Price" class="form-label fw-bold text-secondary">Harga Jual</label>
+                                            <div class="input-group shadow-sm">
+                                                <span class="input-group-text bg-success text-white">Rp</span>
+                                                <input asp-for="Price" type="number" class="form-control" />
+                                            </div>
+                                            <span asp-validation-for="Price" class="text-danger small"></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-5 border-start ps-4">
+                                    <div class="mb-3 text-center">
+                                        <label class="form-label fw-bold text-secondary">Preview Foto</label>
+                                        <div class="mt-2 border rounded p-2 bg-light d-flex align-items-center justify-content-center shadow-inner"
+                                             style="height: 220px; overflow: hidden; border-style: dashed !important; border-width: 2px;">
+
+                                            <img id="imagePreview"
+                                                 src="@(string.IsNullOrEmpty(Model.ImageFileName) ? "/images/no-image.png" : "/products/" + Model.ImageFileName)"
+                                                 alt="Preview" class="img-fluid rounded shadow-sm" style="max-height: 100%;" />
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="FoodImage" class="form-label fw-bold text-secondary">Ganti Gambar (Opsional)</label>
+                                        <input type="file" name="ImageFile" class="form-control shadow-sm" id="FoodImage" accept="image/*" onchange="previewFile()" />
+                                        <div class="form-text text-warning">Kosongkan jika tidak ingin mengubah gambar.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-footer bg-light py-3 text-end">
+                            <a asp-action="Index" class="btn btn-outline-secondary px-4 me-2">
+                                <i class="bi bi-arrow-left me-1"></i> Batal
+                            </a>
+                            <button type="submit" class="btn btn-primary px-4 shadow-sm">
+                                <i class="bi bi-save-fill me-1"></i> Update Menu
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        function previewFile() {
+            const preview = document.querySelector('#imagePreview');
+            const file = document.querySelector('#FoodImage').files[0];
+            const reader = new FileReader();
+
+            reader.addEventListener("load", function () {
+                preview.src = reader.result;
+            }, false);
+
+            if (file) {
+                reader.readAsDataURL(file);
+            }
+        }
+    </script>
+}

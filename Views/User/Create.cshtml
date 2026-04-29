@@ -1,0 +1,75 @@
+@model WebApplication1.Models.ApplicationUser
+@{
+    Layout = "_LayoutAdmin";
+    ViewData["Title"] = "Tambah User";
+    var roles = ViewBag.Roles as List<string> ?? new List<string>();
+}
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2 align-items-center">
+            <div class="col-sm-6">
+                <h1 class="m-0 fw-bold text-dark"><i class="bi bi-person-plus-fill me-2"></i>Tambah User</h1>
+            </div>
+            <div class="col-sm-6 text-end">
+                <a asp-action="Index" class="btn btn-outline-secondary px-4">
+                    <i class="bi bi-arrow-left me-1"></i> Kembali
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid pb-4">
+        <div class="row">
+            <div class="col-lg-8 col-xl-7 mx-auto">
+                <div class="card shadow-lg border-0">
+                    <div class="card-header bg-white py-3">
+                        <h3 class="card-title fw-bold mb-0">Form User Baru</h3>
+                    </div>
+
+                    <form asp-controller="User" asp-action="Create" method="post">
+                        <div class="card-body p-4">
+                            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+                            <div class="mb-3">
+                                <label asp-for="UserName" class="form-label fw-semibold">Username</label>
+                                <input asp-for="UserName" class="form-control" placeholder="Contoh: kasir_hadi" />
+                                <span asp-validation-for="UserName" class="text-danger small"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="FullName" class="form-label fw-semibold">Nama Lengkap</label>
+                                <input asp-for="FullName" class="form-control" placeholder="Contoh: Hadi Pratama" />
+                                <span asp-validation-for="FullName" class="text-danger small"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="role" class="form-label fw-semibold">Role</label>
+                                <select id="role" name="role" class="form-select">
+                                    <option value="" selected disabled>-- Pilih Role --</option>
+                                    @foreach (var r in roles)
+                                    {
+                                        <option value="@r">@r</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="mb-1">
+                                <label for="password" class="form-label fw-semibold">Password</label>
+                                <input id="password" name="password" type="password" class="form-control" placeholder="Minimal 8 karakter" />
+                            </div>
+                        </div>
+
+                        <div class="card-footer bg-light py-3 text-end">
+                            <button type="submit" class="btn btn-primary px-4 shadow-sm">
+                                <i class="bi bi-save-fill me-1"></i> Simpan User
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

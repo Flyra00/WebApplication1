@@ -1,0 +1,36 @@
+@model WebApplication1.Models.Inventory
+@{
+    Layout = "_LayoutAdmin";
+    ViewData["Title"] = "Hapus Inventory";
+}
+
+<div class="content-header">
+    <div class="container-fluid">
+        <h1 class="m-0 fw-bold text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Konfirmasi Hapus Barang</h1>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid pb-4">
+        <div class="row">
+            <div class="col-md-7 col-lg-6 mx-auto">
+                <div class="card shadow-lg border-0">
+                    <div class="card-body p-4 text-center">
+                        <p class="mb-1 text-muted">Anda akan menghapus data barang berikut:</p>
+                        <h5 class="fw-bold mb-1">@Model.ItemName</h5>
+                        <p class="mb-4 text-secondary">@Model.Category</p>
+
+                        <form asp-action="Delete" method="post" class="d-flex justify-content-center gap-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" asp-for="Id" />
+                            <a asp-action="Index" class="btn btn-outline-secondary px-4">Batal</a>
+                            <button type="submit" class="btn btn-danger px-4">
+                                <i class="bi bi-trash-fill me-1"></i> Hapus
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

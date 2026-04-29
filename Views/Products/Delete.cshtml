@@ -1,0 +1,42 @@
+﻿@model WebApplication1.Models.Product
+@{
+    Layout = "_LayoutAdmin";
+    ViewData["Title"] = "Delete Menu";
+}
+
+<div class="content-header">
+    <div class="container-fluid text-center">
+        <h1 class="m-0 fw-bold text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Konfirmasi Hapus</h1>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-6 mx-auto">
+                <div class="card card-danger card-outline shadow-lg border-0">
+                    <div class="card-body text-center p-5">
+                        <h4 class="mb-4">Yakin mau hapus menu ini?</h4>
+
+                        <div class="mb-4">
+                            <img src="@(string.IsNullOrEmpty(Model.ImageFileName) ? "/images/no-image.png" : "/products/" + Model.ImageFileName)"
+                                 class="rounded shadow-sm border" style="width: 200px; height: 200px; object-fit: cover;" />
+                            <h3 class="mt-3 fw-bold">@Model.Name</h3>
+                            <p class="text-muted">Kategori: @Model.Category | Harga: Rp @Model.Price.ToString("N0")</p>
+                        </div>
+
+                        <form asp-action="Delete" method="post">
+                            <input type="hidden" asp-for="Id" />
+                            <div class="d-grid gap-2 d-md-block">
+                                <a asp-action="Index" class="btn btn-secondary px-5 rounded-pill me-md-2">Batal</a>
+                                <button type="submit" class="btn btn-danger px-5 rounded-pill shadow">
+                                    <i class="bi bi-trash-fill me-1"></i> Ya, Hapus Permanen!
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
