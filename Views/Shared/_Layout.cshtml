@@ -33,7 +33,7 @@
 
 <body data-auth="@((User?.Identity?.IsAuthenticated ?? false).ToString().ToLower())"
     data-username="@(User?.Identity?.Name ?? "")"
-    data-isadmin="@((User?.IsInRole("Admin") ?? false).ToString().ToLower())"
+    data-isadmin="@((User?.IsInRole(AppRoles.Admin) ?? false).ToString().ToLower())"
     data-adminpage="@(_isAdminPage.ToString().ToLower())">
 
     <a href="#" class="scrolltop" id="scroll-top">
@@ -71,7 +71,7 @@
                         <li class="nav__item">
                             <a href="#" class="nav__link">Hi, @(User?.Identity?.Name)</a>
                         </li>
-                        @if (User?.IsInRole("Admin") ?? false)
+                        @if (User?.IsInRole(AppRoles.Admin) ?? false)
                         {
                             <li class="nav__item"><a class="nav__link" href="/Admin">Dashboard</a></li>
                         }

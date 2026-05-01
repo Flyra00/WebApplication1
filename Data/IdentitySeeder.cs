@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using WebApplication1.Models;
+using WebApplication1.Security;
 
 namespace WebApplication1.Data
 {
@@ -13,12 +14,10 @@ namespace WebApplication1.Data
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
             var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
-            string[] roles = { "Kasir", "Owner", "Supervisor", "Customer", "Admin" };
-
-            foreach (var r in roles)
+            foreach (var role in AppRoles.All)
             {
-                if (!await roleManager.RoleExistsAsync(r))
-                    await roleManager.CreateAsync(new IdentityRole(r));
+                if (!await roleManager.RoleExistsAsync(role))
+                    await roleManager.CreateAsync(new IdentityRole(role));
             }
 
             // Admin default ini yang dirubah dan untuk menggunakan 
@@ -53,8 +52,8 @@ namespace WebApplication1.Data
                 }
             }
 
-            if (!await userManager.IsInRoleAsync(admin, "Admin"))
-                await userManager.AddToRoleAsync(admin, "Admin");
+            if (!await userManager.IsInRoleAsync(admin, AppRoles.Admin))
+                await userManager.AddToRoleAsync(admin, AppRoles.Admin);
         }
 
         private static string GetRequiredSecret(IConfiguration config, string key, string errorMessage)

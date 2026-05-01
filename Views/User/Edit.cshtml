@@ -3,7 +3,7 @@
     Layout = "_LayoutAdmin";
     ViewData["Title"] = "Edit User";
     var roles = ViewBag.Roles as List<string> ?? new List<string>();
-    var activeRole = Model.Roles.Count > 0 ? Model.Roles[0] : string.Empty;
+    var activeRole = ViewBag.SelectedRole as string ?? (Model.Roles.Count > 0 ? Model.Roles[0] : string.Empty);
 }
 
 <div class="content-header">

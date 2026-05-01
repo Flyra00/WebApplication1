@@ -13,5 +13,7 @@ namespace WebApplication1.Models
         [Range (1,20, ErrorMessage ="Kapasitas meja tidak bisa melebihi ini")]
         public int Capacity { get; set; }
 
+        public ICollection<TableSession> Sessions { get; set; } = new List<TableSession>();
+
     }
 }

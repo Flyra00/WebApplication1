@@ -3,10 +3,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Data;
 using WebApplication1.Models;
+using WebApplication1.Security;
 
 namespace WebApplication1.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = AppRoles.Admin)]
     public class IngredientController : Controller
     {
         private readonly AppDbContext _context;
@@ -18,8 +19,8 @@ namespace WebApplication1.Controllers
         //reading
         public async Task<IActionResult> Index()
         {
-            var Ingredient = await _context.ingredients.ToListAsync();
-            return View(Ingredient);
+            var ingredients = await _context.Ingredients.ToListAsync();
+            return View(ingredients);
         }
         //create
         public IActionResult Create()
@@ -32,7 +33,7 @@ namespace WebApplication1.Controllers
 
             if (ModelState.IsValid)
             {
-                _context.ingredients.Add(ingredient);
+                _context.Ingredients.Add(ingredient);
                 await _context.SaveChangesAsync();
                 return RedirectToAction("Index");
             }
@@ -41,7 +42,7 @@ namespace WebApplication1.Controllers
         //Update
         public async Task<IActionResult> Edit(int Id)
         {
-            var ingredient = await _context.ingredients.FirstOrDefaultAsync(i => i.Id == Id);
+            var ingredient = await _context.Ingredients.FirstOrDefaultAsync(i => i.Id == Id);
             if (ingredient == null) return NotFound();
             return View(ingredient);
         }
@@ -50,7 +51,7 @@ namespace WebApplication1.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.ingredients.Update(ingredient);
+                _context.Ingredients.Update(ingredient);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
@@ -59,17 +60,17 @@ namespace WebApplication1.Controllers
         //Delete
         public async Task<IActionResult>Delete (int Id)
         {
-            var ingredient = await _context.ingredients.FirstOrDefaultAsync(i => i.Id == Id);
+            var ingredient = await _context.Ingredients.FirstOrDefaultAsync(i => i.Id == Id);
             return View(ingredient);
         }
         [HttpPost, ActionName(nameof(Delete))]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int Id)
         {
-            var ingredient = await _context.ingredients.FirstOrDefaultAsync(i => i.Id == Id);
+            var ingredient = await _context.Ingredients.FirstOrDefaultAsync(i => i.Id == Id);
             if (ingredient == null)
                 return NotFound();
-            _context.ingredients.Remove(ingredient);
+            _context.Ingredients.Remove(ingredient);
             await _context.SaveChangesAsync();
             
             return RedirectToAction(nameof(Index));

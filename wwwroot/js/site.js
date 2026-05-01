@@ -3,6 +3,7 @@
 
     const COOKIE_TABLE = 'nr_tableNumber';
     const COOKIE_MEMBER = 'nr_membershipStatus';
+    const CART_STORAGE_KEY = 'nr_orderCart';
 
 
     function setCookie(name, value, days) {
@@ -24,6 +25,44 @@
 
     function deleteCookie(name) {
         document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax';
+    }
+
+    function saveCart(cart) {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+    }
+
+    function loadCart() {
+        try {
+            const raw = localStorage.getItem(CART_STORAGE_KEY);
+            if (!raw) return [];
+
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch {
+            return [];
+        }
+    }
+
+    function clearCart() {
+        localStorage.removeItem(CART_STORAGE_KEY);
+    }
+
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(value || 0);
+    }
+
+    function escapeHtml(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     }
 
     function setBadge(tableNumber) {
@@ -62,6 +101,13 @@
         const tableInput = document.getElementById('tableNumberInput');
         const saveBtn = document.getElementById('tableSaveBtn');
         const resetBtn = document.getElementById('tableResetBtn');
+        const addToCartButtons = document.querySelectorAll('.js-add-to-cart');
+        const cartItemsEl = document.getElementById('orderCartItems');
+        const cartEmptyEl = document.getElementById('orderCartEmpty');
+        const cartTotalEl = document.getElementById('orderCartTotal');
+        const submitOrderBtn = document.getElementById('submitOrderBtn');
+        const orderFeedbackEl = document.getElementById('orderFeedback');
+        let cart = loadCart();
 
 
         const existingTable = getCookie(COOKIE_TABLE);
@@ -123,6 +169,8 @@
             resetBtn.addEventListener('click', function () {
                 deleteCookie(COOKIE_TABLE);
                 deleteCookie(COOKIE_MEMBER);
+                clearCart();
+                cart = [];
 
                 if (tableInput) {
                     tableInput.value = '';
@@ -131,6 +179,7 @@
                 }
                 setSelectedMembership('Guest');
                 setBadge(null);
+                renderCart();
             });
         }
 
@@ -199,6 +248,171 @@
             return await res.json();
         }
 
+        function setOrderFeedback(message, type) {
+            if (!orderFeedbackEl) return;
+
+            orderFeedbackEl.className = 'small mt-3';
+            orderFeedbackEl.textContent = '';
+
+            if (!message) return;
+
+            orderFeedbackEl.textContent = message;
+            orderFeedbackEl.classList.add(type === 'success' ? 'text-success' : 'text-danger');
+        }
+
+        function renderCart() {
+            if (!cartItemsEl || !cartEmptyEl || !cartTotalEl || !submitOrderBtn) return;
+
+            if (cart.length === 0) {
+                cartEmptyEl.style.display = '';
+                cartItemsEl.innerHTML = '';
+                cartTotalEl.textContent = formatCurrency(0);
+                submitOrderBtn.disabled = true;
+                return;
+            }
+
+            cartEmptyEl.style.display = 'none';
+            submitOrderBtn.disabled = false;
+
+            let total = 0;
+            cartItemsEl.innerHTML = cart.map(function (item) {
+                const lineTotal = Number(item.price) * Number(item.qty);
+                total += lineTotal;
+
+                return [
+                    '<div class="list-group-item px-0">',
+                    '<div class="d-flex justify-content-between align-items-start gap-3">',
+                    '<div>',
+                    '<div class="fw-semibold">' + escapeHtml(item.name) + '</div>',
+                    '<div class="text-muted small">' + formatCurrency(item.price) + '</div>',
+                    '</div>',
+                    '<div class="d-flex align-items-center gap-2">',
+                    '<button type="button" class="btn btn-sm btn-outline-secondary" data-cart-action="decrease" data-product-id="' + item.productId + '">-</button>',
+                    '<span class="fw-semibold">' + item.qty + '</span>',
+                    '<button type="button" class="btn btn-sm btn-outline-secondary" data-cart-action="increase" data-product-id="' + item.productId + '">+</button>',
+                    '<button type="button" class="btn btn-sm btn-outline-danger" data-cart-action="remove" data-product-id="' + item.productId + '">x</button>',
+                    '</div>',
+                    '</div>',
+                    '<div class="text-end fw-bold mt-2">' + formatCurrency(lineTotal) + '</div>',
+                    '</div>'
+                ].join('');
+            }).join('');
+
+            cartTotalEl.textContent = formatCurrency(total);
+        }
+
+        function upsertCartItem(item) {
+            const existing = cart.find(function (cartItem) {
+                return Number(cartItem.productId) === Number(item.productId);
+            });
+
+            if (existing) {
+                existing.qty += 1;
+            } else {
+                cart.push({
+                    productId: Number(item.productId),
+                    name: item.name,
+                    price: Number(item.price),
+                    qty: 1
+                });
+            }
+
+            saveCart(cart);
+            renderCart();
+            setOrderFeedback('Menu ditambahkan ke pesanan.', 'success');
+        }
+
+        addToCartButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                upsertCartItem({
+                    productId: button.dataset.productId,
+                    name: button.dataset.productName || 'Menu',
+                    price: button.dataset.productPrice || '0'
+                });
+            });
+        });
+
+        if (cartItemsEl) {
+            cartItemsEl.addEventListener('click', function (event) {
+                const target = event.target.closest('[data-cart-action]');
+                if (!target) return;
+
+                const action = target.getAttribute('data-cart-action');
+                const productId = Number(target.getAttribute('data-product-id'));
+                const item = cart.find(function (cartItem) {
+                    return Number(cartItem.productId) === productId;
+                });
+
+                if (!item) return;
+
+                if (action === 'increase') item.qty += 1;
+                if (action === 'decrease') item.qty -= 1;
+                if (action === 'remove' || item.qty <= 0) {
+                    cart = cart.filter(function (cartItem) {
+                        return Number(cartItem.productId) !== productId;
+                    });
+                }
+
+                saveCart(cart);
+                renderCart();
+                setOrderFeedback('', '');
+            });
+        }
+
+        if (submitOrderBtn) {
+            submitOrderBtn.addEventListener('click', function () {
+                const tableNumber = getCookie(COOKIE_TABLE);
+                const membershipStatus = getCookie(COOKIE_MEMBER) || 'Guest';
+
+                if (!tableNumber) {
+                    setOrderFeedback('Pilih nomor meja dulu sebelum memesan.', 'error');
+                    showModal(modalEl);
+                    return;
+                }
+
+                if (membershipStatus === 'Member' && window.nrIsAuthenticated !== true) {
+                    setOrderFeedback('Login member dulu sebelum mengirim pesanan.', 'error');
+                    showModal(document.getElementById('authModal'));
+                    return;
+                }
+
+                if (cart.length === 0) {
+                    setOrderFeedback('Pesanan masih kosong.', 'error');
+                    return;
+                }
+
+                submitOrderBtn.disabled = true;
+                setOrderFeedback('Mengirim pesanan...', 'success');
+
+                postJson('/CustomerOrder/Submit', {
+                    tableNumber: Number(tableNumber),
+                    membershipStatus: membershipStatus,
+                    items: cart.map(function (item) {
+                        return {
+                            productId: Number(item.productId),
+                            qty: Number(item.qty)
+                        };
+                    })
+                }).then(function (data) {
+                    if (!data || !data.success) {
+                        submitOrderBtn.disabled = false;
+                        setOrderFeedback((data && data.error) || 'Pesanan gagal dikirim.', 'error');
+                        renderCart();
+                        return;
+                    }
+
+                    cart = [];
+                    clearCart();
+                    renderCart();
+                    setOrderFeedback('Pesanan berhasil dikirim. Nomor order: ' + data.orderNumber + '. Total: Rp' + data.total + '.', 'success');
+                }).catch(function () {
+                    submitOrderBtn.disabled = false;
+                    setOrderFeedback('Terjadi error saat mengirim pesanan.', 'error');
+                    renderCart();
+                });
+            });
+        }
+
         if (authContinueBtn) {
             authContinueBtn.addEventListener('click', function () {
                 const activePane = document.querySelector('#authTabContent .tab-pane.active');
@@ -260,5 +474,7 @@
                 tableInput.classList.remove('is-invalid');
             });
         }
+
+        renderCart();
     });
 })();

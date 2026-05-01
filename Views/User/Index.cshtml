@@ -63,15 +63,17 @@
                                                 {
                                                     var badgeClass = role switch
                                                     {
-                                                        "Admin" => "bg-danger-subtle text-danger",
-                                                        "Owner" => "bg-dark-subtle text-dark",
-                                                        "Supervisor" => "bg-primary-subtle text-primary",
-                                                        "Kasir" => "bg-success-subtle text-success",
-                                                        "Customer" => "bg-warning-subtle text-warning",
+                                                        AppRoles.Admin => "bg-danger-subtle text-danger",
+                                                        AppRoles.Owner => "bg-dark-subtle text-dark",
+                                                        AppRoles.Supervisor => "bg-primary-subtle text-primary",
+                                                        AppRoles.Kasir => "bg-success-subtle text-success",
+                                                        AppRoles.Customer => "bg-warning-subtle text-warning",
+                                                        AppRoles.Kitchen => "bg-info-subtle text-info",
                                                         _ => "bg-secondary-subtle text-secondary"
                                                     };
 
-                                                    <span class="badge @badgeClass border border-opacity-25 rounded-pill px-2 me-1">@role</span>
+                                                    var roleLabel = role == AppRoles.Kitchen ? "Bagian Masak" : role;
+                                                    <span class="badge @badgeClass border border-opacity-25 rounded-pill px-2 me-1">@roleLabel</span>
                                                 }
                                             }
                                         </td>

@@ -3,10 +3,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Data;
 using WebApplication1.Models;
+using WebApplication1.Security;
 
 namespace WebApplication1.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = AppRoles.Admin)]
     public class InventoryController : Controller
     {
         private readonly AppDbContext _context;
@@ -17,8 +18,8 @@ namespace WebApplication1.Controllers
         //read
         public async Task<IActionResult> Index()
         {
-            var inven = await _context.Inventory.ToListAsync();
-            return View(inven);
+            var inventoryItems = await _context.InventoryItems.ToListAsync();
+            return View(inventoryItems);
         }
         //create
         public IActionResult Create()
@@ -34,7 +35,7 @@ namespace WebApplication1.Controllers
             }
             if(ModelState.IsValid)
             {
-                await _context.Inventory.AddAsync(inven);
+                await _context.InventoryItems.AddAsync(inven);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
@@ -43,7 +44,7 @@ namespace WebApplication1.Controllers
         //update
         public async Task<IActionResult> Edit(int Id)
         {
-            var inven = await _context.Inventory.FirstOrDefaultAsync(i =>i.Id == Id);
+            var inven = await _context.InventoryItems.FirstOrDefaultAsync(i =>i.Id == Id);
             if(inven == null)
             {
                 return NotFound();
@@ -55,7 +56,7 @@ namespace WebApplication1.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Inventory.Update(inven);
+                _context.InventoryItems.Update(inven);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
@@ -64,7 +65,7 @@ namespace WebApplication1.Controllers
         //delete
         public async Task<IActionResult> Delete(int Id)
         {
-            var inven = await _context.Inventory.FirstOrDefaultAsync(i =>i.Id == Id);
+            var inven = await _context.InventoryItems.FirstOrDefaultAsync(i =>i.Id == Id);
             if(inven == null)
             {
                 return NotFound();
@@ -75,12 +76,12 @@ namespace WebApplication1.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int Id)
         {
-            var inven = await _context.Inventory.FirstOrDefaultAsync(i => i.Id == Id);
+            var inven = await _context.InventoryItems.FirstOrDefaultAsync(i => i.Id == Id);
             if (inven == null)
             {
                 return NotFound();
             }
-            _context.Inventory.Remove(inven);
+            _context.InventoryItems.Remove(inven);
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }

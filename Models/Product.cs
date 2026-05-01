@@ -24,5 +24,7 @@ namespace WebApplication1.Models
         public string ImageFileName { get; set; } = "";
 
         public DateTime Created { get; set; } = DateTime.Now;
+
+        public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
     }
 }

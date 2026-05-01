@@ -1,15 +1,13 @@
-﻿using System.Data;
-using System.Globalization;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using WebApplication1.Data;
 using WebApplication1.Models;
+using WebApplication1.Security;
 
 namespace WebApplication1.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = AppRoles.Admin)]
     public class UserController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
@@ -35,15 +33,13 @@ namespace WebApplication1.Controllers
         [HttpGet]
         public async Task<IActionResult> Create()
         {
-            var roles = await _roleManager.Roles
-                .Select(r => r.Name!)
-                .ToListAsync();
-            ViewBag.Roles = roles;
+            await PopulateRolesAsync();
             return View(new ApplicationUser());
         }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(string fullname, string userName, string password, string role = "Customer")
+        public async Task<IActionResult> Create(string fullname, string userName, string password, string role = AppRoles.Customer)
         {
             var user = new ApplicationUser
             {
@@ -52,48 +48,108 @@ namespace WebApplication1.Controllers
                 EmailConfirmed = true
             };
 
+            if (string.IsNullOrWhiteSpace(role) || !await _roleManager.RoleExistsAsync(role))
+            {
+                ModelState.AddModelError(string.Empty, "Role yang dipilih tidak valid.");
+            }
+
             if (ModelState.IsValid)
             {
                 var createResult = await _userManager.CreateAsync(user, password);
                 if (!createResult.Succeeded)
-                    return BadRequest(string.Join(", ", createResult.Errors.Select(e => e.Description)));
-                if (await _roleManager.RoleExistsAsync(role))
+                {
+                    foreach (var error in createResult.Errors)
+                    {
+                        ModelState.AddModelError(string.Empty, error.Description);
+                    }
+                }
+                else
+                {
                     await _userManager.AddToRoleAsync(user, role);
-                return RedirectToAction("Index");
+                    return RedirectToAction("Index");
+                }
             }
+
+            await PopulateRolesAsync(role);
             return View(user);
         }
         //Update
         [HttpGet]
         public async Task<IActionResult> Edit(string id)
         {
-            var roles = await _roleManager.Roles.Select(r => r.Name!).ToListAsync();
-            ViewBag.Roles = roles;
             var user = await _userManager.Users.FirstOrDefaultAsync(p => p.Id == id);
+            if (user == null)
+                return NotFound();
+
+            user.Roles = await _userManager.GetRolesAsync(user);
+            await PopulateRolesAsync(user.Roles.FirstOrDefault());
             return View(user);
         }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(string id, string fullName, string username, string role)
         {
             var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+                return NotFound();
+
+            user.Roles = await _userManager.GetRolesAsync(user);
+
+            if (string.IsNullOrWhiteSpace(role) || !await _roleManager.RoleExistsAsync(role))
+            {
+                ModelState.AddModelError(string.Empty, "Role yang dipilih tidak valid.");
+            }
+
             if (ModelState.IsValid)
             {
-            
-                if (user == null)
-                    return NotFound();
                 user.FullName = fullName;
                 user.UserName = username;
+
                 var currentRoles = await _userManager.GetRolesAsync(user);
                 var removeRoles = await _userManager.RemoveFromRolesAsync(user, currentRoles);
+                if (!removeRoles.Succeeded)
+                {
+                    foreach (var error in removeRoles.Errors)
+                    {
+                        ModelState.AddModelError(string.Empty, error.Description);
+                    }
+
+                    await PopulateRolesAsync(role);
+                    user.Roles = currentRoles;
+                    return View(user);
+                }
+
                 var updateResult = await _userManager.UpdateAsync(user);
+                if (!updateResult.Succeeded)
+                {
+                    foreach (var error in updateResult.Errors)
+                    {
+                        ModelState.AddModelError(string.Empty, error.Description);
+                    }
+
+                    await PopulateRolesAsync(role);
+                    user.Roles = currentRoles;
+                    return View(user);
+                }
+
                 var addResult = await _userManager.AddToRoleAsync(user, role);
                 if (!addResult.Succeeded)
-                    return BadRequest(string.Join(", ", addResult.Errors.Select(e => e.Description)));
-                if (!updateResult.Succeeded)
-                    return BadRequest(string.Join(", ", updateResult.Errors.Select(e => e.Description)));
+                {
+                    foreach (var error in addResult.Errors)
+                    {
+                        ModelState.AddModelError(string.Empty, error.Description);
+                    }
+
+                    await PopulateRolesAsync(role);
+                    user.Roles = currentRoles;
+                    return View(user);
+                }
+
                 return RedirectToAction(nameof(Index));
             }
+
+            await PopulateRolesAsync(role);
             return View(user);
         }
         //Delete
@@ -110,6 +166,30 @@ namespace WebApplication1.Controllers
                 return BadRequest(string.Join(", ", deleteResult.Errors.Select(e => e.Description)));
 
             return RedirectToAction(nameof(Index));
+        }
+
+        private async Task PopulateRolesAsync(string? selectedRole = null)
+        {
+            var existingRoles = await _roleManager.Roles
+                .Select(r => r.Name)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Select(name => name!)
+                .ToListAsync();
+
+            var orderedRoles = AppRoles.All
+                .Where(existingRoles.Contains)
+                .ToList();
+
+            foreach (var role in existingRoles)
+            {
+                if (!orderedRoles.Contains(role))
+                {
+                    orderedRoles.Add(role);
+                }
+            }
+
+            ViewBag.Roles = orderedRoles;
+            ViewBag.SelectedRole = selectedRole;
         }
     }
 }

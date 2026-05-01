@@ -63,17 +63,18 @@
                                             var badgeClass = inven.Condition switch
                                             {
                                                 "Bagus" => "bg-primary-subtle text-primary",
-                                                "Rusak" => "bg-success-subtle text-success",
+                                                "Rusak" => "bg-danger-subtle text-danger",
                                                 "Perbaikan" => "bg-warning-subtle text-warning",
                                                 _ => "bg-secondary-subtle text-secondary"
                                             };
                                         }
-                                        <span class="badge @badgeClass border border-opacity-25 rounded-pill px-2" style="font-size: 0.75rem;">
-                                            @inven.Condition
-                                        </span>
                                         <td>@inven.Category</td>
                                         <td class="text-center"><span class="badge @qtyClass border">@inven.Qty</span></td>
-                                        <td>@inven.Condition</td>
+                                        <td>
+                                            <span class="badge @badgeClass border border-opacity-25 rounded-pill px-2" style="font-size: 0.75rem;">
+                                                @inven.Condition
+                                            </span>
+                                        </td>
                                         <td class="text-end pe-4">
                                             <div class="btn-group shadow-sm" role="group">
                                                 <a asp-action="Edit" asp-route-id="@inven.Id" class="btn btn-outline-warning btn-sm" title="Edit Barang">

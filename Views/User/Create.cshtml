@@ -1,8 +1,9 @@
 @model WebApplication1.Models.ApplicationUser
-@{
+@{ 
     Layout = "_LayoutAdmin";
     ViewData["Title"] = "Tambah User";
     var roles = ViewBag.Roles as List<string> ?? new List<string>();
+    var selectedRole = ViewBag.SelectedRole as string ?? string.Empty;
 }
 
 <div class="content-header">
@@ -51,7 +52,14 @@
                                     <option value="" selected disabled>-- Pilih Role --</option>
                                     @foreach (var r in roles)
                                     {
-                                        <option value="@r">@r</option>
+                                        if (r == selectedRole)
+                                        {
+                                            <option value="@r" selected>@r</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@r">@r</option>
+                                        }
                                     }
                                 </select>
                             </div>

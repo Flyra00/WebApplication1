@@ -164,46 +164,71 @@
 
 @section Scripts {
     <script>
-        // Sortable Setup
-        new Sortable(document.querySelector('.connectedSortable'), {
-            group: 'shared',
-            handle: '.card-header',
+        // Prevent runtime errors when optional demo libraries are not loaded.
+        document.querySelectorAll('.connectedSortable').forEach(function (element) {
+            if (typeof Sortable === 'undefined') {
+                return;
+            }
+
+            new Sortable(element, {
+                group: 'shared',
+                handle: '.card-header',
+            });
         });
 
-        // Revenue Chart (ApexCharts)
-        const sales_chart_options = {
-            series: [
-                { name: 'Digital Goods', data: [28, 48, 40, 19, 86, 27, 90] },
-                { name: 'Electronics', data: [65, 59, 80, 81, 56, 55, 40] },
-            ],
-            chart: { height: 300, type: 'area', toolbar: { show: false } },
-            legend: { show: false },
-            colors: ['#0d6efd', '#20c997'],
-            dataLabels: { enabled: false },
-            stroke: { curve: 'smooth' },
-            xaxis: {
-                type: 'datetime',
-                categories: ['2023-01-01', '2023-02-01', '2023-03-01', '2023-04-01', '2023-05-01', '2023-06-01', '2023-07-01'],
-            },
-        };
-        const sales_chart = new ApexCharts(document.querySelector('#revenue-chart'), sales_chart_options);
-        sales_chart.render();
+        if (typeof ApexCharts !== 'undefined') {
+            const sales_chart_options = {
+                series: [
+                    { name: 'Digital Goods', data: [28, 48, 40, 19, 86, 27, 90] },
+                    { name: 'Electronics', data: [65, 59, 80, 81, 56, 55, 40] },
+                ],
+                chart: { height: 300, type: 'area', toolbar: { show: false } },
+                legend: { show: false },
+                colors: ['#0d6efd', '#20c997'],
+                dataLabels: { enabled: false },
+                stroke: { curve: 'smooth' },
+                xaxis: {
+                    type: 'datetime',
+                    categories: ['2023-01-01', '2023-02-01', '2023-03-01', '2023-04-01', '2023-05-01', '2023-06-01', '2023-07-01'],
+                },
+            };
 
-        // World Map
-        new jsVectorMap({ selector: '#world-map', map: 'world' });
+            const salesChartElement = document.querySelector('#revenue-chart');
+            if (salesChartElement) {
+                new ApexCharts(salesChartElement, sales_chart_options).render();
+            }
 
-        // Sparklines
-        const sparkline_options = (data) => ({
-            series: [{ data }],
-            chart: { type: 'area', height: 50, sparkline: { enabled: true } },
-            stroke: { curve: 'straight' },
-            fill: { opacity: 0.3 },
-            yaxis: { min: 0 },
-            colors: ['#DCE6EC'],
-        });
+            const sparkline_options = (data) => ({
+                series: [{ data }],
+                chart: { type: 'area', height: 50, sparkline: { enabled: true } },
+                stroke: { curve: 'straight' },
+                fill: { opacity: 0.3 },
+                yaxis: { min: 0 },
+                colors: ['#DCE6EC'],
+            });
 
-        new ApexCharts(document.querySelector('#sparkline-1'), sparkline_options([1000, 1200, 920, 927, 931, 1027, 819, 930, 1021])).render();
-        new ApexCharts(document.querySelector('#sparkline-2'), sparkline_options([515, 519, 520, 522, 652, 810, 370, 627, 319, 630, 921])).render();
-        new ApexCharts(document.querySelector('#sparkline-3'), sparkline_options([15, 19, 20, 22, 33, 27, 31, 27, 19, 30, 21])).render();
+            const sparkline1 = document.querySelector('#sparkline-1');
+            const sparkline2 = document.querySelector('#sparkline-2');
+            const sparkline3 = document.querySelector('#sparkline-3');
+
+            if (sparkline1) {
+                new ApexCharts(sparkline1, sparkline_options([1000, 1200, 920, 927, 931, 1027, 819, 930, 1021])).render();
+            }
+
+            if (sparkline2) {
+                new ApexCharts(sparkline2, sparkline_options([515, 519, 520, 522, 652, 810, 370, 627, 319, 630, 921])).render();
+            }
+
+            if (sparkline3) {
+                new ApexCharts(sparkline3, sparkline_options([15, 19, 20, 22, 33, 27, 31, 27, 19, 30, 21])).render();
+            }
+        }
+
+        if (typeof jsVectorMap !== 'undefined') {
+            const worldMapElement = document.querySelector('#world-map');
+            if (worldMapElement) {
+                new jsVectorMap({ selector: '#world-map', map: 'world' });
+            }
+        }
     </script>
 }

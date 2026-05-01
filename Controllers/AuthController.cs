@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using WebApplication1.Models;
+using WebApplication1.Security;
 
 namespace WebApplication1.Controllers
 {
@@ -20,8 +21,8 @@ namespace WebApplication1.Controllers
         [AllowAnonymous]
         public IActionResult Index()
         {
-            // Halaman opsional (jika user klik tombol Login/Register di navbar)
-            return View();
+            // Auth UI lives on the public home page modal.
+            return RedirectToAction("Index", "Home");
         }
 
         public sealed class AjaxLoginRequest
@@ -53,7 +54,7 @@ namespace WebApplication1.Controllers
 
             var user = await _users.FindByNameAsync(username);
             var redirectUrl = "/";
-            if (user != null && await _users.IsInRoleAsync(user, "Admin"))
+            if (user != null && await _users.IsInRoleAsync(user, AppRoles.Admin))
                 redirectUrl = "/Admin";
 
             return Json(new { success = true, redirectUrl });
@@ -89,7 +90,7 @@ namespace WebApplication1.Controllers
                 return Json(new { success = false, error = msg });
             }
 
-            await _users.AddToRoleAsync(user, "Customer");
+            await _users.AddToRoleAsync(user, AppRoles.Customer);
             await _signIn.SignInAsync(user, isPersistent: false);
 
             return Json(new { success = true, redirectUrl = "/" });
