@@ -1,0 +1,133 @@
+@model WebApplication1.Models.Order
+@{
+    ViewData["Title"] = "Proses Pembayaran";
+    Layout = "~/Views/Shared/_LayoutOperational.cshtml";
+}
+
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a asp-action="OrderDetail" asp-route-id="@Model.Id" class="op-btn op-btn-secondary"><i class="bi bi-arrow-left"></i></a>
+    <h4 class="mb-0 fw-bold">Proses Pembayaran</h4>
+</div>
+
+<div class="row g-3 justify-content-center">
+    <div class="col-lg-5">
+        <!-- Ringkasan Order -->
+        <div class="op-card mb-3">
+            <h6 class="fw-semibold mb-3" style="color:var(--op-muted);text-transform:uppercase;font-size:0.75rem;">Ringkasan Pesanan</h6>
+            <div class="d-flex justify-content-between mb-2">
+                <span style="color:var(--op-muted);">No. Order</span>
+                <code style="color:#f59e0b;">@Model.OrderNumber</code>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+                <span style="color:var(--op-muted);">Meja</span>
+                <span class="fw-semibold">Meja @(Model.TableSession?.Table?.Number ?? 0)</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+                <span style="color:var(--op-muted);">Jumlah Item</span>
+                <span>@Model.Items.Sum(i => i.Qty) item</span>
+            </div>
+            <hr style="border-color:var(--op-border);" />
+            @foreach (var item in Model.Items)
+            {
+                <div class="d-flex justify-content-between mb-1" style="font-size:0.875rem;">
+                    <span>@item.Product?.Name <span class="text-muted">x@item.Qty</span></span>
+                    <span>Rp @item.LineTotal.ToString("N0")</span>
+                </div>
+            }
+            <hr style="border-color:var(--op-border);" />
+            <div class="d-flex justify-content-between">
+                <span class="fw-bold fs-5">TOTAL</span>
+                <span class="fw-bold fs-5" style="color:#f59e0b;">Rp @Model.Total.ToString("N0")</span>
+            </div>
+        </div>
+
+        <!-- Form Pembayaran -->
+        <div class="op-card">
+            <h6 class="fw-semibold mb-3" style="color:var(--op-muted);text-transform:uppercase;font-size:0.75rem;">Input Pembayaran</h6>
+            <form asp-action="ConfirmPayment" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="orderId" value="@Model.Id" />
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" style="color:var(--op-text);">Metode Pembayaran</label>
+                    <div class="d-flex gap-2">
+                        @foreach (var m in new[] { "Cash", "QRIS", "Transfer" })
+                        {
+                            <label class="flex-fill">
+                                <input type="radio" name="method" value="@m" class="d-none pay-method-radio" @(m == "Cash" ? "checked" : "") />
+                                <div class="op-card text-center pay-method-btn" style="cursor:pointer;padding:.75rem;border:2px solid transparent;transition:all .2s;">
+                                    <i class="bi @(m == "Cash" ? "bi-cash-stack" : m == "QRIS" ? "bi-qr-code" : "bi-bank") d-block mb-1" style="font-size:1.25rem;"></i>
+                                    <span style="font-size:.8rem;">@m</span>
+                                </div>
+                            </label>
+                        }
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" style="color:var(--op-text);">Nominal Diterima (Rp)</label>
+                    <input type="number" name="amountPaid" id="amountPaid" class="form-control"
+                           style="background:var(--op-border);border-color:var(--op-border);color:var(--op-text);font-size:1.1rem;"
+                           min="@((int)Model.Total)" step="1000" value="@((int)Math.Ceiling((double)Model.Total / 1000) * 1000)"
+                           required />
+                    <div class="mt-2 d-flex gap-2 flex-wrap">
+                        @foreach (var nom in new long[] { 10000, 20000, 50000, 100000 })
+                        {
+                            <button type="button" class="op-btn op-btn-secondary quick-nominal" style="padding:.35rem .7rem;font-size:.8rem;" data-val="@nom">
+                                +Rp @(nom.ToString("N0"))
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                <div id="kembalianBox" class="op-card mb-3" style="display:none;border-color:#22c55e33;background:#22c55e11;">
+                    <span style="color:var(--op-muted);">Kembalian</span>
+                    <span id="kembalianVal" class="fw-bold float-end" style="color:#22c55e;font-size:1.1rem;"></span>
+                </div>
+
+                <button type="submit" class="op-btn op-btn-success w-100" style="justify-content:center;padding:.85rem;font-size:1rem;">
+                    <i class="bi bi-check-circle-fill me-2"></i> Konfirmasi Pembayaran
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const total = @Model.Total;
+    const amountInput = document.getElementById('amountPaid');
+    const kembalianBox = document.getElementById('kembalianBox');
+    const kembalianVal = document.getElementById('kembalianVal');
+
+    function updateKembalian() {
+        const paid = parseFloat(amountInput.value) || 0;
+        const change = paid - total;
+        if (paid >= total) {
+            kembalianBox.style.display = '';
+            kembalianVal.textContent = 'Rp ' + change.toLocaleString('id-ID');
+        } else {
+            kembalianBox.style.display = 'none';
+        }
+    }
+    amountInput.addEventListener('input', updateKembalian);
+    updateKembalian();
+
+    // Quick nominal
+    document.querySelectorAll('.quick-nominal').forEach(btn => {
+        btn.addEventListener('click', () => {
+            amountInput.value = parseFloat(amountInput.value || 0) + parseFloat(btn.dataset.val);
+            updateKembalian();
+        });
+    });
+
+    // Method radio styling
+    document.querySelectorAll('.pay-method-radio').forEach(radio => {
+        radio.addEventListener('change', () => {
+            document.querySelectorAll('.pay-method-btn').forEach(d => d.style.borderColor = 'transparent');
+            if (radio.checked) radio.nextElementSibling.style.borderColor = '#f97316';
+        });
+        if (radio.checked) radio.nextElementSibling.style.borderColor = '#f97316';
+    });
+</script>
+}

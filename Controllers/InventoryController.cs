@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Data;
@@ -7,7 +7,7 @@ using WebApplication1.Security;
 
 namespace WebApplication1.Controllers
 {
-    [Authorize(Roles = AppRoles.Admin)]
+    [Authorize(Roles = $"{AppRoles.Admin},{AppRoles.Supervisor}")]
     public class InventoryController : Controller
     {
         private readonly AppDbContext _context;
@@ -22,11 +22,13 @@ namespace WebApplication1.Controllers
             return View(inventoryItems);
         }
         //create
+        [Authorize(Roles = AppRoles.Admin)]
         public IActionResult Create()
         {
             return View();
         }
         [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Roles = AppRoles.Admin)]
         public async Task<IActionResult> Create([Bind("ItemName,Category,Qty,Condition")]Inventory inven)
         {
             if(inven == null)
@@ -42,6 +44,7 @@ namespace WebApplication1.Controllers
             return View(inven);
         }
         //update
+        [Authorize(Roles = AppRoles.Admin)]
         public async Task<IActionResult> Edit(int Id)
         {
             var inven = await _context.InventoryItems.FirstOrDefaultAsync(i =>i.Id == Id);
@@ -52,6 +55,7 @@ namespace WebApplication1.Controllers
             return View(inven);
         }
         [HttpPost,ValidateAntiForgeryToken]
+        [Authorize(Roles = AppRoles.Admin)]
         public async Task<IActionResult> Edit([Bind("Id,ItemName,Category,Qty,Condition")]Inventory inven)
         {
             if (ModelState.IsValid)
@@ -63,6 +67,7 @@ namespace WebApplication1.Controllers
             return View(inven);
         }
         //delete
+        [Authorize(Roles = AppRoles.Admin)]
         public async Task<IActionResult> Delete(int Id)
         {
             var inven = await _context.InventoryItems.FirstOrDefaultAsync(i =>i.Id == Id);
@@ -74,6 +79,7 @@ namespace WebApplication1.Controllers
         }
         [HttpPost, ActionName(nameof(Delete))]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = AppRoles.Admin)]
         public async Task<IActionResult> DeleteConfirmed(int Id)
         {
             var inven = await _context.InventoryItems.FirstOrDefaultAsync(i => i.Id == Id);

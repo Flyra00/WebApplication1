@@ -1,0 +1,114 @@
+@model IEnumerable<WebApplication1.Models.Order>
+@{
+    ViewData["Title"] = "Laporan Penjualan";
+    Layout = "~/Views/Shared/_LayoutOwner.cshtml";
+    decimal totalRevenue = ViewBag.TotalRevenue ?? 0m;
+    DateTime from = ViewBag.From;
+    DateTime to   = ViewBag.To;
+    var topProducts = ViewBag.TopProducts as IEnumerable<dynamic>;
+}
+
+<!-- Filter Tanggal -->
+<form method="get" class="ow-card mb-4">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label" style="color:var(--owner-muted);font-size:.8rem;">Dari Tanggal</label>
+            <input type="date" name="from" value="@from.ToString("yyyy-MM-dd")" class="form-control"
+                   style="background:var(--owner-surface);border-color:var(--owner-border);color:var(--owner-text);" />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label" style="color:var(--owner-muted);font-size:.8rem;">Sampai Tanggal</label>
+            <input type="date" name="to" value="@to.ToString("yyyy-MM-dd")" class="form-control"
+                   style="background:var(--owner-surface);border-color:var(--owner-border);color:var(--owner-text);" />
+        </div>
+        <div class="col-md-4">
+            <button type="submit" class="btn btn-warning w-100">Tampilkan</button>
+        </div>
+    </div>
+</form>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="ow-card ow-stat-card">
+            <i class="bi bi-cash-stack d-block mb-2" style="font-size:1.5rem;color:var(--owner-gold);"></i>
+            <div class="stat-value">Rp @totalRevenue.ToString("N0")</div>
+            <div class="stat-label">Total Pendapatan</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="ow-card ow-stat-card">
+            <i class="bi bi-receipt d-block mb-2" style="font-size:1.5rem;color:#3b82f6;"></i>
+            <div class="stat-value" style="color:#3b82f6;">@Model.Count()</div>
+            <div class="stat-label">Jumlah Transaksi</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="ow-card ow-stat-card">
+            <i class="bi bi-calculator d-block mb-2" style="font-size:1.5rem;color:#22c55e;"></i>
+            @{ decimal avg = Model.Any() ? totalRevenue / Model.Count() : 0; }
+            <div class="stat-value" style="color:#22c55e;">Rp @avg.ToString("N0")</div>
+            <div class="stat-label">Rata-rata / Transaksi</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- Top Produk -->
+    <div class="col-md-5">
+        <div class="ow-card">
+            <h6 class="fw-semibold mb-3">🏆 Menu Terlaris</h6>
+            @if (topProducts == null || !topProducts.Any())
+            {
+                <p style="color:var(--owner-muted);">Tidak ada data.</p>
+            }
+            else
+            {
+                var rank = 1;
+                @foreach (var p in topProducts)
+                {
+                    var medalColors = new[] { "#f59e0b", "#94a3b8", "#b45309", "#64748b", "#64748b" };
+                    <div class="d-flex align-items-center gap-3 mb-2 p-2" style="border-radius:8px;background:rgba(255,255,255,.03);">
+                        <span style="color:@medalColors[Math.Min(rank-1,4)];font-size:1.1rem;font-weight:700;width:24px;text-align:center;">@rank</span>
+                        <div class="flex-fill">
+                            <div class="fw-semibold" style="font-size:.875rem;">@p.Name</div>
+                            <small style="color:var(--owner-muted);">Terjual @p.Qty porsi · Rp @((long)p.Revenue).ToString("N0")</small>
+                        </div>
+                    </div>
+                    rank++;
+                }
+            }
+        </div>
+    </div>
+
+    <!-- Daftar Transaksi -->
+    <div class="col-md-7">
+        <div class="ow-card">
+            <h6 class="fw-semibold mb-3">Daftar Transaksi</h6>
+            @if (!Model.Any())
+            {
+                <p style="color:var(--owner-muted);">Tidak ada transaksi dalam periode ini.</p>
+            }
+            else
+            {
+                <table class="ow-table">
+                    <thead><tr><th>No. Order</th><th>Meja</th><th>Tanggal</th><th class="text-end">Total</th></tr></thead>
+                    <tbody>
+                        @foreach (var o in Model.Take(20))
+                        {
+                            <tr>
+                                <td><code style="color:#f59e0b;font-size:.75rem;">@o.OrderNumber</code></td>
+                                <td>Meja @(o.TableSession?.Table?.Number ?? 0)</td>
+                                <td style="font-size:.8rem;color:var(--owner-muted);">@o.OrderDate.ToLocalTime().ToString("dd/MM HH:mm")</td>
+                                <td class="text-end fw-semibold">Rp @o.Total.ToString("N0")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                @if (Model.Count() > 20)
+                {
+                    <p class="text-center mt-2" style="color:var(--owner-muted);font-size:.8rem;">Menampilkan 20 dari @Model.Count() transaksi.</p>
+                }
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,93 @@
+@model IEnumerable<WebApplication1.Models.Order>
+@{
+    ViewData["Title"] = "Antrian Dapur";
+    Layout = "~/Views/Shared/_LayoutOperational.cshtml";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h4 class="mb-0 fw-bold"><i class="bi bi-fire me-2" style="color:#f97316;"></i>Antrian Dapur</h4>
+        <small style="color:var(--op-muted);">@Model.Count() pesanan aktif</small>
+    </div>
+    <button onclick="location.reload()" class="op-btn op-btn-secondary">
+        <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+    </button>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="op-card text-center py-5">
+        <i class="bi bi-check-circle" style="font-size:3rem;color:#22c55e;"></i>
+        <h5 class="mt-3 fw-semibold">Semua pesanan selesai!</h5>
+        <p style="color:var(--op-muted);">Tidak ada pesanan yang perlu diproses saat ini.</p>
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var order in Model)
+        {
+            <div class="col-md-6 col-xl-4">
+                <div class="op-card h-100" style="border-left:4px solid @(order.Status == "Processing" ? "#f97316" : "#3b82f6");">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div>
+                            <span class="fw-bold" style="font-size:1.1rem;">Meja @(order.TableSession?.Table?.Number ?? 0)</span>
+                            <small class="d-block" style="color:var(--op-muted);">@order.OrderDate.ToLocalTime().ToString("HH:mm") · @order.OrderNumber</small>
+                        </div>
+                        <a asp-action="PrintKitchenTicket" asp-route-id="@order.Id" target="_blank"
+                           class="op-btn op-btn-secondary" style="padding:.35rem .7rem;">
+                            <i class="bi bi-printer"></i>
+                        </a>
+                    </div>
+
+                    @foreach (var item in order.Items)
+                    {
+                        var kColor = item.KitchenStatus switch {
+                            "Queued"  => "#64748b",
+                            "Cooking" => "#f97316",
+                            "Ready"   => "#22c55e",
+                            "Served"  => "#8b5cf6",
+                            _         => "#64748b"
+                        };
+                        <div class="d-flex align-items-center gap-2 mb-2 p-2" style="border-radius:8px;background:rgba(255,255,255,0.04);">
+                            <div class="flex-fill">
+                                <span class="fw-semibold" style="font-size:.9rem;">@item.Product?.Name</span>
+                                <small class="d-block" style="color:var(--op-muted);">x@item.Qty @(!string.IsNullOrWhiteSpace(item.Note) ? "· " + item.Note : "")</small>
+                            </div>
+                            <form asp-action="UpdateItemStatus" method="post" class="d-flex gap-1 align-items-center">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="itemId" value="@item.Id" />
+                                <span class="op-badge-status" style="background:@(kColor)22;color:@kColor;border:1px solid @(kColor)55;font-size:.7rem;">@item.KitchenStatus</span>
+                                @if (item.KitchenStatus == "Queued")
+                                {
+                                    <button name="kitchenStatus" value="Cooking" class="op-btn op-btn-primary" style="padding:.25rem .6rem;font-size:.75rem;">
+                                        <i class="bi bi-fire"></i> Masak
+                                    </button>
+                                }
+                                else if (item.KitchenStatus == "Cooking")
+                                {
+                                    <button name="kitchenStatus" value="Ready" class="op-btn op-btn-success" style="padding:.25rem .6rem;font-size:.75rem;">
+                                        <i class="bi bi-check"></i> Siap
+                                    </button>
+                                }
+                                else if (item.KitchenStatus == "Ready")
+                                {
+                                    <button name="kitchenStatus" value="Served" class="op-btn op-btn-secondary" style="padding:.25rem .6rem;font-size:.75rem;">
+                                        <i class="bi bi-send"></i> Sajikan
+                                    </button>
+                                }
+                            </form>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@section Scripts {
+<script>
+    // Auto-refresh setiap 30 detik
+    setTimeout(() => location.reload(), 30000);
+</script>
+}

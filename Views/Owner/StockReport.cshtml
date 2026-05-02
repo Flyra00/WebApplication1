@@ -1,0 +1,77 @@
+@{
+    ViewData["Title"] = "Laporan Stok";
+    Layout = "~/Views/Shared/_LayoutOwner.cshtml";
+    var ingredients = ViewBag.Ingredients as List<WebApplication1.Models.Ingredient> ?? new List<WebApplication1.Models.Ingredient>();
+    var inventory   = ViewBag.Inventory   as List<WebApplication1.Models.Inventory> ?? new List<WebApplication1.Models.Inventory>();
+}
+
+<div class="row g-4">
+    <!-- Bahan Mentah -->
+    <div class="col-md-6">
+        <div class="ow-card">
+            <h6 class="fw-semibold mb-3"><i class="bi bi-basket me-2" style="color:#f59e0b;"></i>Stok Bahan Mentah</h6>
+            @if (!ingredients.Any())
+            {
+                <p style="color:var(--owner-muted);">Belum ada data bahan.</p>
+            }
+            else
+            {
+                <table class="ow-table">
+                    <thead><tr><th>Bahan</th><th>Satuan</th><th class="text-end">Stok</th><th class="text-end">Min</th><th>Status</th></tr></thead>
+                    <tbody>
+                        @foreach (var i in ingredients)
+                        {
+                            var isLow = i.Qty <= i.MinimumStock;
+                            <tr>
+                                <td class="fw-semibold" style="font-size:.875rem;">@i.ItemName</td>
+                                <td style="color:var(--owner-muted);font-size:.8rem;">@i.Unit</td>
+                                <td class="text-end" style="color:@(isLow ? "#ef4444" : "var(--owner-text)");font-weight:@(isLow ? "700" : "400");">@i.Qty</td>
+                                <td class="text-end" style="color:var(--owner-muted);font-size:.8rem;">@i.MinimumStock</td>
+                                <td>
+                                    @if (isLow)
+                                    {
+                                        <span class="badge" style="background:#ef444420;color:#ef4444;font-size:.7rem;">⚠ Menipis</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge" style="background:#22c55e20;color:#22c55e;font-size:.7rem;">✓ Aman</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+
+    <!-- Inventaris -->
+    <div class="col-md-6">
+        <div class="ow-card">
+            <h6 class="fw-semibold mb-3"><i class="bi bi-box-seam me-2" style="color:#3b82f6;"></i>Stok Inventaris / Pecah Belah</h6>
+            @if (!inventory.Any())
+            {
+                <p style="color:var(--owner-muted);">Belum ada data inventaris.</p>
+            }
+            else
+            {
+                var grouped = inventory.GroupBy(i => i.Category);
+                @foreach (var grp in grouped)
+                {
+                    <div class="mb-3">
+                        <p class="mb-2 fw-semibold" style="font-size:.75rem;color:#3b82f6;text-transform:uppercase;letter-spacing:.05em;">@grp.Key</p>
+                        @foreach (var item in grp)
+                        {
+                            var condColor = item.Condition == "Baik" ? "#22c55e" : item.Condition == "Rusak" ? "#ef4444" : "#f97316";
+                            <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1" style="border-radius:6px;background:rgba(255,255,255,.03);font-size:.875rem;">
+                                <span class="flex-fill">@item.ItemName</span>
+                                <span class="fw-semibold">@item.Qty</span>
+                                <span class="badge" style="background:@(condColor)20;color:@condColor;font-size:.7rem;">@item.Condition</span>
+                            </div>
+                        }
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>

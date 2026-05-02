@@ -1,0 +1,64 @@
+@model IEnumerable<WebApplication1.Models.DamageReport>
+@{
+    ViewData["Title"] = "Laporan Kerusakan";
+    Layout = "~/Views/Shared/_LayoutOperational.cshtml";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h4 class="mb-0 fw-bold">Laporan Kerusakan Barang</h4>
+    <a asp-action="Create" class="op-btn op-btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>Laporan Baru
+    </a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="op-card text-center py-5">
+        <i class="bi bi-shield-check" style="font-size:2.5rem;color:#22c55e;"></i>
+        <p class="mt-3 mb-0" style="color:var(--op-muted);">Belum ada laporan kerusakan.</p>
+    </div>
+}
+else
+{
+    <div class="op-card">
+        <table class="op-table">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Barang</th>
+                    <th>Qty</th>
+                    <th>Dilaporkan oleh</th>
+                    <th>Keterangan</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var d in Model)
+                {
+                    var sc = d.Status switch {
+                        "Reported" => "#ef4444",
+                        "Reviewed" => "#f97316",
+                        "Resolved" => "#22c55e",
+                        _ => "#64748b"
+                    };
+                    <tr>
+                        <td style="font-size:.8rem;color:var(--op-muted);">@d.ReportDate.ToLocalTime().ToString("dd/MM/yy HH:mm")</td>
+                        <td class="fw-semibold">@d.InventoryItem?.ItemName</td>
+                        <td><span class="badge" style="background:#ef444420;color:#ef4444;">@d.Qty unit</span></td>
+                        <td>@(d.ReportedByUser?.FullName ?? d.ReportedByUser?.UserName)</td>
+                        <td style="font-size:.8rem;color:var(--op-muted);max-width:200px;">@(d.Description?.Length > 60 ? d.Description[..60] + "…" : d.Description)</td>
+                        <td>
+                            <span class="op-badge-status" style="background:@(sc)22;color:@sc;border:1px solid @(sc)55;font-size:.7rem;">@d.Status</span>
+                        </td>
+                        <td>
+                            <a asp-action="Detail" asp-route-id="@d.Id" class="op-btn op-btn-secondary" style="padding:.3rem .65rem;">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

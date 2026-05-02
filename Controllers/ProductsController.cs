@@ -7,7 +7,7 @@ using WebApplication1.Security;
 
 namespace WebApplication1.Controllers
 {
-    [Authorize(Roles = AppRoles.Admin)]
+    [Authorize(Roles = $"{AppRoles.Admin},{AppRoles.Supervisor}")]
     public class ProductsController : Controller
     {
         private readonly AppDbContext _context;
@@ -24,13 +24,15 @@ namespace WebApplication1.Controllers
             return View(products);
         }
         //create
+        [Authorize(Roles = AppRoles.Admin)]
         public IActionResult Create()
         {
-            return View();
+            return View(new Product { IsAvailable = true });
         }
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Name,Category,Price")] Product product, IFormFile? ImageFile)
+        [Authorize(Roles = AppRoles.Admin)]
+        public async Task<IActionResult> Create([Bind("Name,Category,Price,Stock,IsAvailable")] Product product, IFormFile? ImageFile)
         {
             if (ModelState.IsValid)
             {
@@ -55,6 +57,7 @@ namespace WebApplication1.Controllers
         }
 
         //update
+        [Authorize(Roles = AppRoles.Admin)]
         public async Task<IActionResult> Edit (int id)
         {
             var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
@@ -63,12 +66,20 @@ namespace WebApplication1.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit (int id, [Bind("Id,Name,Price,Category,ImageFileName")]Product product, IFormFile? ImageFile)
+        [Authorize(Roles = AppRoles.Admin)]
+        public async Task<IActionResult> Edit (int id, [Bind("Id,Name,Price,Category,ImageFileName,Stock,IsAvailable")]Product product, IFormFile? ImageFile)
         {
             if (id != product.Id) return NotFound();
             if (ModelState.IsValid)
             {
-                
+                var existingProduct = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
+                if (existingProduct == null) return NotFound();
+
+                existingProduct.Name = product.Name;
+                existingProduct.Category = product.Category;
+                existingProduct.Price = product.Price;
+                existingProduct.Stock = product.Stock;
+                existingProduct.IsAvailable = product.IsAvailable;
 
                 if (ImageFile != null && ImageFile.Length > 0)
                 {
@@ -83,16 +94,15 @@ namespace WebApplication1.Controllers
 
                     // 2. Hapus Gambar Lama biar folder wwwroot lu kaga penuh sampah
                     // Kita ambil data lama dari DB buat tau nama file lamanya
-                    var oldProduct = await _context.Products.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
-                    if (oldProduct != null && !string.IsNullOrEmpty(oldProduct.ImageFileName))
+                    if (!string.IsNullOrEmpty(existingProduct.ImageFileName))
                     {
-                        string oldPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/products", oldProduct.ImageFileName);
+                        string oldPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/products", existingProduct.ImageFileName);
                         if (System.IO.File.Exists(oldPath)) System.IO.File.Delete(oldPath);
                     }
 
-                    product.ImageFileName = fileName;
+                    existingProduct.ImageFileName = fileName;
                 }
-                _context.Products.Update(product);
+
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
@@ -104,13 +114,14 @@ namespace WebApplication1.Controllers
             return View(product);
         }
         //delate
-                                                        
+        [Authorize(Roles = AppRoles.Admin)]
         public async Task<IActionResult> Delete(int id)
         {
             var product = await _context.Products.FirstOrDefaultAsync(p =>p.Id == id);
             return View(product);
         }
         [HttpPost, ActionName (nameof(Delete))]
+        [Authorize(Roles = AppRoles.Admin)]
 
         public async Task<IActionResult> DeleteConfirmed(int id)
         {

@@ -66,6 +66,21 @@
                                             <span asp-validation-for="Price" class="text-danger small"></span>
                                         </div>
                                     </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6 mb-4">
+                                            <label asp-for="Stock" class="form-label fw-bold text-secondary">Stok Menu</label>
+                                            <input asp-for="Stock" type="number" min="0" class="form-control shadow-sm" />
+                                            <span asp-validation-for="Stock" class="text-danger small"></span>
+                                        </div>
+
+                                        <div class="col-md-6 mb-4 d-flex align-items-end">
+                                            <div class="form-check form-switch">
+                                                <input asp-for="IsAvailable" class="form-check-input" type="checkbox" />
+                                                <label asp-for="IsAvailable" class="form-check-label fw-bold text-secondary">Tersedia untuk dijual</label>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div class="col-md-5 border-start ps-4">

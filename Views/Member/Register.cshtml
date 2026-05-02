@@ -1,0 +1,44 @@
+@{
+    ViewData["Title"] = "Daftar Member";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="text-center mb-4">
+                <div style="width:70px;height:70px;border-radius:50%;background:linear-gradient(135deg,#f97316,#f59e0b);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+                    <i class="bi bi-star-fill" style="font-size:1.75rem;color:#fff;"></i>
+                </div>
+                <h4 class="fw-bold">Daftar Member</h4>
+                <p class="text-muted">Nikmati keuntungan eksklusif sebagai member kami</p>
+            </div>
+
+            <div class="card border-0 shadow-sm" style="border-radius:16px;">
+                <div class="card-body p-4">
+                    <form asp-action="Register" method="post">
+                        @Html.AntiForgeryToken()
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Nomor Telepon <span class="text-muted fw-normal">(opsional)</span></label>
+                            <input type="tel" name="phone" class="form-control form-control-lg" placeholder="08xx-xxxx-xxxx" />
+                        </div>
+
+                        <div class="card border-0 mb-4" style="background:#fffbeb;border-radius:12px;">
+                            <div class="card-body py-3 px-4">
+                                <p class="fw-semibold mb-2" style="color:#92400e;">🎁 Keuntungan Member Bronze:</p>
+                                <ul class="mb-0 small" style="color:#78350f;">
+                                    <li>Akumulasi poin setiap transaksi</li>
+                                    <li>Histori pesanan tersimpan</li>
+                                    <li>Upgrade ke Silver & Gold</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-warning w-100 py-2 fw-semibold">
+                            <i class="bi bi-check-circle me-2"></i>Daftar Sekarang (Gratis)
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

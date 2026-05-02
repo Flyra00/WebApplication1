@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Data;
@@ -7,7 +7,7 @@ using WebApplication1.Security;
 
 namespace WebApplication1.Controllers
 {
-    [Authorize(Roles = AppRoles.Admin)]
+    [Authorize(Roles = $"{AppRoles.Admin},{AppRoles.Supervisor}")]
     public class IngredientController : Controller
     {
         private readonly AppDbContext _context;
@@ -23,11 +23,13 @@ namespace WebApplication1.Controllers
             return View(ingredients);
         }
         //create
+        [Authorize(Roles = AppRoles.Admin)]
         public IActionResult Create()
         {
             return View();
         }
         [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Roles = AppRoles.Admin)]
         public async Task<IActionResult> Create([Bind("ItemName,Unit,Qty,MinimumStock")] Ingredient ingredient)
         {
 
@@ -40,6 +42,7 @@ namespace WebApplication1.Controllers
             return View(ingredient);
         }
         //Update
+        [Authorize(Roles = AppRoles.Admin)]
         public async Task<IActionResult> Edit(int Id)
         {
             var ingredient = await _context.Ingredients.FirstOrDefaultAsync(i => i.Id == Id);
@@ -47,6 +50,7 @@ namespace WebApplication1.Controllers
             return View(ingredient);
         }
         [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Roles = AppRoles.Admin)]
         public async Task<IActionResult> Edit([Bind("Id,ItemName,Unit,Qty,MinimumStock")]Ingredient ingredient)
         {
             if (ModelState.IsValid)
@@ -58,6 +62,7 @@ namespace WebApplication1.Controllers
             return View(ingredient);
         }
         //Delete
+        [Authorize(Roles = AppRoles.Admin)]
         public async Task<IActionResult>Delete (int Id)
         {
             var ingredient = await _context.Ingredients.FirstOrDefaultAsync(i => i.Id == Id);
@@ -65,6 +70,7 @@ namespace WebApplication1.Controllers
         }
         [HttpPost, ActionName(nameof(Delete))]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = AppRoles.Admin)]
         public async Task<IActionResult> DeleteConfirmed(int Id)
         {
             var ingredient = await _context.Ingredients.FirstOrDefaultAsync(i => i.Id == Id);

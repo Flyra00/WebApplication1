@@ -1,0 +1,104 @@
+@model WebApplication1.Models.MemberProfile?
+@{
+    ViewData["Title"] = "Profil Member";
+    var recentOrders = ViewBag.RecentOrders as List<WebApplication1.Models.Order>;
+    var levelColors = new System.Collections.Generic.Dictionary<string,string> {
+        ["Bronze"]   = "#b45309",
+        ["Silver"]   = "#94a3b8",
+        ["Gold"]     = "#f59e0b",
+        ["Platinum"] = "#8b5cf6"
+    };
+}
+
+<div class="container py-4">
+    @if (Model == null)
+    {
+        <!-- Bukan member -->
+        <div class="text-center py-5">
+            <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#f97316,#f59e0b);display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;">
+                <i class="bi bi-person-badge" style="font-size:2rem;color:#fff;"></i>
+            </div>
+            <h4 class="fw-bold">Belum Jadi Member</h4>
+            <p class="text-muted mb-4">Daftar sekarang untuk mengumpulkan poin & nikmati keuntungan member!</p>
+            <a asp-action="Register" class="btn btn-warning px-4 py-2 fw-semibold">
+                <i class="bi bi-star-fill me-2"></i>Daftar Member Sekarang
+            </a>
+        </div>
+    }
+    else
+    {
+        var lvlColor = levelColors.GetValueOrDefault(Model.Level, "#64748b");
+        <!-- Profil Member -->
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
+                    <div style="height:100px;background:linear-gradient(135deg,@lvlColor,@(lvlColor)88);"></div>
+                    <div class="card-body text-center" style="margin-top:-40px;">
+                        <div style="width:80px;height:80px;border-radius:50%;background:#fff;border:4px solid @lvlColor;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+                            <i class="bi bi-person-fill" style="font-size:2rem;color:@lvlColor;"></i>
+                        </div>
+                        <h5 class="fw-bold">@(Model.User?.FullName ?? Model.User?.UserName)</h5>
+                        <span class="badge mb-3" style="background:@(lvlColor)22;color:@lvlColor;border:1px solid @(lvlColor)55;font-size:.875rem;padding:.4rem 1rem;">
+                            ★ Member @Model.Level
+                        </span>
+                        <div class="row g-2 mt-1">
+                            <div class="col-6">
+                                <div class="p-2 rounded" style="background:#f8f9fa;">
+                                    <div class="fw-bold text-warning fs-4">@Model.Point</div>
+                                    <small class="text-muted">Poin</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-2 rounded" style="background:#f8f9fa;">
+                                    <div class="fw-bold fs-6">@Model.JoinedAt.ToString("MMM yyyy")</div>
+                                    <small class="text-muted">Bergabung</small>
+                                </div>
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(Model.Phone))
+                        {
+                            <p class="mt-3 mb-0 text-muted small"><i class="bi bi-telephone me-1"></i>@Model.Phone</p>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <h6 class="fw-semibold mb-3">Histori Pesanan Terakhir</h6>
+                @if (recentOrders == null || !recentOrders.Any())
+                {
+                    <p class="text-muted">Belum ada pesanan.</p>
+                }
+                else
+                {
+                    <div class="list-group">
+                        @foreach (var o in recentOrders)
+                        {
+                            var badge = o.Status switch {
+                                "Paid"       => "success",
+                                "Submitted"  => "primary",
+                                "Processing" => "warning",
+                                "Completed"  => "info",
+                                "Cancelled"  => "danger",
+                                _            => "secondary"
+                            };
+                            <div class="list-group-item list-group-item-action border-0 mb-2 rounded shadow-sm">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <code class="text-warning">@o.OrderNumber</code>
+                                        <span class="ms-2 text-muted small">Meja @(o.TableSession?.Table?.Number ?? 0)</span>
+                                    </div>
+                                    <span class="badge bg-@badge">@o.Status</span>
+                                </div>
+                                <div class="d-flex justify-content-between mt-1">
+                                    <small class="text-muted">@o.OrderDate.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</small>
+                                    <span class="fw-semibold">Rp @o.Total.ToString("N0")</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>

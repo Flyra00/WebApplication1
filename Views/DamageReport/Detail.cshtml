@@ -1,0 +1,50 @@
+@model WebApplication1.Models.DamageReport
+@{
+    ViewData["Title"] = "Detail Laporan Kerusakan";
+    Layout = "~/Views/Shared/_LayoutOperational.cshtml";
+    var sc = Model.Status switch { "Reported" => "#ef4444", "Reviewed" => "#f97316", "Resolved" => "#22c55e", _ => "#64748b" };
+}
+
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a asp-action="Index" class="op-btn op-btn-secondary"><i class="bi bi-arrow-left"></i></a>
+    <h4 class="mb-0 fw-bold">Detail Laporan Kerusakan</h4>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="op-card">
+            <table style="width:100%;font-size:.9rem;">
+                <tr><td style="color:var(--op-muted);padding-bottom:.75rem;width:40%;">Barang</td><td class="fw-semibold">@Model.InventoryItem?.ItemName</td></tr>
+                <tr><td style="color:var(--op-muted);padding-bottom:.75rem;">Kategori</td><td>@Model.InventoryItem?.Category</td></tr>
+                <tr><td style="color:var(--op-muted);padding-bottom:.75rem;">Jumlah Rusak</td><td><span style="color:#ef4444;font-weight:700;font-size:1.1rem;">@Model.Qty unit</span></td></tr>
+                <tr><td style="color:var(--op-muted);padding-bottom:.75rem;">Dilaporkan oleh</td><td>@(Model.ReportedByUser?.FullName ?? Model.ReportedByUser?.UserName)</td></tr>
+                <tr><td style="color:var(--op-muted);padding-bottom:.75rem;">Tanggal</td><td>@Model.ReportDate.ToLocalTime().ToString("dd MMMM yyyy, HH:mm")</td></tr>
+                <tr><td style="color:var(--op-muted);padding-bottom:.75rem;">Status</td><td>
+                    <span class="op-badge-status" style="background:@(sc)22;color:@sc;border:1px solid @(sc)55;">@Model.Status</span>
+                </td></tr>
+                @if (!string.IsNullOrWhiteSpace(Model.Description))
+                {
+                    <tr><td style="color:var(--op-muted);padding-bottom:.75rem;vertical-align:top;">Keterangan</td><td>@Model.Description</td></tr>
+                }
+            </table>
+
+            @if (User.IsInRole("Admin"))
+            {
+                <hr style="border-color:var(--op-border);" />
+                <h6 class="fw-semibold mb-3" style="color:var(--op-muted);font-size:.75rem;text-transform:uppercase;">Update Status (Admin)</h6>
+                <div class="d-flex gap-2 flex-wrap">
+                    @foreach (var s in new[] { "Reported", "Reviewed", "Resolved" })
+                    {
+                        <form asp-action="UpdateStatus" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <button name="status" value="@s" class="op-btn @(Model.Status == s ? "op-btn-primary" : "op-btn-secondary")">
+                                @s
+                            </button>
+                        </form>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

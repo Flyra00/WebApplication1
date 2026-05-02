@@ -1,0 +1,53 @@
+@{
+    ViewData["Title"] = "Laporan Kerusakan Baru";
+    Layout = "~/Views/Shared/_LayoutOperational.cshtml";
+    var items = ViewBag.InventoryItems as List<WebApplication1.Models.Inventory>;
+}
+
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a asp-action="Index" class="op-btn op-btn-secondary"><i class="bi bi-arrow-left"></i></a>
+    <h4 class="mb-0 fw-bold">Laporan Kerusakan Baru</h4>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="op-card">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" style="color:var(--op-text);">Barang yang Rusak/Pecah</label>
+                    <select name="inventoryItemId" class="form-select"
+                            style="background:var(--op-surface);border-color:var(--op-border);color:var(--op-text);" required>
+                        <option value="">-- Pilih Barang --</option>
+                        @foreach (var item in items ?? new List<WebApplication1.Models.Inventory>())
+                        {
+                            <option value="@item.Id">@item.ItemName (@item.Category) — stok: @item.Qty</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" style="color:var(--op-text);">Jumlah yang Rusak</label>
+                    <input type="number" name="qty" min="1" class="form-control"
+                           style="background:var(--op-surface);border-color:var(--op-border);color:var(--op-text);"
+                           required placeholder="misal: 2" />
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold" style="color:var(--op-text);">Keterangan (opsional)</label>
+                    <textarea name="description" rows="3" class="form-control"
+                              style="background:var(--op-surface);border-color:var(--op-border);color:var(--op-text);"
+                              placeholder="Jelaskan situasi kerusakan..."></textarea>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="op-btn op-btn-primary flex-fill" style="justify-content:center;">
+                        <i class="bi bi-send me-1"></i>Kirim Laporan
+                    </button>
+                    <a asp-action="Index" class="op-btn op-btn-secondary">Batal</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

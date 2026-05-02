@@ -1,0 +1,94 @@
+@{
+    ViewData["Title"] = "Dashboard Supervisor";
+    Layout = "~/Views/Shared/_LayoutOperational.cshtml";
+    var lowIngredients = ViewBag.LowIngredients as List<WebApplication1.Models.Ingredient>;
+    var recentDamages  = ViewBag.RecentDamages  as List<WebApplication1.Models.DamageReport>;
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h4 class="mb-0 fw-bold">Dashboard Supervisor</h4>
+        <small style="color:var(--op-muted);">Monitoring operasional harian</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-controller="Products" asp-action="Index" class="op-btn op-btn-secondary">
+            <i class="bi bi-egg-fried me-1"></i>Data Menu
+        </a>
+        <a asp-controller="Ingredient" asp-action="Index" class="op-btn op-btn-secondary">
+            <i class="bi bi-basket me-1"></i>Bahan Mentah
+        </a>
+        <a asp-controller="Inventory" asp-action="Index" class="op-btn op-btn-secondary">
+            <i class="bi bi-box-seam me-1"></i>Inventaris
+        </a>
+        <a asp-controller="DamageReport" asp-action="Create" class="op-btn op-btn-primary">
+            <i class="bi bi-exclamation-triangle me-1"></i>Lapor Kerusakan
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="op-card">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h6 class="fw-semibold mb-0" style="color:#ef4444;"><i class="bi bi-exclamation-circle me-2"></i>Stok Bahan Menipis</h6>
+                <span class="badge" style="background:#ef444422;color:#ef4444;border:1px solid #ef444455;">@(lowIngredients?.Count ?? 0) item</span>
+            </div>
+            @if (lowIngredients == null || !lowIngredients.Any())
+            {
+                <p style="color:var(--op-muted);font-size:.875rem;">Semua stok bahan dalam kondisi baik. ✓</p>
+            }
+            else
+            {
+                <table class="op-table" style="font-size:.875rem;">
+                    <thead><tr><th>Bahan</th><th>Satuan</th><th>Stok</th><th>Min</th></tr></thead>
+                    <tbody>
+                        @foreach (var i in lowIngredients)
+                        {
+                            <tr>
+                                <td>@i.ItemName</td>
+                                <td style="color:var(--op-muted);">@i.Unit</td>
+                                <td><span style="color:#ef4444;font-weight:600;">@i.Qty</span></td>
+                                <td style="color:var(--op-muted);">@i.MinimumStock</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="op-card">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h6 class="fw-semibold mb-0" style="color:#f97316;"><i class="bi bi-shield-exclamation me-2"></i>Laporan Kerusakan Terbaru</h6>
+                <a asp-controller="DamageReport" asp-action="Index" style="font-size:.8rem;color:var(--op-accent);">Lihat semua →</a>
+            </div>
+            @if (recentDamages == null || !recentDamages.Any())
+            {
+                <p style="color:var(--op-muted);font-size:.875rem;">Belum ada laporan kerusakan. ✓</p>
+            }
+            else
+            {
+                @foreach (var d in recentDamages)
+                {
+                    <div class="d-flex align-items-start gap-3 mb-3 pb-2" style="border-bottom:1px solid var(--op-border);font-size:.875rem;">
+                        <div style="width:36px;height:36px;border-radius:8px;background:#f9731620;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                            <i class="bi bi-shield-exclamation" style="color:#f97316;"></i>
+                        </div>
+                        <div class="flex-fill">
+                            <span class="fw-semibold">@d.InventoryItem?.ItemName</span>
+                            <small class="d-block" style="color:var(--op-muted);">
+                                @d.Qty unit · @d.ReportedByUser?.FullName · @d.ReportDate.ToLocalTime().ToString("dd/MM HH:mm")
+                            </small>
+                            @if (!string.IsNullOrWhiteSpace(d.Description))
+                            {
+                                <small style="color:var(--op-muted);">@d.Description</small>
+                            }
+                        </div>
+                        <span class="op-badge-status" style="background:#f9731620;color:#f97316;border:1px solid #f9731640;font-size:.7rem;">@d.Status</span>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,146 @@
+@{
+    ViewData["Title"] = "Input Pesanan Kasir";
+    Layout = "~/Views/Shared/_LayoutOperational.cshtml";
+    var tables   = ViewBag.Tables   as List<WebApplication1.Models.Table>;
+    var products = ViewBag.Products as List<WebApplication1.Models.Product>;
+}
+
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a asp-action="Index" class="op-btn op-btn-secondary"><i class="bi bi-arrow-left"></i></a>
+    <h4 class="mb-0 fw-bold">Pesanan Baru (Kasir)</h4>
+</div>
+
+<div class="row g-3">
+    <!-- Pilih Meja & Menu -->
+    <div class="col-lg-8">
+        <div class="op-card mb-3">
+            <label class="form-label fw-semibold" style="color:var(--op-muted);font-size:.75rem;text-transform:uppercase;">Pilih Meja</label>
+            <div class="d-flex flex-wrap gap-2" id="tableGrid">
+                @foreach (var t in tables ?? new List<WebApplication1.Models.Table>())
+                {
+                    <button type="button" class="op-btn op-btn-secondary table-btn" data-num="@t.Number"
+                            style="min-width:60px;justify-content:center;">
+                        @t.Number
+                    </button>
+                }
+            </div>
+        </div>
+
+        <div class="op-card">
+            <label class="form-label fw-semibold mb-3" style="color:var(--op-muted);font-size:.75rem;text-transform:uppercase;">Pilih Menu</label>
+            @{ var grouped = (products ?? new List<WebApplication1.Models.Product>()).GroupBy(p => p.Category); }
+            @foreach (var grp in grouped)
+            {
+                <div class="mb-2">
+                    <p class="mb-2 fw-semibold" style="color:var(--op-accent);font-size:.8rem;">@grp.Key.ToUpper()</p>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var p in grp)
+                        {
+                            <button type="button" class="op-btn op-btn-secondary product-btn"
+                                    data-id="@p.Id" data-name="@p.Name" data-price="@p.Price"
+                                    style="font-size:.8rem;">
+                                <span>@p.Name</span>
+                                <small style="color:var(--op-muted);">Rp @p.Price.ToString("N0")</small>
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Keranjang -->
+    <div class="col-lg-4">
+        <div class="op-card" style="position:sticky;top:80px;">
+            <h6 class="fw-semibold mb-3" style="color:var(--op-muted);text-transform:uppercase;font-size:.75rem;">Keranjang</h6>
+            <div id="selectedTable" class="mb-2 fw-semibold" style="color:#f59e0b;">Meja belum dipilih</div>
+            <div id="cart" class="mb-3" style="min-height:80px;"></div>
+            <hr style="border-color:var(--op-border);" />
+            <div class="d-flex justify-content-between fw-bold mb-3">
+                <span>TOTAL</span>
+                <span id="totalDisplay" style="color:#f59e0b;">Rp 0</span>
+            </div>
+            <button id="submitOrder" class="op-btn op-btn-success w-100" style="justify-content:center;" disabled>
+                <i class="bi bi-send-fill me-2"></i>Kirim Pesanan
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+let cart = [];
+let tableNumber = null;
+
+document.querySelectorAll('.table-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.table-btn').forEach(b => b.classList.remove('op-btn-primary'));
+        btn.classList.add('op-btn-primary');
+        tableNumber = parseInt(btn.dataset.num);
+        document.getElementById('selectedTable').textContent = 'Meja ' + tableNumber;
+        checkSubmit();
+    });
+});
+
+document.querySelectorAll('.product-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const id = parseInt(btn.dataset.id);
+        const existing = cart.find(c => c.id === id);
+        if (existing) existing.qty++;
+        else cart.push({ id, name: btn.dataset.name, price: parseFloat(btn.dataset.price), qty: 1 });
+        renderCart();
+    });
+});
+
+function renderCart() {
+    const div = document.getElementById('cart');
+    if (cart.length === 0) { div.innerHTML = '<p style="color:var(--op-muted);font-size:.85rem;">Belum ada item.</p>'; }
+    else {
+        div.innerHTML = cart.map((c, i) => `
+            <div class="d-flex align-items-center gap-2 mb-2" style="font-size:.85rem;">
+                <span class="flex-fill">${c.name}</span>
+                <button onclick="changeQty(${i},-1)" class="op-btn op-btn-secondary" style="padding:.15rem .5rem;">−</button>
+                <span style="min-width:20px;text-align:center;">${c.qty}</span>
+                <button onclick="changeQty(${i},1)"  class="op-btn op-btn-secondary" style="padding:.15rem .5rem;">+</button>
+                <span style="min-width:80px;text-align:right;">Rp ${(c.price*c.qty).toLocaleString('id-ID')}</span>
+            </div>`).join('');
+    }
+    const total = cart.reduce((s,c) => s + c.price*c.qty, 0);
+    document.getElementById('totalDisplay').textContent = 'Rp ' + total.toLocaleString('id-ID');
+    checkSubmit();
+}
+
+function changeQty(i, delta) {
+    cart[i].qty += delta;
+    if (cart[i].qty <= 0) cart.splice(i, 1);
+    renderCart();
+}
+
+function checkSubmit() {
+    document.getElementById('submitOrder').disabled = !(tableNumber && cart.length > 0);
+}
+
+document.getElementById('submitOrder').addEventListener('click', async () => {
+    const payload = {
+        tableNumber,
+        membershipStatus: 'Guest',
+        items: cart.map(c => ({ productId: c.id, qty: c.qty }))
+    };
+    try {
+        const res = await fetch('/CustomerOrder/Submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+            window.location.href = '/Cashier';
+        } else {
+            alert('Gagal: ' + data.error);
+        }
+    } catch(e) { alert('Terjadi kesalahan.'); }
+});
+
+renderCart();
+</script>
+}

@@ -20,6 +20,9 @@ namespace WebApplication1.Models
         [Precision(16, 2)]
         public decimal LineTotal { get; set; }
 
+        [MaxLength(20)]
+        public string KitchenStatus { get; set; } = KitchenStatuses.Queued;
+
         [MaxLength(200)]
         public string? Note { get; set; }
 

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Data;
 using WebApplication1.Models;
+using WebApplication1.Security;
 
 namespace WebApplication1.Controllers
 {
@@ -22,6 +23,8 @@ namespace WebApplication1.Controllers
         {
             public int TableNumber { get; set; }
 
+            public string? TableToken { get; set; }
+
             public string? MembershipStatus { get; set; }
 
             public List<SubmitOrderItemRequest> Items { get; set; } = new();
@@ -38,7 +41,8 @@ namespace WebApplication1.Controllers
         [IgnoreAntiforgeryToken]
         public async Task<IActionResult> Submit([FromBody] SubmitOrderRequest request)
         {
-            if (request.TableNumber <= 0)
+            var tableToken = (request.TableToken ?? string.Empty).Trim();
+            if (request.TableNumber <= 0 && string.IsNullOrWhiteSpace(tableToken))
             {
                 return Json(new { success = false, error = "Nomor meja tidak valid." });
             }
@@ -62,16 +66,21 @@ namespace WebApplication1.Controllers
                 ? TableGuestTypes.Member
                 : TableGuestTypes.Guest;
 
-            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var currentUserId = User.IsInRole(AppRoles.Customer)
+                ? User.FindFirstValue(ClaimTypes.NameIdentifier)
+                : null;
             if (membershipStatus == TableGuestTypes.Member && string.IsNullOrWhiteSpace(currentUserId))
             {
                 return Json(new { success = false, error = "Silakan login sebagai member sebelum mengirim pesanan." });
             }
 
-            var table = await _context.Tables.FirstOrDefaultAsync(t => t.Number == request.TableNumber);
+            var table = !string.IsNullOrWhiteSpace(tableToken)
+                ? await _context.Tables.FirstOrDefaultAsync(t => t.QrCodeToken == tableToken && t.IsActive)
+                : await _context.Tables.FirstOrDefaultAsync(t => t.Number == request.TableNumber && t.IsActive);
+
             if (table == null)
             {
-                return Json(new { success = false, error = "Meja tidak ditemukan." });
+                return Json(new { success = false, error = "Meja tidak ditemukan atau tidak aktif." });
             }
 
             var productIds = items.Select(item => item.ProductId).ToList();
@@ -82,6 +91,16 @@ namespace WebApplication1.Controllers
             if (products.Count != productIds.Count)
             {
                 return Json(new { success = false, error = "Ada menu yang tidak ditemukan atau sudah dihapus." });
+            }
+
+            foreach (var item in items)
+            {
+                var product = products.First(product => product.Id == item.ProductId);
+                if (!product.IsAvailable)
+                    return Json(new { success = false, error = $"Menu {product.Name} sedang tidak tersedia." });
+
+                if (product.Stock < item.Qty)
+                    return Json(new { success = false, error = $"Stok {product.Name} tidak cukup. Sisa stok: {product.Stock}." });
             }
 
             var openSession = await _context.TableSessions
@@ -122,6 +141,7 @@ namespace WebApplication1.Controllers
             foreach (var item in items)
             {
                 var product = products.First(product => product.Id == item.ProductId);
+                product.Stock -= item.Qty;
                 order.Items.Add(new OrderItem
                 {
                     ProductId = product.Id,

@@ -1,6 +1,7 @@
 ﻿@model List<Product>
 @{
-    Layout = "_LayoutAdmin";
+    var canManage = User?.IsInRole(AppRoles.Admin) ?? false;
+    Layout = canManage ? "_LayoutAdmin" : "~/Views/Shared/_LayoutOperational.cshtml";
     ViewData["Title"] = "Daftar Menu";
 }
 
@@ -10,11 +11,14 @@
             <div class="col-sm-6">
                 <h1 class="m-0 fw-bold text-dark"><i class="bi bi-list-stars me-2"></i>Daftar Menu Restoran</h1>
             </div>
-            <div class="col-sm-6 text-end">
-                <a asp-action="Create" class="btn btn-primary shadow-sm px-4">
-                    <i class="bi bi-plus-lg me-1"></i> Tambah Menu Baru
-                </a>
-            </div>
+            @if (canManage)
+            {
+                <div class="col-sm-6 text-end">
+                    <a asp-action="Create" class="btn btn-primary shadow-sm px-4">
+                        <i class="bi bi-plus-lg me-1"></i> Tambah Menu Baru
+                    </a>
+                </div>
+            }
         </div>
     </div>
 </div>
@@ -45,9 +49,14 @@
                             <tr>
                                 <th>Menu & Kategori</th>
                                 <th class="text-center">Harga</th>
+                                <th class="text-center">Stok</th>
+                                <th class="text-center">Status</th>
                                 <th class="text-center">Foto</th>
                                 <th class="text-center">Tanggal Input</th>
-                                <th class="text-center pe-4">Aksi</th>
+                                @if (canManage)
+                                {
+                                    <th class="text-center pe-4">Aksi</th>
+                                }
                             </tr>
                         </thead>
                         <tbody>
@@ -74,6 +83,21 @@
                                         Rp @product.Price.ToString("N0")
                                     </td>
                                     <td class="text-center">
+                                        <span class="badge @(product.Stock > 0 ? "bg-info-subtle text-info" : "bg-danger-subtle text-danger") border">
+                                            @product.Stock
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        @if (product.IsAvailable && product.Stock > 0)
+                                        {
+                                            <span class="badge bg-success-subtle text-success border">Aktif</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary-subtle text-secondary border">Nonaktif</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
                                         @if (!string.IsNullOrEmpty(product.ImageFileName))
                                         {
                                             <div class="position-relative d-inline-block">
@@ -93,17 +117,20 @@
                                     <td class="text-center text-muted small">
                                         @product.Created.ToString("dd MMM yyyy")
                                     </td>
-                                    <td class="text-center pe-4">
-                                        <div class="btn-group shadow-sm">
-                                            <a asp-action="Edit" asp-route-id="@product.Id" class="btn btn-outline-warning btn-sm" title="Edit Menu">
-                                                <i class="bi bi-pencil-square"></i>
-                                            </a>
-                                            <a asp-action="Delete" asp-route-id="@product.Id" class="btn btn-outline-danger btn-sm"
-                                               onclick="return confirm('Yakin mau hapus menu @product.Name?')" title="Delete Menu">
-                                                <i class="bi bi-trash3-fill"></i>
-                                            </a>
-                                        </div>
-                                    </td>
+                                    @if (canManage)
+                                    {
+                                        <td class="text-center pe-4">
+                                            <div class="btn-group shadow-sm">
+                                                <a asp-action="Edit" asp-route-id="@product.Id" class="btn btn-outline-warning btn-sm" title="Edit Menu">
+                                                    <i class="bi bi-pencil-square"></i>
+                                                </a>
+                                                <a asp-action="Delete" asp-route-id="@product.Id" class="btn btn-outline-danger btn-sm"
+                                                   onclick="return confirm('Yakin mau hapus menu @product.Name?')" title="Delete Menu">
+                                                    <i class="bi bi-trash3-fill"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    }
                                 </tr>
                             }
                         </tbody>

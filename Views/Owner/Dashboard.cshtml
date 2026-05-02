@@ -1,0 +1,71 @@
+@{
+    ViewData["Title"] = "Dashboard Owner";
+    Layout = "~/Views/Shared/_LayoutOwner.cshtml";
+    decimal todayRevenue   = ViewBag.TodayRevenue   ?? 0m;
+    decimal monthRevenue   = ViewBag.MonthRevenue   ?? 0m;
+    int     todayOrders    = ViewBag.TodayOrders    ?? 0;
+    int     lowIngredients = ViewBag.LowIngredients ?? 0;
+    var recentDamages = ViewBag.RecentDamages as List<WebApplication1.Models.DamageReport>;
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-xl-3">
+        <div class="ow-card ow-stat-card">
+            <i class="bi bi-cash-stack d-block mb-2" style="font-size:1.5rem;color:#f59e0b;"></i>
+            <div class="stat-value">Rp @todayRevenue.ToString("N0")</div>
+            <div class="stat-label">Pendapatan Hari Ini</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="ow-card ow-stat-card">
+            <i class="bi bi-calendar-month d-block mb-2" style="font-size:1.5rem;color:#3b82f6;"></i>
+            <div class="stat-value" style="color:#3b82f6;">Rp @monthRevenue.ToString("N0")</div>
+            <div class="stat-label">Pendapatan Bulan Ini</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="ow-card ow-stat-card">
+            <i class="bi bi-receipt d-block mb-2" style="font-size:1.5rem;color:#22c55e;"></i>
+            <div class="stat-value" style="color:#22c55e;">@todayOrders</div>
+            <div class="stat-label">Order Hari Ini</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="ow-card ow-stat-card">
+            <i class="bi bi-exclamation-triangle d-block mb-2" style="font-size:1.5rem;color:#ef4444;"></i>
+            <div class="stat-value" style="color:#ef4444;">@lowIngredients</div>
+            <div class="stat-label">Bahan Stok Menipis</div>
+        </div>
+    </div>
+</div>
+
+<!-- Laporan Kerusakan Terbaru -->
+<div class="ow-card">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-semibold mb-0">Laporan Kerusakan Terbaru</h6>
+        <a asp-action="DamageReport" style="font-size:.8rem;color:var(--owner-gold);">Lihat semua →</a>
+    </div>
+    @if (recentDamages == null || !recentDamages.Any())
+    {
+        <p style="color:var(--owner-muted);font-size:.875rem;">Tidak ada laporan kerusakan terbaru.</p>
+    }
+    else
+    {
+        <table class="ow-table">
+            <thead><tr><th>Barang</th><th>Qty</th><th>Pelapor</th><th>Tanggal</th><th>Status</th></tr></thead>
+            <tbody>
+                @foreach (var d in recentDamages)
+                {
+                    var sc = d.Status switch { "Reported" => "#ef4444", "Reviewed" => "#f97316", "Resolved" => "#22c55e", _ => "#64748b" };
+                    <tr>
+                        <td class="fw-semibold">@d.InventoryItem?.ItemName</td>
+                        <td>@d.Qty</td>
+                        <td style="font-size:.8rem;color:var(--owner-muted);">@(d.ReportedByUser?.FullName ?? d.ReportedByUser?.UserName)</td>
+                        <td style="font-size:.8rem;color:var(--owner-muted);">@d.ReportDate.ToLocalTime().ToString("dd/MM HH:mm")</td>
+                        <td><span class="badge" style="background:@(sc)22;color:@sc;border:1px solid @(sc)44;font-size:.7rem;">@d.Status</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

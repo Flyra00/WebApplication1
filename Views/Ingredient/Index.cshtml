@@ -1,7 +1,8 @@
 ﻿@model List<Ingredient>
 @{
-    Layout = "_LayoutAdmin";
-    ViewData["Title"] = "Ingredient";
+    var canManage = User?.IsInRole(AppRoles.Admin) ?? false;
+    Layout = canManage ? "_LayoutAdmin" : "~/Views/Shared/_LayoutOperational.cshtml";
+    ViewData["Title"] = "Bahan Mentah";
 }
 
 <div class="content-header">
@@ -10,11 +11,14 @@
             <div class="col-sm-6">
                 <h1 class="m-0 fw-bold text-dark"><i class="bi bi-basket2 me-2"></i>Manajemen Bahan</h1>
             </div>
-            <div class="col-sm-6 text-end">
-                <a asp-action="Create" class="btn btn-primary shadow-sm px-4">
-                    <i class="bi bi-plus-lg me-1"></i> Tambah Bahan
-                </a>
-            </div>
+            @if (canManage)
+            {
+                <div class="col-sm-6 text-end">
+                    <a asp-action="Create" class="btn btn-primary shadow-sm px-4">
+                        <i class="bi bi-plus-lg me-1"></i> Tambah Bahan
+                    </a>
+                </div>
+            }
         </div>
     </div>
 </div>
@@ -36,14 +40,17 @@
                                 <th>Satuan</th>
                                 <th class="text-center">Qty</th>
                                 <th>Minimum Stok</th>
-                                <th class="text-end pe-4">Aksi</th>
+                                @if (canManage)
+                                {
+                                    <th class="text-end pe-4">Aksi</th>
+                                }
                             </tr>
                         </thead>
                         <tbody>
                             @if (Model.Count == 0)
                             {
                                 <tr>
-                                    <td colspan="5" class="text-center py-5 text-muted">Belum ada data bahan.</td>
+                                    <td colspan="@(canManage ? 5 : 4)" class="text-center py-5 text-muted">Belum ada data bahan.</td>
                                 </tr>
                             }
                             else
@@ -61,22 +68,25 @@
                                         <td>@ingredient.Unit</td>
                                         <td class="text-center"><span class="badge @qtyClass border">@ingredient.Qty</span></td>
                                         <td>@ingredient.MinimumStock</td>
-                                        <td class="text-end pe-4">
-                                            <div class="btn-group shadow-sm" role="group">
-                                                <a asp-action="Edit" asp-route-id="@ingredient.Id" class="btn btn-outline-warning btn-sm" title="Edit Bahan">
-                                                    <i class="bi bi-pencil-square"></i>
-                                                </a>
-                                                <form asp-action="Delete" asp-route-id="@ingredient.Id" method="post" class="d-inline">
-                                                    @Html.AntiForgeryToken()
-                                                    <button type="submit"
-                                                            class="btn btn-outline-danger btn-sm"
-                                                            onclick="return confirm('Yakin mau hapus bahan @ingredient.ItemName?')"
-                                                            title="Delete Bahan">
-                                                        <i class="bi bi-trash3-fill"></i>
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        </td>
+                                        @if (canManage)
+                                        {
+                                            <td class="text-end pe-4">
+                                                <div class="btn-group shadow-sm" role="group">
+                                                    <a asp-action="Edit" asp-route-id="@ingredient.Id" class="btn btn-outline-warning btn-sm" title="Edit Bahan">
+                                                        <i class="bi bi-pencil-square"></i>
+                                                    </a>
+                                                    <form asp-action="Delete" asp-route-id="@ingredient.Id" method="post" class="d-inline">
+                                                        @Html.AntiForgeryToken()
+                                                        <button type="submit"
+                                                                class="btn btn-outline-danger btn-sm"
+                                                                onclick="return confirm('Yakin mau hapus bahan @ingredient.ItemName?')"
+                                                                title="Delete Bahan">
+                                                            <i class="bi bi-trash3-fill"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        }
                                     </tr>
                                 }
                             }

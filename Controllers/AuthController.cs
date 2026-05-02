@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using WebApplication1.Models;
@@ -54,8 +54,19 @@ namespace WebApplication1.Controllers
 
             var user = await _users.FindByNameAsync(username);
             var redirectUrl = "/";
-            if (user != null && await _users.IsInRoleAsync(user, AppRoles.Admin))
-                redirectUrl = "/Admin";
+            if (user != null)
+            {
+                if (await _users.IsInRoleAsync(user, AppRoles.Admin))
+                    redirectUrl = "/Admin";
+                else if (await _users.IsInRoleAsync(user, AppRoles.Kasir))
+                    redirectUrl = "/Cashier";
+                else if (await _users.IsInRoleAsync(user, AppRoles.Kitchen))
+                    redirectUrl = "/Kitchen";
+                else if (await _users.IsInRoleAsync(user, AppRoles.Supervisor))
+                    redirectUrl = "/Supervisor";
+                else if (await _users.IsInRoleAsync(user, AppRoles.Owner))
+                    redirectUrl = "/Owner/Dashboard";
+            }
 
             return Json(new { success = true, redirectUrl });
         }
@@ -101,6 +112,7 @@ namespace WebApplication1.Controllers
         {
             // Reset table & membership cookies on logout
             Response.Cookies.Delete("nr_tableNumber");
+            Response.Cookies.Delete("nr_tableToken");
             Response.Cookies.Delete("nr_membershipStatus");
 
             await _signIn.SignOutAsync();

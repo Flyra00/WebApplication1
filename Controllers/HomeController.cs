@@ -22,7 +22,11 @@ namespace WebApplication1.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var products =await _context.Products.ToListAsync();
+            var products = await _context.Products
+                .Where(p => p.IsAvailable && p.Stock > 0)
+                .OrderBy(p => p.Category)
+                .ThenBy(p => p.Name)
+                .ToListAsync();
             return View(products);
         }
 

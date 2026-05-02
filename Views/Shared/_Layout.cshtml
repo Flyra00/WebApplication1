@@ -29,6 +29,13 @@
 @{
     var _controller = ViewContext?.RouteData?.Values?["controller"]?.ToString() ?? "";
     var _isAdminPage = string.Equals(_controller, "Admin", System.StringComparison.OrdinalIgnoreCase);
+    var _dashboardUrl = (User?.IsInRole(AppRoles.Admin) ?? false) ? "/Admin"
+        : (User?.IsInRole(AppRoles.Supervisor) ?? false) ? "/Supervisor"
+        : (User?.IsInRole(AppRoles.Kasir) ?? false) ? "/Cashier"
+        : (User?.IsInRole(AppRoles.Kitchen) ?? false) ? "/Kitchen"
+        : (User?.IsInRole(AppRoles.Owner) ?? false) ? "/Owner/Dashboard"
+        : (User?.IsInRole(AppRoles.Customer) ?? false) ? "/Member/Profile"
+        : null;
 }
 
 <body data-auth="@((User?.Identity?.IsAuthenticated ?? false).ToString().ToLower())"
@@ -71,9 +78,9 @@
                         <li class="nav__item">
                             <a href="#" class="nav__link">Hi, @(User?.Identity?.Name)</a>
                         </li>
-                        @if (User?.IsInRole(AppRoles.Admin) ?? false)
+                        @if (!string.IsNullOrWhiteSpace(_dashboardUrl))
                         {
-                            <li class="nav__item"><a class="nav__link" href="/Admin">Dashboard</a></li>
+                            <li class="nav__item"><a class="nav__link" href="@_dashboardUrl">Dashboard</a></li>
                         }
                         <li class="nav__item">
                             <form method="post" action="/Auth/Logout" class="d-inline">

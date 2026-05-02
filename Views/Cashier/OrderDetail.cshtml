@@ -1,0 +1,98 @@
+@model WebApplication1.Models.Order
+@{
+    ViewData["Title"] = $"Detail Order #{Model.OrderNumber}";
+    Layout = "~/Views/Shared/_LayoutOperational.cshtml";
+    var payment = ViewBag.Payment as WebApplication1.Models.Payment;
+}
+
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a asp-action="Index" class="op-btn op-btn-secondary"><i class="bi bi-arrow-left"></i></a>
+    <div>
+        <h4 class="mb-0 fw-bold">Detail Pesanan</h4>
+        <code style="color:#f59e0b;">@Model.OrderNumber</code>
+    </div>
+    <div class="ms-auto d-flex gap-2">
+        @if (Model.Status != OrderStatuses.Paid && Model.Status != OrderStatuses.Cancelled)
+        {
+            <a asp-action="ProcessPayment" asp-route-id="@Model.Id" class="op-btn op-btn-success">
+                <i class="bi bi-cash-coin"></i> Proses Bayar
+            </a>
+        }
+        @if (payment != null)
+        {
+            <a asp-action="PrintReceipt" asp-route-id="@payment.Id" class="op-btn op-btn-secondary" target="_blank">
+                <i class="bi bi-printer"></i> Cetak Struk
+            </a>
+        }
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- Info Pesanan -->
+    <div class="col-md-4">
+        <div class="op-card h-100">
+            <h6 class="fw-semibold mb-3" style="color:var(--op-muted);text-transform:uppercase;font-size:0.75rem;letter-spacing:.05em;">Info Pesanan</h6>
+            <table style="width:100%;font-size:0.875rem;">
+                <tr><td style="color:var(--op-muted);padding-bottom:.5rem;">Meja</td><td class="fw-semibold">Meja @(Model.TableSession?.Table?.Number ?? 0)</td></tr>
+                <tr><td style="color:var(--op-muted);padding-bottom:.5rem;">Waktu</td><td>@Model.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td></tr>
+                <tr><td style="color:var(--op-muted);padding-bottom:.5rem;">Status</td><td>
+                    @{ var c = Model.Status switch { "Paid" => "#22c55e", "Processing" => "#f97316", "Submitted" => "#3b82f6", "Completed" => "#8b5cf6", _ => "#64748b" }; }
+                    <span class="op-badge-status" style="background:@(c)22;color:@c;border:1px solid @(c)55;">@Model.Status</span>
+                </td></tr>
+                @if (Model.CustomerUser != null)
+                {
+                    <tr><td style="color:var(--op-muted);padding-bottom:.5rem;">Customer</td><td>@(Model.CustomerUser.FullName ?? Model.CustomerUser.UserName)</td></tr>
+                }
+                @if (payment != null)
+                {
+                    <tr><td style="color:var(--op-muted);padding-bottom:.5rem;">Metode Bayar</td><td class="fw-semibold text-success">@payment.Method</td></tr>
+                    <tr><td style="color:var(--op-muted);padding-bottom:.5rem;">Ref.</td><td><code style="font-size:0.75rem;">@payment.ReferenceNumber</code></td></tr>
+                }
+            </table>
+        </div>
+    </div>
+
+    <!-- Daftar Item -->
+    <div class="col-md-8">
+        <div class="op-card">
+            <h6 class="fw-semibold mb-3" style="color:var(--op-muted);text-transform:uppercase;font-size:0.75rem;letter-spacing:.05em;">Item Pesanan</h6>
+            <table class="op-table">
+                <thead>
+                    <tr>
+                        <th>Menu</th>
+                        <th class="text-end">Harga</th>
+                        <th class="text-center">Qty</th>
+                        <th class="text-end">Subtotal</th>
+                        <th class="text-center">Status Dapur</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        var kc = item.KitchenStatus switch { "Ready" => "#22c55e", "Cooking" => "#f97316", "Served" => "#8b5cf6", _ => "#64748b" };
+                        <tr>
+                            <td>@item.Product?.Name</td>
+                            <td class="text-end">Rp @item.UnitPrice.ToString("N0")</td>
+                            <td class="text-center">@item.Qty</td>
+                            <td class="text-end fw-semibold">Rp @item.LineTotal.ToString("N0")</td>
+                            <td class="text-center">
+                                <span class="op-badge-status" style="background:@(kc)22;color:@kc;border:1px solid @(kc)55;font-size:0.7rem;">@item.KitchenStatus</span>
+                            </td>
+                        </tr>
+                        @if (!string.IsNullOrWhiteSpace(item.Note))
+                        {
+                            <tr><td colspan="5" style="color:var(--op-muted);font-size:0.8rem;padding-top:0;">📝 @item.Note</td></tr>
+                        }
+                    }
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" class="text-end fw-semibold pt-3">TOTAL</td>
+                        <td class="text-end fw-bold pt-3" style="color:#f59e0b;font-size:1.1rem;">Rp @Model.Total.ToString("N0")</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,77 @@
+@model WebApplication1.Models.Payment
+@{
+    ViewData["Title"] = "Struk Pembayaran";
+    Layout = "~/Views/Shared/_LayoutOperational.cshtml";
+}
+
+<div class="no-print d-flex gap-2 mb-3 justify-content-end">
+    <a asp-action="Index" class="op-btn op-btn-secondary"><i class="bi bi-arrow-left me-1"></i>Kembali</a>
+    <button onclick="window.print()" class="op-btn op-btn-primary"><i class="bi bi-printer me-1"></i>Cetak Struk</button>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-sm-6 col-md-4">
+        <div class="op-card" id="receipt" style="font-family:'Courier New',monospace;max-width:380px;margin:auto;">
+            <div class="text-center mb-3">
+                <h5 class="fw-bold mb-0" style="letter-spacing:.15em;">★ RESTO PRO ★</h5>
+                <small style="color:var(--op-muted);">Jl. Resto No. 1 | Telp. 08xx-xxxx-xxxx</small>
+                <hr style="border-color:var(--op-border);" />
+            </div>
+
+            <div style="font-size:.8rem;">
+                <div class="d-flex justify-content-between mb-1">
+                    <span>No. Order</span>
+                    <span class="fw-bold">@Model.Order.OrderNumber</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Meja</span>
+                    <span>@(Model.Order.TableSession?.Table?.Number ?? 0)</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Tanggal</span>
+                    <span>@Model.PaymentDate.ToLocalTime().ToString("dd/MM/yy HH:mm")</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Kasir</span>
+                    <span>@(Model.PaidByUser?.FullName ?? Model.PaidByUser?.UserName ?? "-")</span>
+                </div>
+            </div>
+
+            <hr style="border-style:dashed;border-color:var(--op-border);" />
+
+            @foreach (var item in Model.Order.Items)
+            {
+                <div class="d-flex justify-content-between" style="font-size:.8rem;margin-bottom:.3rem;">
+                    <span>@item.Product?.Name</span>
+                    <span>@item.Qty x @item.UnitPrice.ToString("N0")</span>
+                </div>
+                <div class="text-end fw-semibold" style="font-size:.8rem;margin-bottom:.4rem;">
+                    Rp @item.LineTotal.ToString("N0")
+                </div>
+            }
+
+            <hr style="border-style:dashed;border-color:var(--op-border);" />
+
+            <div class="d-flex justify-content-between fw-bold mb-1" style="font-size:.9rem;">
+                <span>TOTAL</span>
+                <span>Rp @Model.Order.Total.ToString("N0")</span>
+            </div>
+            <div class="d-flex justify-content-between mb-1" style="font-size:.8rem;">
+                <span>Bayar (@Model.Method)</span>
+                <span>Rp @Model.Amount.ToString("N0")</span>
+            </div>
+            @{ var change = Model.Amount - Model.Order.Total; }
+            <div class="d-flex justify-content-between fw-bold" style="font-size:.9rem;color:#22c55e;">
+                <span>KEMBALIAN</span>
+                <span>Rp @change.ToString("N0")</span>
+            </div>
+
+            <hr style="border-style:dashed;border-color:var(--op-border);" />
+
+            <div class="text-center" style="font-size:.75rem;color:var(--op-muted);">
+                <p class="mb-1">Terima kasih telah berkunjung!</p>
+                <p class="mb-0">Ref: @Model.ReferenceNumber</p>
+            </div>
+        </div>
+    </div>
+</div>

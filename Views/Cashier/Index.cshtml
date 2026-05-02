@@ -1,0 +1,92 @@
+@model IEnumerable<WebApplication1.Models.Order>
+@{
+    ViewData["Title"] = "Transaksi Kasir";
+    Layout = "~/Views/Shared/_LayoutOperational.cshtml";
+    var statuses = new[] { "Semua", "Submitted", "Processing", "Completed", "Paid" };
+    var sel = ViewBag.SelectedStatus as string;
+}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+        <h4 class="mb-0 fw-bold">Transaksi Hari Ini</h4>
+        <small class="text-muted">@DateTime.Now.ToString("dddd, dd MMMM yyyy")</small>
+    </div>
+    <a asp-action="NewOrder" class="op-btn op-btn-primary">
+        <i class="bi bi-plus-lg"></i> Pesanan Kasir
+    </a>
+</div>
+
+<!-- Filter status -->
+<div class="d-flex gap-2 mb-4 flex-wrap">
+    @foreach (var s in statuses)
+    {
+        var q = s == "Semua" ? null : s;
+        var active = (q == null && sel == null) || q == sel;
+        <a asp-action="Index" asp-route-status="@q"
+           class="op-btn @(active ? "op-btn-primary" : "op-btn-secondary")">@s</a>
+    }
+</div>
+
+@if (!Model.Any())
+{
+    <div class="op-card text-center py-5">
+        <i class="bi bi-inbox" style="font-size:2.5rem;color:var(--op-muted);"></i>
+        <p class="mt-3 mb-0" style="color:var(--op-muted);">Belum ada transaksi hari ini.</p>
+    </div>
+}
+else
+{
+    <div class="op-card">
+        <table class="op-table">
+            <thead>
+                <tr>
+                    <th>No Order</th>
+                    <th>Meja</th>
+                    <th>Waktu</th>
+                    <th>Items</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var o in Model)
+                {
+                    var badgeColor = o.Status switch {
+                        "Submitted"  => "#3b82f6",
+                        "Processing" => "#f97316",
+                        "Completed"  => "#8b5cf6",
+                        "Paid"       => "#22c55e",
+                        "Cancelled"  => "#ef4444",
+                        _            => "#64748b"
+                    };
+                    <tr>
+                        <td><code style="color:#f59e0b;">@o.OrderNumber</code></td>
+                        <td>
+                            <span class="fw-semibold">Meja @(o.TableSession?.Table?.Number ?? 0)</span>
+                        </td>
+                        <td style="color:var(--op-muted);font-size:0.8rem;">@o.OrderDate.ToLocalTime().ToString("HH:mm:ss")</td>
+                        <td><span class="badge bg-secondary">@o.Items.Count item</span></td>
+                        <td class="fw-semibold">Rp @o.Total.ToString("N0")</td>
+                        <td>
+                            <span class="op-badge-status" style="background:@(badgeColor)22;color:@badgeColor;border:1px solid @(badgeColor)55;">
+                                @o.Status
+                            </span>
+                        </td>
+                        <td>
+                            <a asp-action="OrderDetail" asp-route-id="@o.Id" class="op-btn op-btn-secondary me-1" style="padding:0.3rem 0.65rem;">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            @if (o.Status != OrderStatuses.Paid && o.Status != OrderStatuses.Cancelled)
+                            {
+                                <a asp-action="ProcessPayment" asp-route-id="@o.Id" class="op-btn op-btn-success" style="padding:0.3rem 0.65rem;">
+                                    <i class="bi bi-cash-coin"></i> Bayar
+                                </a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

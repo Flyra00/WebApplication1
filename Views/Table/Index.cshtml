@@ -34,6 +34,8 @@
                             <tr>
                                 <th class="ps-4">Nomor Meja</th>
                                 <th>Kapasitas</th>
+                                <th>Status</th>
+                                <th>QR Order</th>
                                 <th class="text-end pe-4">Aksi</th>
                             </tr>
                         </thead>
@@ -41,16 +43,43 @@
                             @if (Model.Count == 0)
                             {
                                 <tr>
-                                    <td colspan="3" class="text-center py-5 text-muted">Belum ada data meja.</td>
+                                    <td colspan="5" class="text-center py-5 text-muted">Belum ada data meja.</td>
                                 </tr>
                             }
                             else
                             {
                                 foreach (var table in Model)
                                 {
+                                    var isOccupied = table.Sessions.Any(s => s.Status == TableSessionStatuses.Open && s.EndTime == null);
+                                    var qrUrl = Url.Action("StartFromQr", "TableSession", new { token = table.QrCodeToken }, Context.Request.Scheme);
                                     <tr>
                                         <td class="ps-4 fw-semibold text-dark">Meja @table.Number</td>
                                         <td><span class="badge bg-primary-subtle text-primary border">@table.Capacity Orang</span></td>
+                                        <td>
+                                            @if (!table.IsActive)
+                                            {
+                                                <span class="badge bg-secondary-subtle text-secondary border">Nonaktif</span>
+                                            }
+                                            else if (isOccupied)
+                                            {
+                                                <span class="badge bg-warning-subtle text-warning border">Terisi</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-success-subtle text-success border">Kosong</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="small text-muted mb-1">@qrUrl</div>
+                                            <form asp-action="RegenerateToken" asp-route-id="@table.Id" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit"
+                                                        class="btn btn-outline-secondary btn-sm"
+                                                        onclick="return confirm('Regenerate QR meja @table.Number? Link QR lama tidak bisa dipakai lagi.')">
+                                                    <i class="bi bi-qr-code me-1"></i> Regenerate
+                                                </button>
+                                            </form>
+                                        </td>
                                         <td class="text-end pe-4">
                                             <div class="btn-group shadow-sm" role="group">
                                                 <a asp-action="Edit" asp-route-id="@table.Id" class="btn btn-outline-warning btn-sm" title="Edit Meja">

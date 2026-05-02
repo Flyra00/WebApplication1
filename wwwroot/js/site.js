@@ -2,6 +2,7 @@
     'use strict';
 
     const COOKIE_TABLE = 'nr_tableNumber';
+    const COOKIE_TABLE_TOKEN = 'nr_tableToken';
     const COOKIE_MEMBER = 'nr_membershipStatus';
     const CART_STORAGE_KEY = 'nr_orderCart';
 
@@ -145,6 +146,7 @@
                 const member = getSelectedMembership();
                 setCookie(COOKIE_TABLE, val, 365);
                 setCookie(COOKIE_MEMBER, member, 365);
+                deleteCookie(COOKIE_TABLE_TOKEN);
 
                 setBadge(val);
 
@@ -168,6 +170,7 @@
         if (!isAdminPage && resetBtn) {
             resetBtn.addEventListener('click', function () {
                 deleteCookie(COOKIE_TABLE);
+                deleteCookie(COOKIE_TABLE_TOKEN);
                 deleteCookie(COOKIE_MEMBER);
                 clearCart();
                 cart = [];
@@ -362,6 +365,7 @@
         if (submitOrderBtn) {
             submitOrderBtn.addEventListener('click', function () {
                 const tableNumber = getCookie(COOKIE_TABLE);
+                const tableToken = getCookie(COOKIE_TABLE_TOKEN);
                 const membershipStatus = getCookie(COOKIE_MEMBER) || 'Guest';
 
                 if (!tableNumber) {
@@ -386,6 +390,7 @@
 
                 postJson('/CustomerOrder/Submit', {
                     tableNumber: Number(tableNumber),
+                    tableToken: tableToken || null,
                     membershipStatus: membershipStatus,
                     items: cart.map(function (item) {
                         return {

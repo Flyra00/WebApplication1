@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 
 namespace WebApplication1.Models
@@ -17,11 +17,16 @@ namespace WebApplication1.Models
 
         [Precision(16, 2)]
         [Required(ErrorMessage = "Harga harus diisi!")]
-        [Range(0, double.MaxValue, ErrorMessage = "Harga kaga boleh minus, dongo!")] 
+        [Range(0, double.MaxValue, ErrorMessage = "Harga tidak boleh minus.")] 
         public decimal Price { get; set; }
 
         [MaxLength(100)]
         public string ImageFileName { get; set; } = "";
+
+        public bool IsAvailable { get; set; } = true;
+
+        [Range(0, int.MaxValue, ErrorMessage = "Stok tidak boleh minus.")]
+        public int Stock { get; set; } = 0;
 
         public DateTime Created { get; set; } = DateTime.Now;
 
