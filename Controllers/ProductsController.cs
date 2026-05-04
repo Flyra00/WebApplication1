@@ -20,7 +20,9 @@ namespace WebApplication1.Controllers
         //ambil data
         public async Task<IActionResult> Index()
         {
-            var products = await _context.Products.ToListAsync();
+            var products = await _context.Products
+                .AsNoTracking()
+                .ToListAsync();
             return View(products);
         }
         //create
@@ -38,15 +40,7 @@ namespace WebApplication1.Controllers
             {
                 if (ImageFile != null && ImageFile.Length > 0)
                 {
-                    string fileName = Guid.NewGuid().ToString() + Path.GetExtension(ImageFile.FileName);
-                    string filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/products", fileName);
-
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await ImageFile.CopyToAsync(stream);
-                    }
-
-                    product.ImageFileName = fileName;
+                    product.ImageFileName = await SaveProductImageAsync(ImageFile);
                 }
 
                 _context.Products.Add(product);
@@ -60,7 +54,10 @@ namespace WebApplication1.Controllers
         [Authorize(Roles = AppRoles.Admin)]
         public async Task<IActionResult> Edit (int id)
         {
-            var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
+            var product = await _context.Products
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == id);
+            if (product == null) return NotFound();
             return View(product);
         }
 
@@ -83,21 +80,10 @@ namespace WebApplication1.Controllers
 
                 if (ImageFile != null && ImageFile.Length > 0)
                 {
-                    // 1. Upload Gambar Baru
-                    string fileName = Guid.NewGuid().ToString() + Path.GetExtension(ImageFile.FileName);
-                    string filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/products", fileName);
-
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await ImageFile.CopyToAsync(stream);
-                    }
-
-                    // 2. Hapus Gambar Lama biar folder wwwroot lu kaga penuh sampah
-                    // Kita ambil data lama dari DB buat tau nama file lamanya
+                    var fileName = await SaveProductImageAsync(ImageFile);
                     if (!string.IsNullOrEmpty(existingProduct.ImageFileName))
                     {
-                        string oldPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/products", existingProduct.ImageFileName);
-                        if (System.IO.File.Exists(oldPath)) System.IO.File.Delete(oldPath);
+                        DeleteProductImage(existingProduct.ImageFileName);
                     }
 
                     existingProduct.ImageFileName = fileName;
@@ -117,30 +103,69 @@ namespace WebApplication1.Controllers
         [Authorize(Roles = AppRoles.Admin)]
         public async Task<IActionResult> Delete(int id)
         {
-            var product = await _context.Products.FirstOrDefaultAsync(p =>p.Id == id);
+            var product = await _context.Products
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p =>p.Id == id);
+            if (product == null) return NotFound();
             return View(product);
         }
         [HttpPost, ActionName (nameof(Delete))]
         [Authorize(Roles = AppRoles.Admin)]
+        [ValidateAntiForgeryToken]
 
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var product = await _context.Products.FindAsync(id);
             if (product != null)
             {
+                var isReferenced = await _context.OrderItems.AnyAsync(item => item.ProductId == id);
+                if (isReferenced)
+                {
+                    TempData["Error"] = "Menu tidak bisa dihapus karena sudah dipakai pada transaksi.";
+                    return RedirectToAction(nameof(Index));
+                }
+
                 if (!string.IsNullOrEmpty(product.ImageFileName))
                 {
-                    string filePath = Path.Combine(_env.WebRootPath, "products", product.ImageFileName);
-
-                    if (System.IO.File.Exists(filePath))
-                    {
-                        System.IO.File.Delete(filePath);
-                    }
+                    DeleteProductImage(product.ImageFileName);
                 }
                 _context.Products.Remove(product);
                 await _context.SaveChangesAsync();
             }
-            return RedirectToAction("index");
+            return RedirectToAction(nameof(Index));
+        }
+
+        private async Task<string> SaveProductImageAsync(IFormFile imageFile)
+        {
+            var productsDirectory = GetProductsDirectory();
+            Directory.CreateDirectory(productsDirectory);
+
+            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(imageFile.FileName)}";
+            var filePath = Path.Combine(productsDirectory, fileName);
+
+            await using var stream = new FileStream(filePath, FileMode.CreateNew);
+            await imageFile.CopyToAsync(stream);
+
+            return fileName;
+        }
+
+        private void DeleteProductImage(string imageFileName)
+        {
+            var safeFileName = Path.GetFileName(imageFileName);
+            if (string.IsNullOrWhiteSpace(safeFileName))
+                return;
+
+            var filePath = Path.Combine(GetProductsDirectory(), safeFileName);
+            if (System.IO.File.Exists(filePath))
+            {
+                System.IO.File.Delete(filePath);
+            }
+        }
+
+        private string GetProductsDirectory()
+        {
+            var webRootPath = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            return Path.Combine(webRootPath, "products");
         }
 
     }

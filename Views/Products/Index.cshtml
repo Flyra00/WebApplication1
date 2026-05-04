@@ -1,7 +1,7 @@
 ﻿@model List<Product>
 @{
     var canManage = User?.IsInRole(AppRoles.Admin) ?? false;
-    Layout = canManage ? "_LayoutAdmin" : "~/Views/Shared/_LayoutOperational.cshtml";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
     ViewData["Title"] = "Daftar Menu";
 }
 

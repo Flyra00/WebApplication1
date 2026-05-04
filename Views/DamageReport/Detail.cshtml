@@ -1,7 +1,7 @@
 @model WebApplication1.Models.DamageReport
 @{
     ViewData["Title"] = "Detail Laporan Kerusakan";
-    Layout = "~/Views/Shared/_LayoutOperational.cshtml";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
     var sc = Model.Status switch { "Reported" => "#ef4444", "Reviewed" => "#f97316", "Resolved" => "#22c55e", _ => "#64748b" };
 }
 

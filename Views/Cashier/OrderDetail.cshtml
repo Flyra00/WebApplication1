@@ -1,7 +1,7 @@
 @model WebApplication1.Models.Order
 @{
     ViewData["Title"] = $"Detail Order #{Model.OrderNumber}";
-    Layout = "~/Views/Shared/_LayoutOperational.cshtml";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
     var payment = ViewBag.Payment as WebApplication1.Models.Payment;
 }
 

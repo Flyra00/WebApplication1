@@ -1,6 +1,6 @@
 @{
     ViewData["Title"] = "Input Pesanan Kasir";
-    Layout = "~/Views/Shared/_LayoutOperational.cshtml";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
     var tables   = ViewBag.Tables   as List<WebApplication1.Models.Table>;
     var products = ViewBag.Products as List<WebApplication1.Models.Product>;
 }
@@ -127,9 +127,13 @@ document.getElementById('submitOrder').addEventListener('click', async () => {
         items: cart.map(c => ({ productId: c.id, qty: c.qty }))
     };
     try {
+        const token = document.querySelector('meta[name="request-verification-token"]')?.getAttribute('content') || '';
         const res = await fetch('/CustomerOrder/Submit', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': token
+            },
             body: JSON.stringify(payload)
         });
         const data = await res.json();

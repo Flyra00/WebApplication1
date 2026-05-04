@@ -1,167 +1,1573 @@
-﻿@model List<Product>
+@using System.Globalization
+@using Microsoft.AspNetCore.Antiforgery
+@inject IAntiforgery Antiforgery
+@model List<Product>
 @{
-    ViewData["Title"] = "Home Page";
+    Layout = null;
+    var culture = new CultureInfo("id-ID");
+    var activeTables = ViewBag.ActiveTables as List<Table> ?? new List<Table>();
+    var products = Model ?? new List<Product>();
+    var categories = products
+        .Select(product => product.Category)
+        .Where(category => !string.IsNullOrWhiteSpace(category))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .OrderBy(category => category)
+        .ToList();
+    var tableNumber = Context.Request.Cookies["nr_tableNumber"] ?? "--";
+    var tableToken = Context.Request.Cookies["nr_tableToken"] ?? string.Empty;
+    var featuredProduct = products.FirstOrDefault();
+    var dashboardUrl = (User?.IsInRole(AppRoles.Admin) ?? false) ? "/Admin"
+        : (User?.IsInRole(AppRoles.Supervisor) ?? false) ? "/Supervisor"
+        : (User?.IsInRole(AppRoles.Kasir) ?? false) ? "/Cashier"
+        : (User?.IsInRole(AppRoles.Kitchen) ?? false) ? "/Kitchen"
+        : (User?.IsInRole(AppRoles.Owner) ?? false) ? "/Owner/Dashboard"
+        : (User?.IsInRole(AppRoles.Customer) ?? false) ? "/Member/Profile"
+        : null;
+    var isAuthenticated = User?.Identity?.IsAuthenticated ?? false;
+    var isCustomer = User?.IsInRole(AppRoles.Customer) ?? false;
 }
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="request-verification-token" content="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
+    <meta name="table-token" content="@tableToken" />
+    <title>Menu - Nusantara Heritage</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Serif:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --surface: #fcf9f8;
+            --surface-lowest: #ffffff;
+            --surface-low: #f6f3f2;
+            --surface-container: #f0eded;
+            --surface-high: #eae7e7;
+            --surface-highest: #e5e2e1;
+            --warm-beige: #f4ede3;
+            --on-surface: #1c1b1b;
+            --on-surface-variant: #584238;
+            --outline: #8c7166;
+            --outline-variant: #e0c0b2;
+            --terracotta: #9c3f00;
+            --terracotta-dark: #7a3000;
+            --terracotta-soft: #c45100;
+            --forest: #5e604d;
+            --inverse-surface: #313030;
+            --soft-black: #2c2c2c;
+            --error: #ba1a1a;
+            --shadow: 0 20px 60px rgba(44, 44, 44, .08);
+        }
 
-<section class="home" id="home">
-    <div class="home__container bd-container bd-grid">
-        <div class="home__data">
-            <h1 class="home__title">Tasty food</h1>
-            <h2 class="home__subtitle">Try the best food of <br> the week.</h2>
-            <a href="#menu" class="button">View Menu</a>
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            min-height: 100dvh;
+            margin: 0;
+            background:
+                radial-gradient(circle at top left, rgba(224, 122, 95, .14), transparent 32rem),
+                linear-gradient(180deg, #fff8f2 0%, var(--surface) 36%, #fbf6f2 100%);
+            color: var(--on-surface);
+            font-family: 'Inter', sans-serif;
+        }
+        a { color: inherit; text-decoration: none; }
+        button, input { font: inherit; }
+        button { cursor: pointer; border: 0; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .page-shell { width: min(100% - 48px, 1180px); margin: 0 auto; }
+
+        .site-header {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            border-bottom: 1px solid rgba(219, 193, 186, .65);
+            background: rgba(244, 237, 227, .88);
+            backdrop-filter: blur(16px);
+        }
+        .site-nav {
+            min-height: 82px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 28px;
+        }
+        .brand { display: inline-flex; align-items: center; gap: 14px; min-width: 0; }
+        .brand-mark {
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background: var(--surface-lowest);
+            color: var(--terracotta);
+            box-shadow: inset 0 0 0 1px rgba(219, 193, 186, .52);
+        }
+        .brand-text { display: grid; gap: 2px; }
+        .brand-name {
+            color: var(--terracotta-dark);
+            font-family: 'Noto Serif', serif;
+            font-size: 22px;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .brand-subtitle { color: var(--on-surface-variant); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
+        .nav-links { display: flex; align-items: center; gap: 24px; color: var(--on-surface-variant); font-weight: 600; }
+        .nav-links a:hover { color: var(--terracotta-dark); }
+        .nav-actions { display: flex; align-items: center; gap: 12px; }
+        .table-pill, .outline-link, .primary-link {
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border-radius: 999px;
+            padding: 0 18px;
+            font-weight: 700;
+        }
+        .table-pill { background: var(--surface-lowest); color: var(--terracotta); border: 1px solid var(--outline-variant); }
+        .outline-link { background: transparent; color: var(--forest); border: 1px solid rgba(72, 102, 72, .45); }
+        .primary-link { background: var(--terracotta); color: #fff; }
+        .cart-trigger {
+            position: relative;
+            width: 44px;
+            height: 44px;
+            border-radius: 999px;
+            display: grid;
+            place-items: center;
+            color: var(--terracotta);
+            background: var(--surface-lowest);
+            border: 1px solid var(--outline-variant);
+        }
+        .cart-trigger-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 999px;
+            background: var(--terracotta);
+            color: #fff;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 0 5px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .cart-trigger-badge.visible { display: inline-flex; }
+
+        .hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.05fr) minmax(320px, .75fr);
+            gap: 56px;
+            align-items: center;
+            padding: 72px 0 58px;
+        }
+        .eyebrow {
+            margin: 0 0 14px;
+            color: var(--forest);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+        }
+        .hero-title {
+            max-width: 780px;
+            margin: 0;
+            color: var(--on-surface);
+            font-family: 'Noto Serif', serif;
+            font-size: clamp(44px, 6vw, 76px);
+            font-weight: 700;
+            line-height: .98;
+            letter-spacing: -.045em;
+        }
+        .hero-copy {
+            max-width: 640px;
+            margin: 24px 0 0;
+            color: var(--on-surface-variant);
+            font-size: 18px;
+            line-height: 1.75;
+        }
+        .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 32px; }
+        .hero-button {
+            min-height: 54px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            border-radius: 12px;
+            padding: 0 22px;
+            font-weight: 800;
+        }
+        .hero-button.primary { background: var(--terracotta); color: #fff; }
+        .hero-button.secondary { background: var(--surface-lowest); color: var(--forest); border: 1px solid rgba(72, 102, 72, .42); }
+        .feature-card {
+            overflow: hidden;
+            border-radius: 30px;
+            background: var(--surface-lowest);
+            border: 1px solid rgba(219, 193, 186, .72);
+            box-shadow: var(--shadow);
+        }
+        .feature-image { aspect-ratio: 4 / 3; width: 100%; object-fit: cover; display: block; background: var(--surface-container); }
+        .feature-body { padding: 24px; }
+        .feature-label { color: var(--forest); font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+        .feature-title { margin: 8px 0 10px; font-family: 'Noto Serif', serif; font-size: 30px; line-height: 1.15; }
+        .feature-meta { display: flex; align-items: center; justify-content: space-between; gap: 16px; color: var(--terracotta); font-family: 'Noto Serif', serif; font-size: 22px; }
+
+        .toolbar {
+            display: grid;
+            grid-template-columns: minmax(260px, 420px) minmax(0, 1fr);
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .search-box {
+            min-height: 58px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-radius: 999px;
+            background: var(--surface-highest);
+            color: var(--on-surface-variant);
+            padding: 0 20px;
+        }
+        .search-box input {
+            width: 100%;
+            min-width: 0;
+            border: 0;
+            outline: 0;
+            background: transparent;
+            color: var(--on-surface);
+            font-size: 17px;
+        }
+        .category-strip { display: flex; gap: 12px; overflow-x: auto; padding: 4px 0; scrollbar-width: none; }
+        .category-strip::-webkit-scrollbar { display: none; }
+        .category-chip {
+            flex: 0 0 auto;
+            min-height: 48px;
+            border-radius: 999px;
+            padding: 0 20px;
+            border: 1px solid var(--terracotta);
+            background: var(--surface);
+            color: var(--on-surface);
+            font-weight: 700;
+            white-space: nowrap;
+            transition: transform .18s ease, background .18s ease, color .18s ease;
+        }
+        .category-chip.active { border-color: transparent; background: var(--inverse-surface); color: #fff; transform: translateY(-1px); }
+
+        .menu-section { padding: 26px 0 88px; }
+        .section-heading { display: flex; justify-content: space-between; gap: 24px; align-items: end; margin-bottom: 22px; }
+        .section-heading h2 { margin: 0; font-family: 'Noto Serif', serif; font-size: clamp(32px, 4vw, 48px); line-height: 1; }
+        .section-heading p { max-width: 420px; margin: 0; color: var(--on-surface-variant); line-height: 1.65; }
+        .menu-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 30px; align-items: start; }
+        .menu-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+        .menu-card {
+            display: flex;
+            min-width: 0;
+            overflow: hidden;
+            flex-direction: column;
+            border-radius: 22px;
+            background: var(--surface-lowest);
+            border: 1px solid rgba(219, 193, 186, .78);
+            box-shadow: 0 8px 28px rgba(44, 44, 44, .055);
+            transition: transform .18s ease, box-shadow .18s ease;
+        }
+        .menu-card:hover { transform: translateY(-3px); box-shadow: 0 18px 42px rgba(44, 44, 44, .09); }
+        .menu-image-wrap { position: relative; aspect-ratio: 4 / 3; width: 100%; overflow: hidden; background: var(--surface-container); }
+        .menu-image { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .menu-open {
+            position: absolute;
+            inset: 0;
+            background: transparent;
+            border: 0;
+            color: transparent;
+            z-index: 1;
+        }
+        .fab-add {
+            position: absolute;
+            right: 16px;
+            bottom: 0;
+            transform: translateY(50%);
+            width: 52px;
+            height: 52px;
+            border-radius: 999px;
+            border: 0;
+            background: var(--terracotta);
+            color: #fff;
+            display: grid;
+            place-items: center;
+             box-shadow: 0 6px 20px rgba(156, 63, 0, .35);
+            z-index: 3;
+        }
+        .fab-add .material-symbols-outlined { font-size: 24px; }
+        .chef-badge {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            border-radius: 999px;
+            padding: 8px 11px;
+             background: rgba(72, 102, 72, .94);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+        }
+        .menu-body { display: flex; flex: 1; flex-direction: column; padding: 28px 20px 20px; }
+        .menu-heading { display: flex; align-items: start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+        .menu-title {
+            min-height: 64px;
+            margin: 0;
+            border: 0;
+            background: transparent;
+            padding: 0;
+            text-align: left;
+            color: var(--on-surface);
+            font-family: 'Noto Serif', serif;
+            font-size: 24px;
+            font-weight: 600;
+            line-height: 1.12;
+            letter-spacing: -.02em;
+            cursor: pointer;
+        }
+        .menu-price-inline { color: var(--terracotta); font-family: 'Noto Serif', serif; font-size: 20px; font-weight: 700; white-space: nowrap; }
+        .menu-detail { display: -webkit-box; min-height: 48px; margin: 0 0 18px; overflow: hidden; color: var(--on-surface-variant); line-height: 1.55; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+        .menu-meta { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .menu-tag {
+            display: inline-flex;
+            align-items: center;
+            min-height: 32px;
+            border-radius: 999px;
+            border: 1px solid var(--outline-variant);
+            padding: 0 12px;
+            color: var(--on-surface-variant);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+        }
+        .add-button, .qty-button {
+            min-height: 50px;
+            border-radius: 10px;
+            font-weight: 800;
+            transition: transform .16s ease, background .16s ease, color .16s ease, border-color .16s ease;
+        }
+         .add-button { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--forest); background: transparent; color: var(--forest); }
+         .add-button.primary { border-color: var(--terracotta); background: var(--terracotta-soft); color: #fff; }
+        .add-button:active, .qty-button:active, .hero-button:active { transform: scale(.985); }
+        .quantity-control { display: none; align-items: center; justify-content: space-between; gap: 10px; min-height: 50px; border-radius: 12px; background: var(--surface-container); padding: 5px; }
+        .quantity-control.active { display: flex; }
+         .qty-button { width: 42px; min-height: 40px; display: grid; place-items: center; background: var(--surface-lowest); color: var(--on-surface); box-shadow: 0 2px 8px rgba(44, 44, 44, .06); }
+        .qty-value { min-width: 28px; text-align: center; font-weight: 700; }
+        .is-in-cart .add-button { display: none; }
+        .is-in-cart .quantity-control { display: flex; }
+
+        .cart-panel h3 { margin: 0; font-family: 'Noto Serif', serif; font-size: 28px; }
+        .cart-note { margin: 8px 0 18px; color: var(--on-surface-variant); line-height: 1.55; }
+         .cart-item { display: flex; gap: 14px; padding: 15px 0; border-top: 1px solid rgba(219, 193, 186, .65); }
+        .cart-item-main { flex: 1; min-width: 0; }
+        .cart-item-title { margin: 0 0 5px; font-weight: 800; }
+        .cart-item-price { color: var(--on-surface-variant); font-size: 14px; }
+        .qty-pill {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            background: var(--surface-container);
+            padding: 4px 12px;
+            color: var(--on-surface-variant);
+            font-size: 13px;
+            margin-top: 8px;
+        }
+        .cart-empty { padding: 20px 0; color: var(--on-surface-variant); }
+        .cart-total { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--outline-variant); }
+        .cart-total span { color: var(--on-surface-variant); }
+        .cart-total strong { color: var(--terracotta); font-family: 'Noto Serif', serif; font-size: 26px; }
+        .checkout-card {
+            margin-top: 16px;
+            border-radius: 16px;
+             border: 1px solid rgba(224, 192, 178, .7);
+            background: var(--surface-low);
+            padding: 14px;
+        }
+        .checkout-card h4 {
+            margin: 0 0 8px;
+            font-family: 'Noto Serif', serif;
+            font-size: 21px;
+        }
+        .checkout-note {
+            width: 100%;
+            min-height: 82px;
+            border: 1px solid var(--outline);
+            border-radius: 10px;
+            resize: vertical;
+            background: var(--surface-lowest);
+            color: var(--on-surface);
+            padding: 10px 12px;
+        }
+         .checkout-note:focus { outline: 2px solid rgba(156, 63, 0, .22); border-color: var(--terracotta); }
+        .payment-option {
+            width: 100%;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-radius: 10px;
+            border: 1px solid var(--outline);
+            background: var(--surface-lowest);
+            color: var(--on-surface);
+            padding: 0 12px;
+            margin-top: 8px;
+            text-align: left;
+            font-weight: 700;
+        }
+        .payment-option.active {
+            border-color: var(--terracotta);
+             background: rgba(156, 63, 0, .08);
+        }
+        .payment-option:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+        }
+        .submit-button, .secondary-button { width: 100%; min-height: 54px; border-radius: 12px; font-weight: 800; }
+        .submit-button { margin-top: 18px; background: var(--terracotta); color: #fff; }
+        .submit-button:disabled { opacity: .58; cursor: not-allowed; }
+        .secondary-button { margin-top: 10px; background: var(--surface-container); color: var(--on-surface); }
+        .feedback { min-height: 22px; margin-top: 12px; color: var(--on-surface-variant); font-size: 14px; line-height: 1.45; }
+        .feedback.error { color: var(--error); }
+         .feedback.success { color: var(--forest); }
+
+        .cart-backdrop {
+            position: fixed;
+            inset: 0;
+             background: rgba(49, 48, 48, .35);
+            z-index: 71;
+            display: none;
+        }
+        .cart-backdrop.open { display: block; }
+        .cart-drawer {
+            position: fixed;
+            top: 0;
+            right: -420px;
+            width: min(100%, 390px);
+            height: 100dvh;
+            z-index: 72;
+            background: var(--surface-lowest);
+             border-left: 1px solid rgba(219, 193, 186, .78);
+             box-shadow: -12px 0 36px rgba(44, 44, 44, .18);
+            transition: right .28s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        .cart-drawer.open { right: 0; }
+        .cart-drawer-header {
+            min-height: 72px;
+            padding: 0 16px;
+             border-bottom: 1px solid rgba(219, 193, 186, .7);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .cart-drawer-title { font-family: 'Noto Serif', serif; font-size: 28px; margin: 0; }
+        .cart-drawer-close {
+            width: 40px;
+            height: 40px;
+            border-radius: 999px;
+            display: grid;
+            place-items: center;
+            background: var(--surface-low);
+            color: var(--on-surface-variant);
+        }
+        .cart-drawer-body {
+            flex: 1;
+            overflow: auto;
+            padding: 16px;
+        }
+        .no-scroll { overflow: hidden; }
+
+        .empty-state { grid-column: 1 / -1; padding: 46px 24px; text-align: center; border-radius: 24px; background: var(--surface-lowest); border: 1px dashed var(--outline-variant); color: var(--on-surface-variant); }
+        .empty-state h2 { margin: 0 0 8px; color: var(--on-surface); font-family: 'Noto Serif', serif; font-size: 28px; }
+        .empty-state p { margin: 0; }
+
+        .table-dialog {
+            position: fixed;
+            inset: 0;
+            z-index: 70;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+             background: rgba(27, 28, 28, .42);
+        }
+        .table-dialog.open { display: flex; }
+        .table-panel {
+            width: min(100%, 460px);
+            border-radius: 24px;
+            background: var(--surface-lowest);
+             box-shadow: 0 28px 70px rgba(44, 44, 44, .22);
+            padding: 28px;
+        }
+        .table-panel h2 { margin: 0 0 8px; font-family: 'Noto Serif', serif; font-size: 32px; }
+        .table-panel p { margin: 0 0 20px; color: var(--on-surface-variant); line-height: 1.6; }
+        .table-input { width: 100%; min-height: 56px; border: 1px solid var(--outline-variant); border-radius: 12px; padding: 0 16px; color: var(--on-surface); background: var(--surface); outline-color: var(--terracotta); font-size: 18px; }
+        .table-select { width: 100%; min-height: 56px; border: 1px solid var(--outline-variant); border-radius: 12px; padding: 0 16px; color: var(--on-surface); background: var(--surface-lowest); outline-color: var(--terracotta); font-size: 17px; }
+         .table-select:focus { border-color: var(--terracotta); outline: 2px solid rgba(156, 63, 0, .15); }
+        .table-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+        .table-action-button {
+            width: 100%;
+            min-height: 54px;
+            border-radius: 12px;
+            font-weight: 800;
+            border: 1px solid var(--terracotta);
+            box-sizing: border-box;
+        }
+        .table-action-button.guest {
+            background: var(--terracotta-soft);
+             color: #fff;
+        }
+        .table-action-button.member {
+            background: var(--surface-lowest);
+             color: var(--on-surface);
+        }
+
+        .auth-dialog {
+            position: fixed;
+            inset: 0;
+            z-index: 73;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+             background: rgba(49, 48, 48, .4);
+        }
+        .auth-dialog.open { display: flex; }
+        .auth-panel {
+            width: min(100%, 460px);
+            border-radius: 18px;
+            background: var(--surface-lowest);
+            border: 1px solid var(--outline-variant);
+            padding: 22px;
+             box-shadow: 0 22px 60px rgba(44, 44, 44, .24);
+        }
+        .auth-panel h3 { margin: 0; font-family: 'Noto Serif', serif; font-size: 30px; }
+        .auth-panel p { margin: 8px 0 18px; color: var(--on-surface-variant); }
+        .auth-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+        .auth-tab { min-height: 42px; border-radius: 999px; background: var(--surface-low); color: var(--on-surface-variant); font-weight: 700; }
+         .auth-tab.active { background: var(--inverse-surface); color: #fff; }
+        .auth-group { margin-bottom: 10px; }
+        .auth-group label { display: block; margin-bottom: 5px; font-weight: 700; color: var(--on-surface); font-size: 14px; }
+        .auth-input { width: 100%; min-height: 48px; border: 1px solid var(--outline-variant); border-radius: 10px; padding: 0 12px; background: var(--surface-lowest); color: var(--on-surface); }
+        .auth-error { min-height: 20px; color: var(--error); font-size: 13px; margin-top: 8px; }
+
+        .item-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 72;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+             background: rgba(49, 48, 48, .4);
+            backdrop-filter: blur(2px);
+        }
+        .item-modal.open { display: flex; }
+        .item-modal-panel {
+            width: min(100%, 1120px);
+            border-radius: 20px;
+            background: var(--surface-lowest);
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(340px, 560px);
+             box-shadow: 0 24px 80px rgba(44, 44, 44, .28);
+            position: relative;
+        }
+        .item-modal-close {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            width: 42px;
+            height: 42px;
+            border-radius: 999px;
+             border: 1px solid rgba(0,0,0,.08);
+             background: rgba(255,255,255,.82);
+            display: grid;
+            place-items: center;
+            z-index: 2;
+        }
+        .item-modal-image {
+            width: 100%;
+            height: 100%;
+            min-height: 430px;
+            object-fit: cover;
+            display: block;
+            background: var(--surface-container);
+        }
+        .item-modal-content { padding: 28px 30px; }
+        .item-modal-title { margin: 0 0 6px; font-family: 'Noto Serif', serif; font-size: clamp(34px, 3vw, 56px); line-height: 1.05; }
+        .item-modal-category { color: var(--terracotta); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; }
+        .item-modal-desc { margin: 18px 0 22px; color: var(--on-surface-variant); line-height: 1.65; font-size: 17px; }
+        .item-modal-foot { display: flex; align-items: center; justify-content: space-between; gap: 14px; border-top: 1px solid var(--outline-variant); padding-top: 18px; }
+        .item-modal-price { color: var(--on-surface); font-family: 'Noto Serif', serif; font-size: 44px; font-weight: 700; }
+        .item-modal-add { width: 100%; margin-top: 22px; min-height: 56px; border-radius: 12px; background: var(--terracotta); color: #fff; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+
+         .success-dialog {
+            position: fixed;
+            inset: 0;
+            z-index: 74;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+             background: rgba(49, 48, 48, .38);
+        }
+        .success-dialog.open { display: flex; }
+        .success-panel {
+            width: min(100%, 620px);
+            border-radius: 18px;
+            border: 1px solid var(--outline-variant);
+            background: var(--surface-lowest);
+            padding: 30px;
+            text-align: center;
+             box-shadow: 0 18px 56px rgba(44, 44, 44, .2);
+        }
+        .success-icon {
+            width: 88px;
+            height: 88px;
+            border-radius: 50%;
+            margin: 0 auto 16px;
+            display: grid;
+            place-items: center;
+            background: var(--surface-container);
+            color: var(--terracotta);
+        }
+        .success-panel h3 { margin: 0; font-family: 'Noto Serif', serif; font-size: 34px; }
+        .success-panel p { margin: 10px 0; color: var(--on-surface-variant); line-height: 1.6; }
+        .success-order { margin: 18px auto 0; border-radius: 10px; padding: 14px; background: var(--surface-low); max-width: 320px; }
+        .success-order b { color: var(--terracotta); font-family: 'Noto Serif', serif; font-size: 34px; }
+
+         .site-footer { border-top: 1px solid rgba(219, 193, 186, .68); background: var(--warm-beige); color: var(--on-surface-variant); }
+        .footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 82px; }
+
+        @@media (max-width: 1080px) {
+            .hero { grid-template-columns: 1fr; }
+            .feature-card { max-width: 560px; }
+            .menu-layout { grid-template-columns: 1fr; }
+            .menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        @@media (max-width: 760px) {
+            .page-shell { width: min(100% - 32px, 1180px); }
+            .site-nav { min-height: 72px; }
+            .brand-subtitle, .nav-links, .outline-link { display: none; }
+            .table-pill, .primary-link { min-height: 40px; padding: 0 13px; font-size: 13px; }
+            .hero { padding: 48px 0 36px; gap: 30px; }
+            .hero-title { font-size: clamp(38px, 12vw, 52px); }
+            .hero-copy { font-size: 16px; }
+            .toolbar { grid-template-columns: 1fr; }
+            .section-heading { display: block; }
+            .section-heading p { margin-top: 10px; }
+            .menu-grid { gap: 18px; }
+            .menu-title { font-size: 23px; min-height: auto; }
+            .menu-price-inline { font-size: 19px; }
+            .footer-inner { display: block; padding: 22px 0; }
+            .item-modal { padding: 0; align-items: end; }
+            .item-modal-panel {
+                width: 100%;
+                border-radius: 20px 20px 0 0;
+                grid-template-columns: 1fr;
+                max-height: 90dvh;
+                overflow: auto;
+            }
+            .item-modal-image { min-height: 260px; }
+            .table-actions { grid-template-columns: 1fr; }
+        }
+
+        @@media (max-width: 520px) {
+            .menu-grid { grid-template-columns: 1fr; }
+            .hero-actions { display: grid; }
+            .feature-title { font-size: 26px; }
+            .cart-panel { padding: 18px; }
+        }
+    </style>
+</head>
+<body>
+    <header class="site-header">
+        <nav class="site-nav page-shell" aria-label="Navigasi utama">
+            <a class="brand" href="/">
+                <span class="brand-mark" aria-hidden="true"><span class="material-symbols-outlined">restaurant</span></span>
+                <span class="brand-text">
+                    <span class="brand-name">Nusantara Heritage</span>
+                    <span class="brand-subtitle">Authentic Indonesian Fine Dining</span>
+                </span>
+            </a>
+            <div class="nav-links">
+                <a href="#menu">Menu</a>
+                <a href="#cara-pesan">Cara Pesan</a>
+                <button type="button" id="openCartButton" style="background:none;padding:0;color:inherit;font:inherit;">Keranjang</button>
+            </div>
+            <div class="nav-actions">
+                <button type="button" class="table-pill" id="openTableDialog">
+                    <span class="material-symbols-outlined">table_restaurant</span>
+                    Meja <span id="tableBadgeValue">@tableNumber</span>
+                </button>
+                <button type="button" class="cart-trigger" id="openCartIconButton" aria-label="Buka keranjang">
+                    <span class="material-symbols-outlined">shopping_cart</span>
+                    <span class="cart-trigger-badge" id="cartCountBadge">0</span>
+                </button>
+                @if (!string.IsNullOrWhiteSpace(dashboardUrl))
+                {
+                    <a class="outline-link" href="@dashboardUrl">Dashboard</a>
+                }
+                <button type="button" class="primary-link" id="openCartPrimaryButton">Pesan</button>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero page-shell" id="cara-pesan">
+            <div>
+                <p class="eyebrow">Nusantara Heritage</p>
+                <h1 class="hero-title">Menu utama dengan sentuhan warisan kuliner Nusantara.</h1>
+                <p class="hero-copy">Nikmati persembahan hidangan otentik yang merayakan rempah, teknik masak tradisional, dan presentasi modern. Pilih menu, atur jumlah, lalu kirim langsung dari meja Anda.</p>
+                <div class="hero-actions">
+                    <a class="hero-button primary" href="#menu">
+                        Lihat Menu
+                        <span class="material-symbols-outlined">arrow_downward</span>
+                    </a>
+                    <button type="button" class="hero-button secondary" id="heroTableButton">
+                        Ganti Nomor Meja
+                        <span class="material-symbols-outlined">edit</span>
+                    </button>
+                </div>
+            </div>
+            @if (featuredProduct != null)
+            {
+                var featuredImage = string.IsNullOrWhiteSpace(featuredProduct.ImageFileName)
+                    ? "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1000&q=80"
+                    : $"/products/{featuredProduct.ImageFileName}";
+                <aside class="feature-card" aria-label="Rekomendasi chef">
+                    <img class="feature-image" src="@featuredImage" alt="@featuredProduct.Name" />
+                    <div class="feature-body">
+                        <span class="feature-label">Chef's Recommendation</span>
+                        <h2 class="feature-title">@featuredProduct.Name</h2>
+                        <div class="feature-meta">
+                            <span>Rp @featuredProduct.Price.ToString("N0", culture)</span>
+                            <span class="material-symbols-outlined" aria-hidden="true">local_dining</span>
+                        </div>
+                    </div>
+                </aside>
+            }
+        </section>
+
+        <section class="menu-section page-shell" id="menu">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Menu Pilihan</p>
+                    <h2>Hidangan hari ini</h2>
+                </div>
+                <p>Gunakan pencarian dan kategori untuk menemukan menu favorit. Stok menu otomatis mengikuti data restoran.</p>
+            </div>
+
+            <div class="toolbar">
+                <div class="search-box">
+                    <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                    <input id="menuSearch" type="search" placeholder="Cari menu favoritmu..." autocomplete="off" />
+                </div>
+                <nav class="category-strip" aria-label="Kategori menu">
+                    <button type="button" class="category-chip active" data-category="">Semua</button>
+                    @foreach (var category in categories)
+                    {
+                        <button type="button" class="category-chip" data-category="@category">@category</button>
+                    }
+                </nav>
+            </div>
+
+            <div class="menu-layout">
+                <div class="menu-grid" aria-label="Daftar menu">
+                    @if (products.Count == 0)
+                    {
+                        <div class="empty-state">
+                            <h2>Menu belum tersedia</h2>
+                            <p>Silakan panggil staf restoran untuk bantuan pemesanan.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        for (var i = 0; i < products.Count; i++)
+                        {
+                            var product = products[i];
+                            var categoryLabel = string.IsNullOrWhiteSpace(product.Category) ? "Menu" : product.Category;
+                            var imageSrc = string.IsNullOrWhiteSpace(product.ImageFileName)
+                                ? "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80"
+                                : $"/products/{product.ImageFileName}";
+                            var detail = string.IsNullOrWhiteSpace(product.Category)
+                                ? "Hidangan pilihan dapur dengan cita rasa Nusantara modern."
+                                : $"Menu kategori {product.Category} dengan rasa yang diracik untuk pengalaman makan di tempat.";
+                            <article class="menu-card"
+                                     data-product-card
+                                     data-product-id="@product.Id"
+                                     data-category="@categoryLabel"
+                                     data-name="@product.Name.ToLowerInvariant()"
+                                     data-product-name="@product.Name"
+                                     data-product-category="@categoryLabel"
+                                     data-product-price="@product.Price.ToString(CultureInfo.InvariantCulture)"
+                                     data-product-image="@imageSrc"
+                                     data-product-detail="@detail">
+                                <div class="menu-image-wrap">
+                                    <button type="button" class="menu-open" data-open-item="@product.Id" aria-label="Lihat detail @product.Name"></button>
+                                    <img class="menu-image" src="@imageSrc" alt="@product.Name" loading="lazy" />
+                                    @if (i == 0)
+                                    {
+                                        <span class="chef-badge">Chef's Rec</span>
+                                    }
+                                    <button type="button"
+                                            class="fab-add"
+                                            data-cart-action="add"
+                                            data-product-id="@product.Id"
+                                            data-product-name="@product.Name"
+                                            data-product-price="@product.Price.ToString(CultureInfo.InvariantCulture)"
+                                            aria-label="Tambah @product.Name">
+                                        <span class="material-symbols-outlined">add</span>
+                                    </button>
+                                </div>
+                                <div class="menu-body">
+                                    <div class="menu-heading">
+                                        <button type="button" class="menu-title" data-open-item="@product.Id">@product.Name</button>
+                                        <span class="menu-price-inline">Rp @product.Price.ToString("N0", culture)</span>
+                                    </div>
+                                    <p class="menu-detail">@detail</p>
+                                    <div class="menu-meta">
+                                        <span class="menu-tag">@categoryLabel</span>
+                                    </div>
+                                    <button type="button"
+                                            class="add-button @(i == 0 ? "primary" : string.Empty)"
+                                            data-cart-action="add"
+                                            data-product-id="@product.Id"
+                                            data-product-name="@product.Name"
+                                            data-product-price="@product.Price.ToString(CultureInfo.InvariantCulture)">
+                                        <span class="material-symbols-outlined">add</span>
+                                        Tambah
+                                    </button>
+                                    <div class="quantity-control" aria-label="Jumlah @product.Name">
+                                        <button type="button" class="qty-button" data-cart-action="decrease" data-product-id="@product.Id" aria-label="Kurangi @product.Name">
+                                            <span class="material-symbols-outlined">remove</span>
+                                        </button>
+                                        <span class="qty-value" data-qty-for="@product.Id">0</span>
+                                        <button type="button" class="qty-button" data-cart-action="increase" data-product-id="@product.Id" aria-label="Tambah @product.Name">
+                                            <span class="material-symbols-outlined">add</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </article>
+                        }
+                        <div class="empty-state" id="filterEmptyState" style="display:none;">
+                            <h2>Menu tidak ditemukan</h2>
+                            <p>Coba kata kunci atau kategori lain.</p>
+                        </div>
+                    }
+                </div>
+
+                <div></div>
+            </div>
+        </section>
+    </main>
+
+    <div class="cart-backdrop" id="cartBackdrop"></div>
+    <aside class="cart-drawer" id="cartDrawer" aria-label="Keranjang pesanan">
+        <div class="cart-drawer-header">
+            <h3 class="cart-drawer-title">Keranjang</h3>
+            <button type="button" class="cart-drawer-close" id="closeCartDrawer" aria-label="Tutup keranjang">
+                <span class="material-symbols-outlined">close</span>
+            </button>
         </div>
-
-        <img src="https://res.cloudinary.com/dhmixzenl/image/upload/v1736954168/home_rk9gwy.png" alt="" class="home__img">
-    </div>
-</section>
-
-<section class="about section bd-container" id="about">
-    <div class="about__container bd-grid">
-        <div class="about__data">
-            <span class="section-subtitle about__initial">About us</span>
-            <h2 class="section-title about__initial">We cook the best <br> tasty food</h2>
-            <p class="about__description">We cook the best food in the entire city, with excellent customer service, the best meals and at the best price, visit us.</p>
-            <a href="#" class="button">Explore history</a>
-        </div>
-
-        <img src="https://res.cloudinary.com/dhmixzenl/image/upload/v1736944766/about_kchsty.jpg" alt="" class="about__img">
-    </div>
-</section>
-
-<section class="services section bd-container" id="services">
-    <span class="section-subtitle">Offering</span>
-    <h2 class="section-title">Our amazing services</h2>
-
-    <div class="services__container bd-grid">
-        <div class="services__content">
-            <svg class="services__img" xmlns="http://www.w3.org/2000/svg">
-                <path d="M45.3205 21.5702L44.6357 19.3163C43.7659 16.756 40.9852 15.3857 38.4249 16.2556C36.9847 16.7449 35.8536 17.876 35.3643 19.3163L34.6795 21.5702C34.1032 23.471 33.9823 25.4807 34.3264 27.4368C34.6403 29.0838 35.6859 30.4987 37.168 31.2822L36.4011 48.4267C36.2984 49.3836 36.6088 50.339 37.2544 51.0528C38.6428 52.5715 40.9996 52.6771 41.2887C42.6004 51.2136 42.6791 51.135 42.7541 51.0528C43.3853 50.3592 43.6952 49.4319 43.6075 48.4982L42.8363 31.28C44.3164 30.4962 45.3603 29.0822 45.6736 27.4368C46.0177 25.4807 45.8968 23.471 45.3205 21.5702ZM43.5723 27.0656C43.3413 28.2488 42.4981 29.2196 41.3589 29.6139C40.9265 29.7764 40.648 30.1988 40.6688 30.6603L41.4795 48.6667C41.5168 49.0199 41.4003 49.372 41.1595 49.6331C40.5172 50.269 39.4828 50.269 38.8405 49.6331C38.5877 49.351 38.4729 48.9712 38.5269 48.5963L39.3312 30.6603C39.352 30.1988 39.0735 29.7764 38.6411 29.6139C37.5019 29.2196 36.6587 28.2488 36.4277 27.0656C36.1424 25.4416 36.2429 23.7732 36.7211 22.1952L37.4059 19.9403C37.9357 18.5076 39.5267 17.7758 40.9595 18.3056C41.7169 18.5858 42.314 19.183 42.5941 19.9403L43.2789 22.1952C43.7565 23.7734 43.8571 25.4416 43.5723 27.0656Z" />
-                <path d="M28.8 16C28.2109 16 27.7333 16.4776 27.7333 17.0667V26.2251L24.8459 29.1125C24.6323 29.3253 24.5187 29.6188 24.5333 29.92L25.4667 48.5867C25.4889 48.9892 25.3428 49.3829 25.0635 49.6736C24.4796 50.2627 23.5287 50.2669 22.9395 49.6829C22.9363 49.6799 22.9332 49.6767 22.9301 49.6736C22.6507 49.3829 22.5047 48.9892 22.5269 48.5867L23.4667 29.92C23.4816 29.6189 23.3684 29.3256 23.1552 29.1125L20.2667 26.2251V17.0667C20.2667 16.4776 19.7891 16 19.2 16C18.6109 16 18.1333 16.4776 18.1333 17.0667V26.6667C18.1333 26.9496 18.2459 27.2208 18.4459 27.4208L21.3109 30.2869L20.4011 48.4832C20.3043 50.4708 21.8371 52.1607 23.8247 52.2575C25.8123 52.3543 27.5021 50.8215 27.5989 48.8339C27.6047 48.7171 27.6047 48.6001 27.5989 48.4833L26.6891 30.2871L29.5541 27.4209C29.7541 27.2209 29.8667 26.9497 29.8667 26.6668V17.0668C29.8667 16.4776 29.3891 16 28.8 16Z" />
-                <path d="M22.4 16C21.8109 16 21.3333 16.4776 21.3333 17.0667V25.6C21.3333 26.1891 21.8109 26.6667 22.4 26.6667C22.9891 26.6667 23.4667 26.1891 23.4667 25.6V17.0667C23.4667 16.4776 22.9891 16 22.4 16Z" />
-                <path d="M25.6 16C25.0109 16 24.5333 16.4776 24.5333 17.0667V25.6C24.5333 26.1891 25.0109 26.6667 25.6 26.6667C26.1891 26.6667 26.6667 26.1891 26.6667 25.6V17.0667C26.6667 16.4776 26.1891 16 25.6 16Z" />
-                <path d="M32 0C14.3269 0 0 14.3269 0 32C0 49.6731 14.3269 64 32 64C49.6731 64 64 49.6731 64 32C63.98 14.3352 49.6648 0.02 32 0ZM32 61.8667C15.5051 61.8667 2.13333 48.4949 2.13333 32C2.13333 15.5051 15.5051 2.13333 32 2.13333C48.4949 2.13333 61.8667 15.5051 61.8667 32C61.8479 48.4871 48.4871 61.8479 32 61.8667Z" />
-                <path d="M35.4625 52.0229C35.4053 51.4367 34.8836 51.0077 34.2972 51.0649C34.2835 51.0663 34.2697 51.0679 34.256 51.0697L34.2603 51.0687C32.7585 51.2431 31.2415 51.2431 29.7397 51.0687C29.1544 51 28.6244 51.4188 28.5557 52.0041C28.4871 52.5895 28.9059 53.1195 29.4912 53.1881C31.1567 53.3827 32.8391 53.3827 34.5045 53.1881C35.0908 53.1311 35.5197 52.6093 35.4625 52.0229Z" />
-                <path d="M48.32 18.2549C47.9414 17.8035 47.2686 17.7445 46.8173 18.1231C46.8158 18.1243 46.8144 18.1257 46.8128 18.1269C46.3625 18.5066 46.3052 19.1794 46.6848 19.6298C53.1161 27.2645 52.6241 38.5537 45.553 45.5999C45.1357 46.0158 45.1345 46.6914 45.5504 47.1087C45.9662 47.5261 46.6418 47.5273 47.0592 47.1114C54.9174 39.283 55.4654 26.7387 48.32 18.2549Z" />
-            </svg>
-            <h3 class="services__title">Excellent food</h3>
-            <p class="services__description">We offer our clients excellent quality services for many years, with the best and delicious food in the city.</p>
-        </div>
-
-        <div class="services__content">
-            <svg class="services__img" xmlns="http://www.w3.org/2000/svg">
-                <g clip-path="url(#clip0)">
-                    <path d="M55.82 22.0395C55.5475 21.5164 54.9027 21.3132 54.3795 21.5855L54.3794 21.5857L49.4885 24.1283H49.481L32.1524 33.1455L38.0258 14.5397C38.0258 14.5323 38.0343 14.5269 38.0364 14.5184L39.6917 9.24302C39.8672 8.68077 39.5542 8.08249 38.9922 7.90602C23.9044 3.04166 7.72977 11.3293 2.86527 26.4172C-1.99923 41.5051 6.28852 57.6796 21.3763 62.5441C21.4918 62.5813 21.6074 62.6178 21.7234 62.6535C24.5311 63.5434 27.4587 63.9975 30.4042 64.0002C42.9131 63.965 53.9649 55.8488 57.7422 43.9239C60.0541 36.6656 59.3619 28.7836 55.82 22.0395ZM29.3406 34.962C29.164 35.5247 29.4769 36.1241 30.0396 36.3008C30.3091 36.3854 30.601 36.3598 30.8517 36.2296L49.4682 26.5439C49.4682 26.5439 49.4682 26.5439 49.4682 26.5439L49.4682 26.5439ZM55.6993 43.2777C51.2801 57.2726 36.3525 65.0352 22.3577 60.616C15.642 58.4955 10.0427 53.7957 6.79003 47.5492C-0.00601205 34.5574 5.01667 18.5164 18.0083 11.7204C23.9533 8.61056 30.8553 7.86704 37.3263 9.6392L36.3097 12.8824C36.0897 12.8236 35.8675 12.7895 35.6465 12.7382C35.3261 12.6613 34.9983 12.5887 34.6726 12.5246C34.2743 12.4488 33.877 12.3879 33.4776 12.3335C33.1412 12.2865 32.8059 12.2406 32.4695 12.2096C32.0733 12.1722 31.6793 12.1541 31.2842 12.137C30.9457 12.1231 30.6082 12.1071 30.2707 12.1071C29.8724 12.1071 29.4762 12.1306 29.079 12.153C28.7458 12.1712 28.4148 12.1829 28.0837 12.216C27.6779 12.2555 27.2743 12.3228 26.8717 12.3826C26.5513 12.4307 26.2309 12.4702 25.917 12.5321C25.4984 12.6154 25.084 12.7254 24.6686 12.8311C24.3728 12.9069 24.0749 12.9699 23.7812 13.0575C23.338 13.1899 22.9013 13.3533 22.4634 13.5135C22.205 13.6075 21.9434 13.6854 21.6881 13.7901C21.1542 14.0037 20.6363 14.2557 20.1173 14.512C19.9667 14.5867 19.8108 14.6444 19.6613 14.7256C19.0408 15.0459 18.446 15.4037 17.864 15.7742C7.77422 22.2215 4.26621 35.2991 9.77477 45.9303C9.78332 45.9474 9.78972 45.9645 9.79827 45.9805C9.81963 46.0211 9.84632 46.0574 9.86661 46.0979C12.6976 51.506 17.5617 55.5673 23.3882 57.3877C23.4202 57.3983 23.4523 57.4037 23.4833 57.4133C24.1154 57.6098 24.7519 57.7732 25.3916 57.9141C25.6222 57.9654 25.854 58.0049 26.0857 58.0497C26.5395 58.1352 26.9945 58.2099 27.4505 58.2633C27.7046 58.2954 27.9577 58.3263 28.2119 58.3509C28.6871 58.3957 29.1623 58.4224 29.6375 58.4374C29.8511 58.4449 30.0646 58.4609 30.2697 58.462C30.3081 58.462 30.3466 58.462 30.385 58.462C30.9681 58.462 31.5501 58.4321 32.1299 58.3872C32.3061 58.3733 32.4813 58.3573 32.6564 58.3391C33.2843 58.2772 33.9101 58.196 34.5306 58.0818C34.6373 58.0626 34.7441 58.0359 34.8509 58.0145C35.4148 57.9077 35.9743 57.7668 36.5307 57.6119C36.677 57.5713 36.8233 57.534 36.9685 57.4902C37.5836 57.3065 38.1913 57.094 38.7936 56.858C38.9281 56.8046 39.0605 56.7512 39.194 56.6935C39.8241 56.4319 40.4488 56.1521 41.0607 55.8392C46.5215 53.0152 50.6262 48.1245 52.4604 42.2568C52.4924 42.1564 52.5106 42.0539 52.5405 41.9535C52.7274 41.3352 52.8961 40.7158 53.0296 40.0911C53.0819 39.8455 53.1107 39.5988 53.1545 39.3521C53.2421 38.8673 53.3318 38.3835 53.3884 37.8966C53.4204 37.6189 53.429 37.3413 53.4514 37.0626C53.4866 36.6066 53.5251 36.1516 53.5336 35.6967C53.54 35.402 53.524 35.1083 53.5187 34.8136C53.5101 34.3768 53.5027 33.9401 53.4685 33.5044C53.445 33.1979 53.4023 32.8935 53.367 32.5881C53.3168 32.1684 53.2666 31.7509 53.1951 31.3344C53.1396 31.014 53.068 30.7044 52.9997 30.3893C52.9121 29.991 52.8224 29.5938 52.7146 29.1986C52.6249 28.8783 52.5213 28.5515 52.4177 28.229C52.297 27.8552 52.1721 27.4815 52.0322 27.1141C51.9051 26.7788 51.7652 26.4467 51.6221 26.1156C51.5399 25.9266 51.4758 25.7333 51.3882 25.5454L54.4007 23.9777C57.2654 30.0137 57.7296 36.9125 55.6993 43.2777Z" />
-                </g>
-                <defs>
-                    <clipPath id="clip0">
-                        <rect width="64" height="64" fill="white" />
-                    </clipPath>
-                </defs>
-            </svg>
-            <h3 class="services__title">Fast food</h3>
-            <p class="services__description">We offer our clients excellent quality services for many years, with the best and delicious food in the city.</p>
-        </div>
-
-        <div class="services__content">
-            <svg class="services__img" xmlns="http://www.w3.org/2000/svg">
-                <g clip-path="url(#clip0)">
-                    <path d="M19.1978 49.6016C17.4308 49.6016 15.9981 51.0342 15.9981 52.8012C15.9981 54.5682 17.4308 56.0008 19.1978 56.0008C20.9648 56.0008 22.3974 54.5682 22.3974 52.8012C22.3974 51.0342 20.9648 49.6016 19.1978 49.6016ZM19.1978 53.8677C18.6088 53.8677 18.1312 53.3902 18.1312 52.8012C18.1312 52.2122 18.6088 51.7347 19.1978 51.7347C19.7868 51.7347 20.2643 52.2122 20.2643 52.8012C20.2643 53.3902 19.7868 53.8677 19.1978 53.8677Z" />
-                    <path d="M50.1275 49.6016C48.3605 49.6016 46.9279 51.0342 46.9279 52.8012C46.9279 54.5682 48.3605 56.0008 50.1275 56.0008C51.8945 56.0008 53.3271 54.5682 53.3271 52.8012C53.3271 51.0342 51.8945 49.6016 50.1275 49.6016ZM50.1275 53.8677C49.5385 53.8677 49.0609 53.3902 49.0609 52.8012C49.0609 52.2122 49.5385 51.7347 50.1275 51.7347C50.7165 51.7347 51.194 52.2122 51.194 52.8012C51.194 53.3902 50.7165 53.8677 50.1275 53.8677Z" />
-                    <path d="M3.19962 21.8715H5.3327V24.0045H3.19962V21.8715Z" />
-                    <path d="M0 26.1377H2.13308V28.2708H0V26.1377Z" />
-                    <path d="M52.2606 11.2061H58.6598V13.3391H52.2606V11.2061Z" />
-                    <path d="M47.9944 11.2061H50.1275V13.3391H47.9944V11.2061Z" />
-                    <path d="M34.1294 4.80676H44.7948V6.93985H34.1294V4.80676Z" />
-                    <path d="M29.8632 4.80676H31.9963V6.93985H29.8632V4.80676Z" />
-                    <path d="M63.9925 59.2005V57.0674H54.8842C55.7935 56.0607 56.3575 54.7906 56.495 53.4412L63.4593 49.461C63.5087 49.4266 63.5556 49.3886 63.5988 49.3469C63.6363 49.3214 63.6723 49.2928 63.7056 49.2626C63.7858 49.1777 63.8514 49.0798 63.8998 48.9735C63.905 48.9636 63.9123 48.9574 63.917 48.948C63.9655 48.8272 63.9915 48.6986 63.9936 48.5684C63.9936 48.5564 63.9998 48.547 63.9998 48.535V38.9362C63.9951 38.9049 63.9889 38.8742 63.9806 38.8435C63.9821 38.8159 63.9821 38.7877 63.9806 38.7601L61.8475 25.9616C61.8428 25.946 61.8371 25.9299 61.8308 25.9148C61.8308 25.9033 61.8308 25.8903 61.8308 25.8788L60.7643 21.6127C60.645 21.1367 60.2169 20.8034 59.7264 20.8049H46.7893C46.6446 20.2852 46.3696 19.8103 45.9905 19.4259L38.708 12.1435C38.1096 11.5414 37.2951 11.204 36.4457 11.2061H10.6654C10.0764 11.2061 9.59888 11.6836 9.59888 12.2726V16.5388H0V18.6719H9.59888V21.8715H7.4658V24.0046H9.59888V26.1377H4.26617V28.2707H9.59888V37.8696C9.00989 37.8696 8.53234 38.3472 8.53234 38.9362V48.535C8.53234 48.5574 8.54432 48.5767 8.54536 48.6001C8.55161 48.6965 8.57088 48.7918 8.60264 48.8829C8.61254 48.9168 8.62451 48.9501 8.63805 48.9829C8.68805 49.0949 8.75679 49.1969 8.84168 49.285L12.8178 53.2611C12.9198 54.6749 13.4911 56.0149 14.441 57.0674H0V59.2005H63.9925ZM44.1016 50.6681H25.2236C25.0929 50.2984 24.9278 49.9411 24.731 49.6016H44.5943C44.3974 49.9411 44.2323 50.2984 44.1016 50.6681ZM25.597 52.8012H43.7282C43.7288 54.3776 44.3141 55.8977 45.3708 57.0674H23.9545C25.0111 55.8977 25.5965 54.3776 25.597 52.8012ZM45.8613 52.8012C45.8613 50.4452 47.7715 48.535 50.1275 48.535C52.4835 48.535 54.3937 50.4452 54.3937 52.8012C54.3937 55.1572 52.4835 57.0674 50.1275 57.0674C47.7715 57.0674 45.8613 55.1572 45.8613 52.8012ZM56.2898 51.0946C56.145 50.5723 55.9336 50.0703 55.6607 49.6016H58.9093L56.2898 51.0946ZM61.6662 37.8696H51.194V27.2042H59.8894L61.6662 37.8696ZM59.4269 25.0711H50.1275C49.5385 25.0711 49.0609 25.5487 49.0609 26.1377V38.9362C49.0609 39.5252 49.5385 40.0027 50.1275 40.0027H61.8595V42.1358H58.6598V44.2689H61.8595V47.4685H53.6578C51.519 46.0463 48.736 46.0463 46.5972 47.4685H22.7281C20.5893 46.0463 17.8063 46.0463 15.6674 47.4685H10.6654V43.2023H14.9316V41.0692H10.6654V40.0027H45.8613C46.4503 40.0027 46.9279 39.5252 46.9279 38.9362V22.938H58.8937L59.4269 25.0711ZM11.732 28.2707H20.2643V26.1377H11.732V24.0046H21.3308V21.8715H11.732V18.6719H17.0647V16.5388H11.732V13.3391H36.4457C36.7285 13.3402 36.9993 13.4527 37.1998 13.6516L44.4823 20.9341C44.6828 21.1341 44.7948 21.4059 44.7948 21.6892V37.8696H11.732V28.2707ZM13.6646 49.6016C13.4766 49.9255 13.3177 50.2661 13.1901 50.6181L12.1736 49.6016H13.6646ZM14.9316 52.8012C14.9316 50.4452 16.8418 48.535 19.1978 48.535C21.5537 48.535 23.4639 50.4452 23.4639 52.8012C23.4639 55.1572 21.5537 57.0674 19.1978 57.0674C16.8418 57.0674 14.9316 55.1572 14.9316 52.8012Z" />
-                </g>
-                <defs>
-                    <clipPath id="clip0">
-                        <rect width="64" height="64" fill="white" />
-                    </clipPath>
-                </defs>
-            </svg>
-            <h3 class="services__title">Delivery</h3>
-            <p class="services__description">We offer our clients excellent quality services for many years, with the best and delicious food in the city.</p>
-        </div>
-    </div>
-</section>
-
-<section class="menu section bd-container" id="menu">
-    <span class="section-subtitle">Special</span>
-    <h2 class="section-title">Menu of the week</h2>
-
-    <div class="menu__container bd-grid">
-       @foreach (var product in Model)
-        {
-            <div class="menu__content">
-                <img src="/products/@product.ImageFileName" alt="@product.Name" class="menu__img">
-                <h3 class="menu__name">@product.Name</h3>
-                <span class="menu__detail">@product.Category</span>
-                <span class="menu__preci">Rp. @product.Price.ToString("C0", new System.Globalization.CultureInfo("id-ID"))</span>
-                <button type="button"
-                        class="button menu__button js-add-to-cart"
-                        data-product-id="@product.Id"
-                        data-product-name="@product.Name"
-                        data-product-price="@product.Price.ToString(System.Globalization.CultureInfo.InvariantCulture)"
-                        aria-label="Tambah @product.Name ke pesanan">
-                    <i class='bx bx-cart-alt'></i>
+        <div class="cart-drawer-body">
+            <p class="cart-note">Pesanan akan dikirim untuk Meja <strong id="cartTableNumber">@tableNumber</strong>.</p>
+            <div id="cartItems"></div>
+            <div class="checkout-card">
+                <h4>Catatan Pesanan</h4>
+                <textarea class="checkout-note" id="orderNote" placeholder="Contoh: Tolong pisahkan sambal, tidak pakai daun bawang..."></textarea>
+            </div>
+            <div class="checkout-card">
+                <h4>Metode Pembayaran</h4>
+                <button type="button" class="payment-option active">
+                    <span class="material-symbols-outlined">point_of_sale</span>
+                    Bayar di Kasir
+                </button>
+                <button type="button" class="payment-option" disabled>
+                    <span class="material-symbols-outlined">qr_code_scanner</span>
+                    QRIS (segera hadir)
                 </button>
             </div>
-        }
+            <div class="cart-total">
+                <span>Total</span>
+                <strong id="cartTotal">Rp 0</strong>
+            </div>
+            <button type="button" class="submit-button" id="submitOrderBtn" disabled>Kirim Pesanan</button>
+            <button type="button" class="secondary-button" id="clearCartBtn">Kosongkan Keranjang</button>
+            <div id="orderFeedback" class="feedback"></div>
+        </div>
+    </aside>
+
+    <div class="table-dialog" id="tableDialog" role="dialog" aria-modal="true" aria-labelledby="tableDialogTitle">
+        <div class="table-panel">
+            <h2 id="tableDialogTitle">Nomor meja</h2>
+            <p>Pilih meja yang tersedia, lalu lanjut sebagai pemesan umum atau member.</p>
+            <select class="table-select" id="tableSelect" aria-label="Pilih meja">
+                <option value="">-- Pilih meja --</option>
+                @foreach (var table in activeTables)
+                {
+                    <option value="@table.Number" data-token="@table.QrCodeToken">Meja @table.Number (Kapasitas @table.Capacity)</option>
+                }
+            </select>
+            <div class="table-actions">
+                <button type="button" class="table-action-button guest" id="continueGuestButton">Lanjut sebagai Umum</button>
+                <button type="button" class="table-action-button member" id="continueMemberButton">Lanjut sebagai Member</button>
+            </div>
+            <button type="button" class="secondary-button" id="closeTableDialog">Tutup</button>
+            <div id="tableFeedback" class="feedback"></div>
+        </div>
     </div>
 
-    <div class="container mt-5">
-        <div class="card shadow-sm border-0">
-            <div class="card-body p-4">
-                <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-3">
-                    <div>
-                        <h3 class="h5 mb-1">Pesanan Meja</h3>
-                        <p class="text-muted mb-0">Tambahkan menu ke keranjang lalu kirim pesanan ke restoran.</p>
+    <div class="auth-dialog" id="authDialog" role="dialog" aria-modal="true" aria-labelledby="authDialogTitle">
+        <div class="auth-panel">
+            <h3 id="authDialogTitle">Login Member</h3>
+            <p>Masuk sebagai member untuk melanjutkan pemesanan meja.</p>
+            <div class="auth-tabs">
+                <button type="button" class="auth-tab active" id="authLoginTab">Login</button>
+                <button type="button" class="auth-tab" id="authRegisterTab">Register</button>
+            </div>
+
+            <div id="loginForm">
+                <div class="auth-group">
+                    <label for="authLoginUsername">Username</label>
+                    <input class="auth-input" id="authLoginUsername" type="text" autocomplete="username" />
+                </div>
+                <div class="auth-group">
+                    <label for="authLoginPassword">Password</label>
+                    <input class="auth-input" id="authLoginPassword" type="password" autocomplete="current-password" />
+                </div>
+            </div>
+
+            <div id="registerForm" style="display:none;">
+                <div class="auth-group">
+                    <label for="authRegName">Nama Lengkap</label>
+                    <input class="auth-input" id="authRegName" type="text" autocomplete="name" />
+                </div>
+                <div class="auth-group">
+                    <label for="authRegUsername">Username</label>
+                    <input class="auth-input" id="authRegUsername" type="text" autocomplete="username" />
+                </div>
+                <div class="auth-group">
+                    <label for="authRegPassword">Password</label>
+                    <input class="auth-input" id="authRegPassword" type="password" autocomplete="new-password" />
+                </div>
+            </div>
+
+            <button type="button" class="submit-button" id="authSubmitButton">Lanjut</button>
+            <button type="button" class="secondary-button" id="closeAuthDialog">Lewati dulu</button>
+            <div class="auth-error" id="authError"></div>
+        </div>
+    </div>
+
+    <div class="item-modal" id="itemModal" role="dialog" aria-modal="true" aria-labelledby="itemModalTitle">
+        <div class="item-modal-panel">
+            <button type="button" class="item-modal-close" id="closeItemModal" aria-label="Tutup detail menu">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+            <img class="item-modal-image" id="itemModalImage" src="" alt="Detail menu" />
+            <div class="item-modal-content">
+                <h2 class="item-modal-title" id="itemModalTitle">Menu</h2>
+                <div class="item-modal-category" id="itemModalCategory">Kategori</div>
+                <p class="item-modal-desc" id="itemModalDescription"></p>
+                <div class="item-modal-foot">
+                    <span class="item-modal-price" id="itemModalPrice">Rp 0</span>
+                    <div class="quantity-control active">
+                        <button type="button" class="qty-button" id="itemModalDecrease" aria-label="Kurangi jumlah detail"><span class="material-symbols-outlined">remove</span></button>
+                        <span class="qty-value" id="itemModalQty">1</span>
+                        <button type="button" class="qty-button" id="itemModalIncrease" aria-label="Tambah jumlah detail"><span class="material-symbols-outlined">add</span></button>
                     </div>
-                    <button type="button" id="submitOrderBtn" class="btn btn-primary px-4" disabled>Kirim Pesanan</button>
                 </div>
-
-                <div id="orderCartEmpty" class="text-muted">Belum ada menu di pesanan.</div>
-                <div id="orderCartItems" class="list-group list-group-flush"></div>
-
-                <div class="d-flex justify-content-between align-items-center border-top pt-3 mt-3">
-                    <span class="fw-semibold">Total</span>
-                    <span id="orderCartTotal" class="fw-bold">Rp0</span>
-                </div>
-
-                <div id="orderFeedback" class="small mt-3"></div>
+                <button type="button" class="item-modal-add" id="itemModalAdd">
+                    <span class="material-symbols-outlined">shopping_cart</span>
+                    Tambah ke Keranjang
+                </button>
             </div>
         </div>
     </div>
-</section>
 
-<section class="app section bd-container">
-    <div class="app__container bd-grid">
-        <div class="app__data">
-            <span class="section-subtitle app__initial">App</span>
-            <h2 class="section-title app__initial">App is available</h2>
-            <p class="app__description">Find our application and download it, you can make reservations, food orders, see your deliveries on the way and much more.</p>
-            <div class="app__stores">
-                <a href="#"><img src="https://res.cloudinary.com/dhmixzenl/image/upload/v1736954193/app1_gwo8ve.png" alt="" class="app__store"></a>
-                <a href="#"><img src="https://res.cloudinary.com/dhmixzenl/image/upload/v1736954183/app2_bdmo6d.png" alt="" class="app__store"></a>
+    <div class="success-dialog" id="successDialog" role="dialog" aria-modal="true" aria-labelledby="successTitle">
+        <div class="success-panel">
+            <div class="success-icon"><span class="material-symbols-outlined" style="font-size:48px;font-variation-settings:'FILL' 1;">check_circle</span></div>
+            <h3 id="successTitle">Terima kasih!</h3>
+            <p>Pesanan Anda sudah diteruskan ke dapur. Silakan tunggu hidangan disajikan ke meja Anda.</p>
+            <div class="success-order">
+                <div>Nomor Pesanan</div>
+                <b id="successOrderNumber">-</b>
             </div>
-        </div>
-
-        <img src="https://res.cloudinary.com/dhmixzenl/image/upload/v1736954157/movil-app_yhwfqw.png" alt="" class="app__img">
-    </div>
-</section>
-
-<section class="contact section bd-container" id="contact">
-    <div class="contact__container bd-grid">
-        <div class="contact__data">
-            <span class="section-subtitle contact__initial">Let's talk</span>
-            <h2 class="section-title contact__initial">Contact us</h2>
-            <p class="contact__description">If you want to reserve a table in our restaurant, contact us and we will attend you quickly, with our 24/7 chat service.</p>
-        </div>
-
-        <div class="contact__button">
-            <a href="#" class="button">Contact us now</a>
+            <button type="button" class="submit-button" id="successCloseBtn">Kembali ke Menu</button>
         </div>
     </div>
-</section>
+
+    <footer class="site-footer">
+        <div class="footer-inner page-shell">
+            <span>Nusantara Resto</span>
+            <span>Pesan dari meja, diproses langsung oleh dapur.</span>
+        </div>
+    </footer>
+
+    <script>
+        (function () {
+            'use strict';
+
+            const COOKIE_TABLE = 'nr_tableNumber';
+            const COOKIE_TABLE_TOKEN = 'nr_tableToken';
+            const COOKIE_MEMBER = 'nr_membershipStatus';
+            const CART_STORAGE_KEY = 'nr_orderCart';
+
+            const tableBadgeValue = document.getElementById('tableBadgeValue');
+            const cartTableNumber = document.getElementById('cartTableNumber');
+            const tableDialog = document.getElementById('tableDialog');
+            const tableSelect = document.getElementById('tableSelect');
+            const tableFeedback = document.getElementById('tableFeedback');
+            const continueGuestButton = document.getElementById('continueGuestButton');
+            const continueMemberButton = document.getElementById('continueMemberButton');
+            const openCartButtons = [
+                document.getElementById('openCartButton'),
+                document.getElementById('openCartIconButton'),
+                document.getElementById('openCartPrimaryButton')
+            ].filter(Boolean);
+            const cartCountBadge = document.getElementById('cartCountBadge');
+            const cartBackdrop = document.getElementById('cartBackdrop');
+            const cartDrawer = document.getElementById('cartDrawer');
+            const closeCartDrawer = document.getElementById('closeCartDrawer');
+            const searchInput = document.getElementById('menuSearch');
+            const filterEmptyState = document.getElementById('filterEmptyState');
+            const cartItems = document.getElementById('cartItems');
+            const cartTotal = document.getElementById('cartTotal');
+            const submitOrderBtn = document.getElementById('submitOrderBtn');
+            const clearCartBtn = document.getElementById('clearCartBtn');
+            const orderFeedback = document.getElementById('orderFeedback');
+            const itemModal = document.getElementById('itemModal');
+            const itemModalImage = document.getElementById('itemModalImage');
+            const itemModalTitle = document.getElementById('itemModalTitle');
+            const itemModalCategory = document.getElementById('itemModalCategory');
+            const itemModalDescription = document.getElementById('itemModalDescription');
+            const itemModalPrice = document.getElementById('itemModalPrice');
+            const itemModalQty = document.getElementById('itemModalQty');
+            const itemModalAdd = document.getElementById('itemModalAdd');
+            const successDialog = document.getElementById('successDialog');
+            const successOrderNumber = document.getElementById('successOrderNumber');
+            const authDialog = document.getElementById('authDialog');
+            const authLoginTab = document.getElementById('authLoginTab');
+            const authRegisterTab = document.getElementById('authRegisterTab');
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const authSubmitButton = document.getElementById('authSubmitButton');
+            const closeAuthDialog = document.getElementById('closeAuthDialog');
+            const authError = document.getElementById('authError');
+            const authLoginUsername = document.getElementById('authLoginUsername');
+            const authLoginPassword = document.getElementById('authLoginPassword');
+            const authRegName = document.getElementById('authRegName');
+            const authRegUsername = document.getElementById('authRegUsername');
+            const authRegPassword = document.getElementById('authRegPassword');
+            const activeTableOptions = Array.from(tableSelect ? tableSelect.options : []).map(option => ({
+                number: option.value,
+                token: option.getAttribute('data-token') || ''
+            })).filter(option => option.number);
+            const isAuthenticated = @isAuthenticated.ToString().ToLowerInvariant();
+            const isCustomer = @isCustomer.ToString().ToLowerInvariant();
+            let activeCategory = '';
+            let cart = loadCart();
+            let modalItem = null;
+            let modalItemQty = 1;
+            let authMode = 'login';
+
+            function openCartDrawer() {
+                cartDrawer.classList.add('open');
+                cartBackdrop.classList.add('open');
+                document.body.classList.add('no-scroll');
+            }
+
+            function closeCartPanel() {
+                cartDrawer.classList.remove('open');
+                cartBackdrop.classList.remove('open');
+                document.body.classList.remove('no-scroll');
+            }
+
+            function setCookie(name, value, days) {
+                const d = new Date();
+                d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+                document.cookie = name + '=' + encodeURIComponent(value) + ';expires=' + d.toUTCString() + ';path=/;SameSite=Lax';
+            }
+
+            function getCookie(name) {
+                const nameEq = name + '=';
+                const parts = document.cookie.split(';');
+                for (let i = 0; i < parts.length; i++) {
+                    const part = parts[i].trim();
+                    if (part.indexOf(nameEq) === 0) return decodeURIComponent(part.substring(nameEq.length));
+                }
+                return null;
+            }
+
+            function loadCart() {
+                try {
+                    const parsed = JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || '[]');
+                    return Array.isArray(parsed) ? parsed : [];
+                } catch {
+                    return [];
+                }
+            }
+
+            function saveCart() {
+                localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+            }
+
+            function formatCurrency(value) {
+                return 'Rp ' + new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(Number(value) || 0);
+            }
+
+            function escapeHtml(value) {
+                return String(value || '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+
+            function normalizeTableNumber(value) {
+                if (!value) return '--';
+                return String(value).padStart(2, '0');
+            }
+
+            function setTableUi(value) {
+                const normalized = normalizeTableNumber(value);
+                tableBadgeValue.textContent = normalized;
+                cartTableNumber.textContent = normalized;
+            }
+
+            function getSelectedTableOption() {
+                const selected = tableSelect && tableSelect.selectedOptions ? tableSelect.selectedOptions[0] : null;
+                if (!selected || !selected.value) return null;
+                return {
+                    number: selected.value,
+                    token: selected.getAttribute('data-token') || ''
+                };
+            }
+
+            function isTableActive(number) {
+                return activeTableOptions.some(option => String(option.number) === String(number));
+            }
+
+            function setTableCookies(tableNumber, tableToken) {
+                setCookie(COOKIE_TABLE, String(tableNumber), 365);
+                if (tableToken) {
+                    setCookie(COOKIE_TABLE_TOKEN, tableToken, 365);
+                }
+            }
+
+            async function postJson(url, payload) {
+                const token = document.querySelector('meta[name="request-verification-token"]')?.getAttribute('content') || '';
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                return await res.json();
+            }
+
+            function findCartItem(productId) {
+                return cart.find(item => Number(item.productId) === Number(productId));
+            }
+
+            function addToCart(productId, name, price, qty) {
+                const quantity = Math.max(1, Number(qty) || 1);
+                const existing = findCartItem(productId);
+                if (existing) {
+                    existing.qty += quantity;
+                } else {
+                    cart.push({
+                        productId: Number(productId),
+                        name: name || 'Menu',
+                        price: Number(price || 0),
+                        qty: quantity
+                    });
+                }
+            }
+
+            function updateItem(productId, delta, sourceButton) {
+                const existing = findCartItem(productId);
+                if (existing) {
+                    existing.qty += delta;
+                } else if (delta > 0 && sourceButton) {
+                    addToCart(
+                        Number(productId),
+                        sourceButton.dataset.productName || 'Menu',
+                        Number(sourceButton.dataset.productPrice || 0),
+                        1
+                    );
+                }
+
+                cart = cart.filter(item => Number(item.qty) > 0);
+                saveCart();
+                renderCart();
+                setFeedback('', '');
+            }
+
+            function setFeedback(message, type) {
+                orderFeedback.textContent = message || '';
+                orderFeedback.className = 'feedback' + (type ? ' ' + type : '');
+            }
+
+            function renderCart() {
+                const totalQty = cart.reduce((sum, item) => sum + Number(item.qty || 0), 0);
+                const total = cart.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.qty || 0)), 0);
+
+                document.querySelectorAll('[data-product-card]').forEach(card => {
+                    const productId = Number(card.dataset.productId);
+                    const item = findCartItem(productId);
+                    card.classList.toggle('is-in-cart', !!item);
+                    const qty = card.querySelector('[data-qty-for="' + productId + '"]');
+                    if (qty) qty.textContent = item ? item.qty : '0';
+                });
+
+                cartTotal.textContent = formatCurrency(total);
+                if (cartCountBadge) {
+                    cartCountBadge.textContent = String(totalQty);
+                    cartCountBadge.classList.toggle('visible', totalQty > 0);
+                }
+                submitOrderBtn.disabled = totalQty === 0;
+
+                if (cart.length === 0) {
+                    cartItems.innerHTML = '<div class="cart-empty">Belum ada menu di keranjang.</div>';
+                    return;
+                }
+
+                cartItems.innerHTML = cart.map(item => [
+                    '<div class="cart-item">',
+                    '<div class="cart-item-main">',
+                    '<p class="cart-item-title">' + escapeHtml(item.name) + '</p>',
+                    '<div class="cart-item-price">' + escapeHtml(String(item.qty)) + ' x ' + formatCurrency(item.price) + '</div>',
+                    '<div class="qty-pill">Qty: ' + escapeHtml(String(item.qty)) + '</div>',
+                    '</div>',
+                    '<div class="quantity-control active">',
+                    '<button type="button" class="qty-button" data-cart-action="decrease" data-product-id="' + item.productId + '"><span class="material-symbols-outlined">remove</span></button>',
+                    '<span class="qty-value">' + item.qty + '</span>',
+                    '<button type="button" class="qty-button" data-cart-action="increase" data-product-id="' + item.productId + '"><span class="material-symbols-outlined">add</span></button>',
+                    '</div>',
+                    '</div>'
+                ].join('')).join('');
+            }
+
+            function applyFilter() {
+                const query = (searchInput.value || '').trim().toLowerCase();
+                let visibleCount = 0;
+                document.querySelectorAll('[data-product-card]').forEach(card => {
+                    const matchesCategory = !activeCategory || String(card.dataset.category || '').toLowerCase() === activeCategory.toLowerCase();
+                    const matchesQuery = !query || String(card.dataset.name || '').includes(query);
+                    const visible = matchesCategory && matchesQuery;
+                    card.style.display = visible ? '' : 'none';
+                    if (visible) visibleCount += 1;
+                });
+                if (filterEmptyState) filterEmptyState.style.display = visibleCount === 0 ? '' : 'none';
+            }
+
+            function openTableDialog() {
+                tableFeedback.textContent = '';
+                tableFeedback.className = 'feedback';
+                const currentTable = getCookie(COOKIE_TABLE) || '';
+                if (tableSelect) {
+                    tableSelect.value = isTableActive(currentTable) ? String(currentTable) : '';
+                }
+                tableDialog.classList.add('open');
+                if (tableSelect) tableSelect.focus();
+            }
+
+            function closeAuthModal() {
+                authDialog.classList.remove('open');
+                authError.textContent = '';
+            }
+
+            function openAuthModal() {
+                authError.textContent = '';
+                authDialog.classList.add('open');
+                if (authMode === 'login') {
+                    authLoginUsername.focus();
+                } else {
+                    authRegName.focus();
+                }
+            }
+
+            function setAuthMode(mode) {
+                authMode = mode === 'register' ? 'register' : 'login';
+                authLoginTab.classList.toggle('active', authMode === 'login');
+                authRegisterTab.classList.toggle('active', authMode === 'register');
+                loginForm.style.display = authMode === 'login' ? '' : 'none';
+                registerForm.style.display = authMode === 'register' ? '' : 'none';
+                authError.textContent = '';
+            }
+
+            function setModalQty(value) {
+                modalItemQty = Math.max(1, Number(value) || 1);
+                itemModalQty.textContent = String(modalItemQty);
+            }
+
+            function openItemModal(productId) {
+                const card = document.querySelector('[data-product-card][data-product-id="' + Number(productId) + '"]');
+                if (!card) return;
+
+                modalItem = {
+                    productId: Number(card.dataset.productId),
+                    name: card.dataset.productName || 'Menu',
+                    category: card.dataset.productCategory || 'Menu',
+                    detail: card.dataset.productDetail || '',
+                    image: card.dataset.productImage || '',
+                    price: Number(card.dataset.productPrice || 0)
+                };
+
+                itemModalImage.src = modalItem.image;
+                itemModalImage.alt = modalItem.name;
+                itemModalTitle.textContent = modalItem.name;
+                itemModalCategory.textContent = String(modalItem.category).toUpperCase();
+                itemModalDescription.textContent = modalItem.detail;
+                itemModalPrice.textContent = formatCurrency(modalItem.price);
+                setModalQty(1);
+                itemModal.classList.add('open');
+            }
+
+            function closeItemModal() {
+                itemModal.classList.remove('open');
+            }
+
+            async function postOrder() {
+                const tableNumber = getCookie(COOKIE_TABLE);
+                const tableToken = getCookie(COOKIE_TABLE_TOKEN) || document.querySelector('meta[name="table-token"]')?.getAttribute('content') || null;
+                const membershipStatus = getCookie(COOKIE_MEMBER) || 'Guest';
+
+                if (!tableNumber) {
+                    setFeedback('Nomor meja belum dipilih.', 'error');
+                    openTableDialog();
+                    return;
+                }
+
+                if (cart.length === 0) {
+                    setFeedback('Keranjang masih kosong.', 'error');
+                    return;
+                }
+
+                submitOrderBtn.disabled = true;
+                setFeedback('Mengirim pesanan...', 'success');
+
+                try {
+                    const data = await postJson('/CustomerOrder/Submit', {
+                        tableNumber: Number(tableNumber),
+                        tableToken: tableToken || null,
+                        membershipStatus: membershipStatus,
+                        items: cart.map(item => ({ productId: Number(item.productId), qty: Number(item.qty) }))
+                    });
+                    if (!data || !data.success) {
+                        setFeedback((data && data.error) || 'Pesanan gagal dikirim.', 'error');
+                        renderCart();
+                        return;
+                    }
+
+                    cart = [];
+                    saveCart();
+                    renderCart();
+                    setFeedback('Pesanan berhasil dikirim. Nomor order: ' + data.orderNumber + '.', 'success');
+                    successOrderNumber.textContent = data.orderNumber || '-';
+                    successDialog.classList.add('open');
+                } catch {
+                    setFeedback('Terjadi error saat mengirim pesanan.', 'error');
+                } finally {
+                    renderCart();
+                }
+            }
+
+            document.addEventListener('click', event => {
+                const openButton = event.target.closest('[data-open-item]');
+                if (openButton) {
+                    openItemModal(openButton.getAttribute('data-open-item'));
+                    return;
+                }
+
+                const actionButton = event.target.closest('[data-cart-action]');
+                if (actionButton) {
+                    const action = actionButton.dataset.cartAction;
+                    const delta = action === 'decrease' ? -1 : 1;
+                    updateItem(actionButton.dataset.productId, delta, actionButton);
+                    return;
+                }
+
+                const chip = event.target.closest('.category-chip');
+                if (chip) {
+                    document.querySelectorAll('.category-chip').forEach(item => item.classList.remove('active'));
+                    chip.classList.add('active');
+                    activeCategory = chip.dataset.category || '';
+                    applyFilter();
+                }
+            });
+
+            document.getElementById('openTableDialog').addEventListener('click', openTableDialog);
+            document.getElementById('heroTableButton').addEventListener('click', openTableDialog);
+            document.getElementById('closeTableDialog').addEventListener('click', () => tableDialog.classList.remove('open'));
+            openCartButtons.forEach(button => {
+                button.addEventListener('click', openCartDrawer);
+            });
+            closeCartDrawer.addEventListener('click', closeCartPanel);
+            cartBackdrop.addEventListener('click', closeCartPanel);
+            continueGuestButton.addEventListener('click', () => {
+                const selected = getSelectedTableOption();
+                if (!selected) {
+                    tableFeedback.textContent = 'Silakan pilih meja yang tersedia.';
+                    tableFeedback.className = 'feedback error';
+                    if (tableSelect) tableSelect.focus();
+                    return;
+                }
+
+                setTableCookies(selected.number, selected.token);
+                setCookie(COOKIE_MEMBER, 'Guest', 365);
+                setTableUi(selected.number);
+                tableDialog.classList.remove('open');
+                setFeedback('Mode umum aktif. Anda bisa langsung memesan.', 'success');
+            });
+
+            continueMemberButton.addEventListener('click', () => {
+                const selected = getSelectedTableOption();
+                if (!selected) {
+                    tableFeedback.textContent = 'Silakan pilih meja yang tersedia.';
+                    tableFeedback.className = 'feedback error';
+                    if (tableSelect) tableSelect.focus();
+                    return;
+                }
+
+                setTableCookies(selected.number, selected.token);
+                setCookie(COOKIE_MEMBER, 'Member', 365);
+                setTableUi(selected.number);
+                tableDialog.classList.remove('open');
+
+                setAuthMode('login');
+                openAuthModal();
+                setFeedback('Mode member aktif. Login member tersedia, atau lewati dulu untuk lanjut pesan.', 'success');
+            });
+
+            document.getElementById('closeItemModal').addEventListener('click', closeItemModal);
+            document.getElementById('itemModalDecrease').addEventListener('click', () => setModalQty(modalItemQty - 1));
+            document.getElementById('itemModalIncrease').addEventListener('click', () => setModalQty(modalItemQty + 1));
+            itemModalAdd.addEventListener('click', () => {
+                if (!modalItem) return;
+                addToCart(modalItem.productId, modalItem.name, modalItem.price, modalItemQty);
+                saveCart();
+                renderCart();
+                setFeedback('Menu ditambahkan ke keranjang.', 'success');
+                closeItemModal();
+            });
+            tableDialog.addEventListener('click', event => {
+                if (event.target === tableDialog) tableDialog.classList.remove('open');
+            });
+            itemModal.addEventListener('click', event => {
+                if (event.target === itemModal) closeItemModal();
+            });
+            successDialog.addEventListener('click', event => {
+                if (event.target === successDialog) successDialog.classList.remove('open');
+            });
+            authDialog.addEventListener('click', event => {
+                if (event.target === authDialog) closeAuthModal();
+            });
+            document.addEventListener('keydown', event => {
+                if (event.key === 'Escape') {
+                    tableDialog.classList.remove('open');
+                    closeItemModal();
+                    successDialog.classList.remove('open');
+                    closeAuthModal();
+                    closeCartPanel();
+                }
+            });
+
+            document.getElementById('successCloseBtn').addEventListener('click', () => successDialog.classList.remove('open'));
+            authLoginTab.addEventListener('click', () => setAuthMode('login'));
+            authRegisterTab.addEventListener('click', () => setAuthMode('register'));
+            closeAuthDialog.addEventListener('click', closeAuthModal);
+
+            authSubmitButton.addEventListener('click', async () => {
+                authError.textContent = '';
+                authSubmitButton.disabled = true;
+
+                try {
+                    if (authMode === 'login') {
+                        const username = String(authLoginUsername.value || '').trim();
+                        const password = String(authLoginPassword.value || '');
+                        if (!username || !password) {
+                            authError.textContent = 'Username dan password wajib diisi.';
+                            return;
+                        }
+
+                        const data = await postJson('/Auth/AjaxLogin', { username, password });
+                        if (!data || !data.success) {
+                            authError.textContent = (data && data.error) || 'Login gagal.';
+                            return;
+                        }
+
+                        window.location.href = data.redirectUrl || '/';
+                        return;
+                    }
+
+                    const fullName = String(authRegName.value || '').trim();
+                    const username = String(authRegUsername.value || '').trim();
+                    const password = String(authRegPassword.value || '');
+                    if (!fullName || !username || !password) {
+                        authError.textContent = 'Nama, username, dan password wajib diisi.';
+                        return;
+                    }
+
+                    const data = await postJson('/Auth/AjaxRegister', { fullName, username, password });
+                    if (!data || !data.success) {
+                        authError.textContent = (data && data.error) || 'Register gagal.';
+                        return;
+                    }
+
+                    window.location.href = data.redirectUrl || '/';
+                } catch {
+                    authError.textContent = 'Terjadi kesalahan jaringan. Silakan coba lagi.';
+                } finally {
+                    authSubmitButton.disabled = false;
+                }
+            });
+
+            clearCartBtn.addEventListener('click', () => {
+                cart = [];
+                saveCart();
+                renderCart();
+                setFeedback('', '');
+            });
+            submitOrderBtn.addEventListener('click', postOrder);
+            searchInput.addEventListener('input', applyFilter);
+
+            const currentTable = getCookie(COOKIE_TABLE);
+            if (currentTable && isTableActive(currentTable)) {
+                setTableUi(currentTable);
+            } else {
+                setCookie(COOKIE_TABLE, '', -1);
+                setCookie(COOKIE_TABLE_TOKEN, '', -1);
+                setTableUi(null);
+            }
+
+            if (!getCookie(COOKIE_MEMBER)) setCookie(COOKIE_MEMBER, 'Guest', 365);
+            renderCart();
+            applyFilter();
+
+            if (!getCookie(COOKIE_TABLE)) {
+                openTableDialog();
+            }
+        })();
+    </script>
+</body>
+</html>

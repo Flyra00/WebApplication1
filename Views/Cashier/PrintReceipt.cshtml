@@ -1,11 +1,11 @@
 @model WebApplication1.Models.Payment
 @{
     ViewData["Title"] = "Struk Pembayaran";
-    Layout = "~/Views/Shared/_LayoutOperational.cshtml";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
 }
 
 <div class="no-print d-flex gap-2 mb-3 justify-content-end">
-    <a asp-action="Index" class="op-btn op-btn-secondary"><i class="bi bi-arrow-left me-1"></i>Kembali</a>
+    <a asp-action="OrderDetail" asp-route-id="@Model.OrderId" class="op-btn op-btn-secondary"><i class="bi bi-arrow-left me-1"></i>Kembali</a>
     <button onclick="window.print()" class="op-btn op-btn-primary"><i class="bi bi-printer me-1"></i>Cetak Struk</button>
 </div>
 

@@ -27,6 +27,14 @@ namespace WebApplication1.Controllers
                 .OrderBy(p => p.Category)
                 .ThenBy(p => p.Name)
                 .ToListAsync();
+
+            var activeTables = await _context.Tables
+                .AsNoTracking()
+                .Where(t => t.IsActive)
+                .OrderBy(t => t.Number)
+                .ToListAsync();
+
+            ViewBag.ActiveTables = activeTables;
             return View(products);
         }
 

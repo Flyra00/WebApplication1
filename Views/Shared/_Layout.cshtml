@@ -1,4 +1,6 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Antiforgery
+@inject IAntiforgery Antiforgery
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -18,6 +20,7 @@
     <!-- Custom Site CSS -->
     <link rel="stylesheet" href="~/css/site.css">
     <link rel="stylesheet" href="~/css/public-custom.css">
+    <meta name="request-verification-token" content="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
 
     <title>@ViewData["Title"] - Responsive website food</title>
 </head>

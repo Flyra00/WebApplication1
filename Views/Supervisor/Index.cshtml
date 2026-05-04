@@ -1,6 +1,6 @@
 @{
     ViewData["Title"] = "Dashboard Supervisor";
-    Layout = "~/Views/Shared/_LayoutOperational.cshtml";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
     var lowIngredients = ViewBag.LowIngredients as List<WebApplication1.Models.Ingredient>;
     var recentDamages  = ViewBag.RecentDamages  as List<WebApplication1.Models.DamageReport>;
 }
@@ -11,15 +11,6 @@
         <small style="color:var(--op-muted);">Monitoring operasional harian</small>
     </div>
     <div class="d-flex gap-2">
-        <a asp-controller="Products" asp-action="Index" class="op-btn op-btn-secondary">
-            <i class="bi bi-egg-fried me-1"></i>Data Menu
-        </a>
-        <a asp-controller="Ingredient" asp-action="Index" class="op-btn op-btn-secondary">
-            <i class="bi bi-basket me-1"></i>Bahan Mentah
-        </a>
-        <a asp-controller="Inventory" asp-action="Index" class="op-btn op-btn-secondary">
-            <i class="bi bi-box-seam me-1"></i>Inventaris
-        </a>
         <a asp-controller="DamageReport" asp-action="Create" class="op-btn op-btn-primary">
             <i class="bi bi-exclamation-triangle me-1"></i>Lapor Kerusakan
         </a>

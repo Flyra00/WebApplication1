@@ -82,38 +82,58 @@ namespace WebApplication1.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ConfirmPayment(int orderId, string method, decimal amountPaid)
         {
-            var order = await _context.Orders
-                .Include(o => o.Items)
-                .FirstOrDefaultAsync(o => o.Id == orderId);
+            await using var transaction = await _context.Database.BeginTransactionAsync();
 
-            if (order == null) return NotFound();
-
-            if (amountPaid < order.Total)
+            try
             {
-                TempData["Error"] = $"Nominal bayar kurang. Total: Rp {order.Total:N0}";
+                var order = await _context.Orders
+                    .Include(o => o.Items)
+                    .Include(o => o.TableSession)
+                    .FirstOrDefaultAsync(o => o.Id == orderId);
+
+                if (order == null) return NotFound();
+
+                if (order.Status == OrderStatuses.Paid)
+                {
+                    TempData["Error"] = "Pesanan ini sudah dibayar.";
+                    return RedirectToAction(nameof(OrderDetail), new { id = orderId });
+                }
+
+                if (amountPaid < order.Total)
+                {
+                    TempData["Error"] = $"Nominal bayar kurang. Total: Rp {order.Total:N0}";
+                    return RedirectToAction(nameof(ProcessPayment), new { id = orderId });
+                }
+
+                var cashierId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                var payment = new Payment
+                {
+                    OrderId         = orderId,
+                    Method          = method,
+                    Amount          = amountPaid,
+                    PaymentDate     = DateTime.UtcNow,
+                    Status          = PaymentStatuses.Paid,
+                    ReferenceNumber = $"KSR-{DateTime.UtcNow:yyyyMMddHHmmss}",
+                    PaidByUserId    = cashierId
+                };
+
+                order.Status = OrderStatuses.Paid;
+                _context.Payments.Add(payment);
+
+                await CloseSessionIfFullyPaidAsync(order.TableSessionId, order.Id);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                TempData["Success"] = $"Pembayaran berhasil! Kembalian: Rp {(amountPaid - order.Total):N0}";
+                return RedirectToAction(nameof(PrintReceipt), new { id = payment.Id });
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                TempData["Error"] = "Pembayaran gagal diproses. Silakan coba lagi.";
                 return RedirectToAction(nameof(ProcessPayment), new { id = orderId });
             }
-
-            var cashierId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            var payment = new Payment
-            {
-                OrderId         = orderId,
-                Method          = method,
-                Amount          = amountPaid,
-                PaymentDate     = DateTime.UtcNow,
-                Status          = PaymentStatuses.Paid,
-                ReferenceNumber = $"KSR-{DateTime.UtcNow:yyyyMMddHHmmss}",
-                PaidByUserId    = cashierId
-            };
-
-            order.Status = OrderStatuses.Paid;
-
-            _context.Payments.Add(payment);
-            await _context.SaveChangesAsync();
-
-            TempData["Success"] = $"Pembayaran berhasil! Kembalian: Rp {(amountPaid - order.Total):N0}";
-            return RedirectToAction(nameof(PrintReceipt), new { id = payment.Id });
         }
 
         // ─── Cetak struk ─────────────────────────────────────────────────────
@@ -142,6 +162,29 @@ namespace WebApplication1.Controllers
             ViewBag.Tables = tables;
             ViewBag.Products = products;
             return View();
+        }
+
+        private async Task CloseSessionIfFullyPaidAsync(int tableSessionId, int currentOrderId)
+        {
+            var hasUnpaidOrders = await _context.Orders.AnyAsync(o =>
+                o.TableSessionId == tableSessionId &&
+                o.Id != currentOrderId &&
+                o.Status != OrderStatuses.Paid &&
+                o.Status != OrderStatuses.Cancelled);
+
+            if (hasUnpaidOrders)
+                return;
+
+            var session = await _context.TableSessions.FirstOrDefaultAsync(s =>
+                s.Id == tableSessionId &&
+                s.Status == TableSessionStatuses.Open &&
+                s.EndTime == null);
+
+            if (session == null)
+                return;
+
+            session.Status = TableSessionStatuses.Closed;
+            session.EndTime = DateTime.UtcNow;
         }
     }
 }

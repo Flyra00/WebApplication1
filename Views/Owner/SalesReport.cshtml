@@ -1,7 +1,7 @@
 @model IEnumerable<WebApplication1.Models.Order>
 @{
     ViewData["Title"] = "Laporan Penjualan";
-    Layout = "~/Views/Shared/_LayoutOwner.cshtml";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
     decimal totalRevenue = ViewBag.TotalRevenue ?? 0m;
     DateTime from = ViewBag.From;
     DateTime to   = ViewBag.To;

@@ -1,7 +1,7 @@
 @model IEnumerable<WebApplication1.Models.Order>
 @{
     ViewData["Title"] = "Transaksi Kasir";
-    Layout = "~/Views/Shared/_LayoutOperational.cshtml";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
     var statuses = new[] { "Semua", "Submitted", "Processing", "Completed", "Paid" };
     var sel = ViewBag.SelectedStatus as string;
 }

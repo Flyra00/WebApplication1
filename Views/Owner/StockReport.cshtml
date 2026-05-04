@@ -1,6 +1,6 @@
 @{
     ViewData["Title"] = "Laporan Stok";
-    Layout = "~/Views/Shared/_LayoutOwner.cshtml";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
     var ingredients = ViewBag.Ingredients as List<WebApplication1.Models.Ingredient> ?? new List<WebApplication1.Models.Ingredient>();
     var inventory   = ViewBag.Inventory   as List<WebApplication1.Models.Inventory> ?? new List<WebApplication1.Models.Inventory>();
 }

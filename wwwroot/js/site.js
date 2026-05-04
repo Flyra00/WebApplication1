@@ -240,12 +240,19 @@
         });
 
         async function postJson(url, payload) {
+            const token = document.querySelector('meta[name="request-verification-token"]')?.getAttribute('content') || '';
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            };
+
+            if (token) {
+                headers.RequestVerificationToken = token;
+            }
+
             const res = await fetch(url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
+                headers,
                 body: JSON.stringify(payload)
             });
             return await res.json();

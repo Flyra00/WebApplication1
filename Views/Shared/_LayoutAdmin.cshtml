@@ -1,3 +1,5 @@
+@using Microsoft.AspNetCore.Antiforgery
+@inject IAntiforgery Antiforgery
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -11,19 +13,36 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" />
     <link rel="stylesheet" href="~/css/admin-custom.css" />
+    <meta name="request-verification-token" content="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
     <style>
         :root {
-            --dash-bg: #080d18;
-            --dash-sidebar: #0d1322;
-            --dash-surface: #131a2a;
-            --dash-surface-2: #192131;
-            --dash-border: #243049;
-            --dash-text: #f8fafc;
-            --dash-muted: #8294ba;
-            --dash-accent: #f59e0b;
-            --dash-blue: #3b82f6;
-            --dash-green: #22c55e;
-            --dash-red: #ef4444;
+            --dash-bg: #fcf9f8;
+            --dash-sidebar: #f4ede3;
+            --dash-surface: #ffffff;
+            --dash-surface-2: #f0eded;
+            --dash-border: #e0c0b2;
+            --dash-text: #1c1b1b;
+            --dash-muted: #584238;
+            --dash-accent: #9c3f00;
+            --dash-blue: #486648;
+            --dash-green: #5e604d;
+            --dash-red: #ba1a1a;
+            --op-bg: var(--dash-bg);
+            --op-sidebar: var(--dash-sidebar);
+            --op-surface: var(--dash-surface);
+            --op-surface2: var(--dash-surface-2);
+            --op-border: var(--dash-border);
+            --op-accent: var(--dash-accent);
+            --op-accent2: var(--dash-blue);
+            --op-text: var(--dash-text);
+            --op-muted: var(--dash-muted);
+            --owner-bg: var(--dash-bg);
+            --owner-sidebar: var(--dash-sidebar);
+            --owner-surface: var(--dash-surface);
+            --owner-border: var(--dash-border);
+            --owner-gold: var(--dash-accent);
+            --owner-text: var(--dash-text);
+            --owner-muted: var(--dash-muted);
         }
 
         * { box-sizing: border-box; }
@@ -35,19 +54,19 @@
         .dashboard-brand-title { color: var(--dash-accent); font-size: 1.45rem; font-weight: 800; letter-spacing: .01em; margin: 0; display: flex; align-items: center; gap: .65rem; }
         .dashboard-brand-user { color: var(--dash-muted); font-size: .9rem; margin-top: .55rem; }
         .dashboard-nav { padding: 1.25rem 0; flex: 1; overflow-y: auto; }
-        .dashboard-nav-label { color: #5d6f94; font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 1rem 1.8rem .45rem; }
+        .dashboard-nav-label { color: #8c7166; font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 1rem 1.8rem .45rem; }
         .dashboard-nav-link { display: flex; align-items: center; gap: .9rem; padding: .9rem 1.8rem; color: var(--dash-muted); text-decoration: none; font-weight: 500; border-left: 4px solid transparent; transition: .18s ease; }
-        .dashboard-nav-link:hover { color: var(--dash-text); background: rgba(255,255,255,.035); }
+        .dashboard-nav-link:hover { color: var(--dash-text); background: rgba(156,63,0,.08); }
         .dashboard-nav-link.active { color: var(--dash-accent); background: var(--dash-surface-2); border-left-color: var(--dash-accent); }
         .dashboard-nav-link i { width: 1.1rem; text-align: center; }
-        .dashboard-profile { margin: 1rem 1.25rem 1.5rem; padding: 1rem; border: 1px solid var(--dash-border); border-radius: .9rem; background: rgba(255,255,255,.025); }
+        .dashboard-profile { margin: 1rem 1.25rem 1.5rem; padding: 1rem; border: 1px solid var(--dash-border); border-radius: .9rem; background: rgba(255,255,255,.78); }
         .dashboard-profile-name { color: var(--dash-text); font-size: .9rem; font-weight: 700; margin-bottom: .15rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .dashboard-profile-role { color: var(--dash-muted); font-size: .76rem; margin-bottom: .85rem; }
         .dashboard-profile-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; }
-        .dashboard-profile-actions .btn { font-size: .78rem; border-color: #53627d; color: var(--dash-muted); }
+        .dashboard-profile-actions .btn { font-size: .78rem; border-color: #8c7166; color: var(--dash-muted); }
         .dashboard-profile-actions .btn:hover { color: var(--dash-text); border-color: var(--dash-accent); }
         .dashboard-main { flex: 1; min-width: 0; }
-        .dashboard-topbar { height: 62px; border-bottom: 1px solid var(--dash-border); display: flex; align-items: center; justify-content: space-between; padding: 0 1.85rem; background: rgba(13,19,34,.75); position: sticky; top: 0; z-index: 20; backdrop-filter: blur(14px); }
+        .dashboard-topbar { height: 62px; border-bottom: 1px solid var(--dash-border); display: flex; align-items: center; justify-content: space-between; padding: 0 1.85rem; background: rgba(244,237,227,.88); position: sticky; top: 0; z-index: 20; backdrop-filter: blur(14px); }
         .dashboard-title { font-size: 1.25rem; font-weight: 800; margin: 0; }
         .dashboard-date { color: var(--dash-muted); font-size: .9rem; }
         .dashboard-content { padding: 1.85rem; }
@@ -61,17 +80,40 @@
         .card-title, .form-label, label, .fw-bold, .fw-semibold, .text-dark { color: var(--dash-text) !important; }
         .text-muted, .text-secondary, .form-text { color: var(--dash-muted) !important; }
         .bg-white, .bg-light { background: transparent !important; }
-        .table { --bs-table-bg: transparent; --bs-table-color: var(--dash-text); --bs-table-hover-bg: rgba(255,255,255,.035); color: var(--dash-text); }
+        .table { --bs-table-bg: transparent; --bs-table-color: var(--dash-text); --bs-table-hover-bg: rgba(156,63,0,.05); color: var(--dash-text); }
         .table thead { color: var(--dash-muted) !important; }
-        .table td, .table th { border-color: rgba(255,255,255,.065); }
-        .form-control, .form-select, .input-group-text { background: #0c1220; border-color: var(--dash-border); color: var(--dash-text); }
-        .form-control:focus, .form-select:focus { background: #0c1220; border-color: var(--dash-accent); color: var(--dash-text); box-shadow: 0 0 0 .2rem rgba(245,158,11,.15); }
-        .btn-primary { background: var(--dash-accent); border-color: var(--dash-accent); color: #111827; font-weight: 700; }
-        .btn-primary:hover { background: #d97706; border-color: #d97706; color: #111827; }
-        .btn-outline-secondary, .btn-outline-warning, .btn-outline-danger { border-color: #53627d; color: var(--dash-muted); }
+        .table td, .table th { border-color: rgba(140,113,102,.25); }
+        .form-control, .form-select, .input-group-text { background: #ffffff; border-color: var(--dash-border); color: var(--dash-text); }
+        .form-control:focus, .form-select:focus { background: #ffffff; border-color: var(--dash-accent); color: var(--dash-text); box-shadow: 0 0 0 .2rem rgba(156,63,0,.15); }
+        .btn-primary { background: var(--dash-accent); border-color: var(--dash-accent); color: #fff; font-weight: 700; }
+        .btn-primary:hover { background: #7a3000; border-color: #7a3000; color: #fff; }
+        .btn-outline-secondary, .btn-outline-warning, .btn-outline-danger { border-color: #8c7166; color: var(--dash-muted); }
         .btn-outline-secondary:hover, .btn-outline-warning:hover, .btn-outline-danger:hover { background: var(--dash-surface-2); color: var(--dash-text); border-color: var(--dash-accent); }
         .small-box { border-radius: 1rem; border: 1px solid var(--dash-border); background: var(--dash-surface) !important; color: var(--dash-text) !important; padding: 1.2rem; min-height: 150px; }
         .small-box-footer { display: none; }
+        .op-card, .ow-card { background: var(--dash-surface); border: 1px solid var(--dash-border); border-radius: 16px; padding: 1.5rem; color: var(--dash-text); }
+        .op-badge-status { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+        .op-btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.875rem; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; text-decoration: none; }
+        .op-btn-primary { background: var(--dash-accent); border-color: var(--dash-accent); color: #fff; font-weight: 700; }
+        .op-btn-primary:hover { background: #7a3000; border-color: #7a3000; color: #fff; }
+        .op-btn-secondary { background: transparent; border-color: #8c7166; color: var(--dash-muted); }
+        .op-btn-secondary:hover { background: var(--dash-surface-2); color: var(--dash-text); border-color: var(--dash-accent); }
+        .op-btn-success { background: #22c55e; border-color: #22c55e; color: #07130a; font-weight: 700; }
+        .op-btn-success:hover { background: #16a34a; color: #07130a; }
+        .op-table, .ow-table { width: 100%; border-collapse: collapse; color: var(--dash-text); }
+        .op-table th, .ow-table th { color: var(--dash-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--dash-border); padding: 0.75rem; }
+        .op-table td, .ow-table td { padding: 0.875rem 0.75rem; border-bottom: 1px solid rgba(140,113,102,0.18); vertical-align: middle; }
+        .op-table tr:hover td, .ow-table tr:hover td { background: rgba(156,63,0,0.04); }
+        .ow-stat-card { text-align: center; }
+        .ow-stat-card .stat-value { font-size: 1.75rem; font-weight: 700; color: var(--dash-accent); }
+        .ow-stat-card .stat-label { color: var(--dash-muted); font-size: 0.8rem; margin-top: 0.25rem; }
+
+        @@media print {
+            .dashboard-sidebar, .dashboard-topbar, .no-print { display: none !important; }
+            body { background: #fff; color: #000; }
+            .dashboard-content { padding: 0; }
+            .op-card, .ow-card, .card { border: none; padding: 0; background: #fff !important; color: #000 !important; }
+        }
 
         @@media (max-width: 991.98px) {
             .dashboard-shell { display: block; }
@@ -89,34 +131,67 @@
 <body>
     @{
         var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+        var action = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
         var userName = User?.Identity?.Name ?? "admin";
+        var isAdmin = User?.IsInRole(AppRoles.Admin) ?? false;
+        var isSupervisor = User?.IsInRole(AppRoles.Supervisor) ?? false;
+        var isKasir = User?.IsInRole(AppRoles.Kasir) ?? false;
+        var isKitchen = User?.IsInRole(AppRoles.Kitchen) ?? false;
+        var isOwner = User?.IsInRole(AppRoles.Owner) ?? false;
+        var roleName = isAdmin ? "Administrator" : isSupervisor ? "Supervisor" : isKasir ? "Kasir" : isKitchen ? "Dapur" : isOwner ? "Owner" : "User";
+        var brandTitle = isAdmin ? "ADMIN" : isSupervisor ? "SUPERVISOR" : isKasir ? "KASIR" : isKitchen ? "DAPUR" : isOwner ? "OWNER" : "RESTO PRO";
     }
     <div class="dashboard-shell">
         <aside class="dashboard-sidebar">
             <div class="dashboard-brand">
-                <h1 class="dashboard-brand-title"><i class="bi bi-graph-up-arrow"></i> ADMIN</h1>
+                <h1 class="dashboard-brand-title"><i class="bi bi-graph-up-arrow"></i> @brandTitle</h1>
                 <div class="dashboard-brand-user">@userName</div>
             </div>
 
             <nav class="dashboard-nav">
-                <a asp-controller="Admin" asp-action="Index" class="dashboard-nav-link @(controller == "Admin" ? "active" : "")"><i class="bi bi-speedometer2"></i>Dashboard</a>
-                <div class="dashboard-nav-label">Master Data</div>
-                <a asp-controller="Products" asp-action="Index" class="dashboard-nav-link @(controller == "Products" ? "active" : "")"><i class="bi bi-egg-fried"></i>Manajemen Menu</a>
-                <a asp-controller="Table" asp-action="Index" class="dashboard-nav-link @(controller == "Table" ? "active" : "")"><i class="bi bi-grid-3x3-gap"></i>Manajemen Meja</a>
-                <a asp-controller="User" asp-action="Index" class="dashboard-nav-link @(controller == "User" ? "active" : "")"><i class="bi bi-people"></i>Manajemen User</a>
-                <a asp-controller="Ingredient" asp-action="Index" class="dashboard-nav-link @(controller == "Ingredient" ? "active" : "")"><i class="bi bi-basket"></i>Manajemen Bahan</a>
-                <a asp-controller="Inventory" asp-action="Index" class="dashboard-nav-link @(controller == "Inventory" ? "active" : "")"><i class="bi bi-box-seam"></i>Manajemen Inventory</a>
-                <div class="dashboard-nav-label">Operasional</div>
-                <a asp-controller="Cashier" asp-action="Index" class="dashboard-nav-link @(controller == "Cashier" ? "active" : "")"><i class="bi bi-receipt"></i>Kasir</a>
-                <a asp-controller="Kitchen" asp-action="Index" class="dashboard-nav-link @(controller == "Kitchen" ? "active" : "")"><i class="bi bi-fire"></i>Dapur</a>
-                <a asp-controller="Supervisor" asp-action="Index" class="dashboard-nav-link @(controller == "Supervisor" ? "active" : "")"><i class="bi bi-clipboard-check"></i>Supervisor</a>
-                <a asp-controller="DamageReport" asp-action="Index" class="dashboard-nav-link @(controller == "DamageReport" ? "active" : "")"><i class="bi bi-exclamation-triangle"></i>Laporan Kerusakan</a>
-                <a asp-controller="Owner" asp-action="Dashboard" class="dashboard-nav-link @(controller == "Owner" ? "active" : "")"><i class="bi bi-bar-chart-line"></i>Owner</a>
+                @if (isAdmin)
+                {
+                    <a asp-controller="Admin" asp-action="Index" class="dashboard-nav-link @(controller == "Admin" ? "active" : "")"><i class="bi bi-speedometer2"></i>Dashboard</a>
+                    <div class="dashboard-nav-label">Master Data</div>
+                    <a asp-controller="Products" asp-action="Index" class="dashboard-nav-link @(controller == "Products" ? "active" : "")"><i class="bi bi-egg-fried"></i>Manajemen Menu</a>
+                    <a asp-controller="Table" asp-action="Index" class="dashboard-nav-link @(controller == "Table" ? "active" : "")"><i class="bi bi-grid-3x3-gap"></i>Manajemen Meja</a>
+                    <a asp-controller="User" asp-action="Index" class="dashboard-nav-link @(controller == "User" ? "active" : "")"><i class="bi bi-people"></i>Manajemen User</a>
+                    <a asp-controller="Ingredient" asp-action="Index" class="dashboard-nav-link @(controller == "Ingredient" ? "active" : "")"><i class="bi bi-basket"></i>Manajemen Bahan</a>
+                    <a asp-controller="Inventory" asp-action="Index" class="dashboard-nav-link @(controller == "Inventory" ? "active" : "")"><i class="bi bi-box-seam"></i>Manajemen Inventory</a>
+                    <div class="dashboard-nav-label">Operasional</div>
+                }
+                @if (isKasir || isAdmin)
+                {
+                    <a asp-controller="Cashier" asp-action="Index" class="dashboard-nav-link @(controller == "Cashier" ? "active" : "")"><i class="bi bi-receipt"></i>Kasir</a>
+                }
+                @if (isKitchen || isAdmin)
+                {
+                    <a asp-controller="Kitchen" asp-action="Index" class="dashboard-nav-link @(controller == "Kitchen" ? "active" : "")"><i class="bi bi-fire"></i>Dapur</a>
+                }
+                @if (isSupervisor || isAdmin)
+                {
+                    <a asp-controller="Supervisor" asp-action="Index" class="dashboard-nav-link @(controller == "Supervisor" ? "active" : "")"><i class="bi bi-clipboard-check"></i>Supervisor</a>
+                    @if (!isAdmin)
+                    {
+                        <a asp-controller="Products" asp-action="Index" class="dashboard-nav-link @(controller == "Products" ? "active" : "")"><i class="bi bi-egg-fried"></i>Data Menu</a>
+                        <a asp-controller="Ingredient" asp-action="Index" class="dashboard-nav-link @(controller == "Ingredient" ? "active" : "")"><i class="bi bi-basket"></i>Bahan Mentah</a>
+                        <a asp-controller="Inventory" asp-action="Index" class="dashboard-nav-link @(controller == "Inventory" ? "active" : "")"><i class="bi bi-box-seam"></i>Inventaris</a>
+                    }
+                    <a asp-controller="DamageReport" asp-action="Index" class="dashboard-nav-link @(controller == "DamageReport" ? "active" : "")"><i class="bi bi-exclamation-triangle"></i>Laporan Kerusakan</a>
+                }
+                @if (isOwner || isAdmin)
+                {
+                    <div class="dashboard-nav-label">Owner</div>
+                    <a asp-controller="Owner" asp-action="Dashboard" class="dashboard-nav-link @(controller == "Owner" && action == "Dashboard" ? "active" : "")"><i class="bi bi-speedometer2"></i>Dashboard Owner</a>
+                    <a asp-controller="Owner" asp-action="SalesReport" class="dashboard-nav-link @(controller == "Owner" && action == "SalesReport" ? "active" : "")"><i class="bi bi-bar-chart-line"></i>Laporan Penjualan</a>
+                    <a asp-controller="Owner" asp-action="StockReport" class="dashboard-nav-link @(controller == "Owner" && action == "StockReport" ? "active" : "")"><i class="bi bi-boxes"></i>Laporan Stok</a>
+                    <a asp-controller="Owner" asp-action="DamageReport" class="dashboard-nav-link @(controller == "Owner" && action == "DamageReport" ? "active" : "")"><i class="bi bi-exclamation-triangle"></i>Laporan Kerusakan</a>
+                }
             </nav>
 
             <div class="dashboard-profile">
                 <div class="dashboard-profile-name">@userName</div>
-                <div class="dashboard-profile-role">Administrator</div>
+                <div class="dashboard-profile-role">@roleName</div>
                 <div class="dashboard-profile-actions">
                     <a href="/" class="btn btn-sm btn-outline-secondary"><i class="bi bi-globe2 me-1"></i>Website</a>
                     <form action="/Auth/Logout" method="post">
