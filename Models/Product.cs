@@ -15,10 +15,14 @@ namespace WebApplication1.Models
         [MaxLength(100)]
         public string Category { get; set; } = "";
 
-        [Precision(16, 2)]
+[Precision(16, 2)]
         [Required(ErrorMessage = "Harga harus diisi!")]
         [Range(0, double.MaxValue, ErrorMessage = "Harga tidak boleh minus.")] 
         public decimal Price { get; set; }
+
+        [Precision(5, 2)]
+        [Range(0, 100, ErrorMessage = "Diskon tidak boleh negatif atau lebih dari 100%")]
+        public decimal? MemberDiscountPercentage { get; set; }
 
         [MaxLength(100)]
         public string ImageFileName { get; set; } = "";

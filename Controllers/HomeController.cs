@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using WebApplication1.Data;
 using WebApplication1.Models;
 
@@ -11,13 +12,15 @@ namespace WebApplication1.Controllers
         private readonly ILogger<HomeController> _logger;
         private readonly AppDbContext _context;
         private readonly IWebHostEnvironment _env;
+        private readonly OrderChargesOptions _orderChargesOptions;
 
         //ambil data
-        public HomeController(ILogger<HomeController> logger, AppDbContext context, IWebHostEnvironment env)
+        public HomeController(ILogger<HomeController> logger, AppDbContext context, IWebHostEnvironment env, IOptions<OrderChargesOptions> orderChargesOptions)
         {
             _logger = logger;
             _context = context;
             _env = env;
+            _orderChargesOptions = orderChargesOptions.Value;
         }
 
         public async Task<IActionResult> Index()
@@ -35,7 +38,22 @@ namespace WebApplication1.Controllers
                 .ToListAsync();
 
             ViewBag.ActiveTables = activeTables;
+            ViewBag.PpnPercentage = NormalizeChargeRate(_orderChargesOptions.PpnPercentage);
+            ViewBag.ServicePercentage = NormalizeChargeRate(_orderChargesOptions.ServicePercentage);
             return View(products);
+        }
+
+        private static decimal NormalizeChargeRate(decimal? rate)
+        {
+            if (!rate.HasValue)
+                return 0;
+
+            var normalized = rate.Value;
+            if (normalized < 0)
+                return 0;
+            if (normalized > 100)
+                return 100;
+            return Math.Round(normalized, 2);
         }
 
         public IActionResult Privacy()

@@ -24,8 +24,12 @@
                     <span class="fw-bold">@Model.Order.OrderNumber</span>
                 </div>
                 <div class="d-flex justify-content-between mb-1">
+                    <span>Tipe</span>
+                    <span>@(Model.Order.OrderType == WebApplication1.Models.OrderTypes.Takeaway ? "Takeaway" : "Dine-In")</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
                     <span>Meja</span>
-                    <span>@(Model.Order.TableSession?.Table?.Number ?? 0)</span>
+                    <span>@(Model.Order.OrderType == WebApplication1.Models.OrderTypes.Takeaway ? "-" : (Model.Order.TableSession?.Table?.Number ?? 0))</span>
                 </div>
                 <div class="d-flex justify-content-between mb-1">
                     <span>Tanggal</span>
@@ -52,6 +56,24 @@
 
             <hr style="border-style:dashed;border-color:var(--op-border);" />
 
+            <div class="d-flex justify-content-between mb-1" style="font-size:.8rem;">
+                <span>Subtotal</span>
+                <span>Rp @Model.Order.Subtotal.ToString("N0")</span>
+            </div>
+            @if (Model.Order.PpnAmount > 0)
+            {
+                <div class="d-flex justify-content-between mb-1" style="font-size:.8rem;">
+                    <span>PPN (@((Model.Order.PpnPercentage ?? 0).ToString("N2"))%)</span>
+                    <span>Rp @Model.Order.PpnAmount.ToString("N0")</span>
+                </div>
+            }
+            @if (Model.Order.ServiceAmount > 0)
+            {
+                <div class="d-flex justify-content-between mb-1" style="font-size:.8rem;">
+                    <span>Service (@((Model.Order.ServicePercentage ?? 0).ToString("N2"))%)</span>
+                    <span>Rp @Model.Order.ServiceAmount.ToString("N0")</span>
+                </div>
+            }
             <div class="d-flex justify-content-between fw-bold mb-1" style="font-size:.9rem;">
                 <span>TOTAL</span>
                 <span>Rp @Model.Order.Total.ToString("N0")</span>

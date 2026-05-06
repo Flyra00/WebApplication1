@@ -33,7 +33,8 @@
         <div class="op-card h-100">
             <h6 class="fw-semibold mb-3" style="color:var(--op-muted);text-transform:uppercase;font-size:0.75rem;letter-spacing:.05em;">Info Pesanan</h6>
             <table style="width:100%;font-size:0.875rem;">
-                <tr><td style="color:var(--op-muted);padding-bottom:.5rem;">Meja</td><td class="fw-semibold">Meja @(Model.TableSession?.Table?.Number ?? 0)</td></tr>
+                <tr><td style="color:var(--op-muted);padding-bottom:.5rem;">Tipe Pesanan</td><td class="fw-semibold">@(Model.OrderType == WebApplication1.Models.OrderTypes.Takeaway ? "Dibawa Pulang" : "Makan di Tempat")</td></tr>
+                <tr><td style="color:var(--op-muted);padding-bottom:.5rem;">Meja</td><td class="fw-semibold">@(Model.OrderType == WebApplication1.Models.OrderTypes.Takeaway ? "-" : $"Meja {Model.TableSession?.Table?.Number ?? 0}")</td></tr>
                 <tr><td style="color:var(--op-muted);padding-bottom:.5rem;">Waktu</td><td>@Model.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td></tr>
                 <tr><td style="color:var(--op-muted);padding-bottom:.5rem;">Status</td><td>
                     @{ var c = Model.Status switch { "Paid" => "#22c55e", "Processing" => "#f97316", "Submitted" => "#3b82f6", "Completed" => "#8b5cf6", _ => "#64748b" }; }
@@ -86,6 +87,27 @@
                     }
                 </tbody>
                 <tfoot>
+                    <tr>
+                        <td colspan="3" class="text-end fw-semibold pt-3">SUBTOTAL</td>
+                        <td class="text-end fw-semibold pt-3">Rp @Model.Subtotal.ToString("N0")</td>
+                        <td></td>
+                    </tr>
+                    @if (Model.PpnAmount > 0)
+                    {
+                        <tr>
+                            <td colspan="3" class="text-end" style="color:var(--op-muted);">PPN (@((Model.PpnPercentage ?? 0).ToString("N2"))%)</td>
+                            <td class="text-end">Rp @Model.PpnAmount.ToString("N0")</td>
+                            <td></td>
+                        </tr>
+                    }
+                    @if (Model.ServiceAmount > 0)
+                    {
+                        <tr>
+                            <td colspan="3" class="text-end" style="color:var(--op-muted);">Service (@((Model.ServicePercentage ?? 0).ToString("N2"))%)</td>
+                            <td class="text-end">Rp @Model.ServiceAmount.ToString("N0")</td>
+                            <td></td>
+                        </tr>
+                    }
                     <tr>
                         <td colspan="3" class="text-end fw-semibold pt-3">TOTAL</td>
                         <td class="text-end fw-bold pt-3" style="color:#f59e0b;font-size:1.1rem;">Rp @Model.Total.ToString("N0")</td>

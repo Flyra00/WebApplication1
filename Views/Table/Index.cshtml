@@ -50,7 +50,8 @@
                             {
                                 foreach (var table in Model)
                                 {
-                                    var isOccupied = table.Sessions.Any(s => s.Status == TableSessionStatuses.Open && s.EndTime == null);
+                                    var hasOccupiedSession = table.Sessions.Any(s => s.Status == TableSessionStatuses.Open && s.EndTime == null && s.Orders.Any());
+                                    var hasClaimedSession = table.Sessions.Any(s => s.Status == TableSessionStatuses.Open && s.EndTime == null && !s.Orders.Any());
                                     var qrUrl = Url.Action("StartFromQr", "TableSession", new { token = table.QrCodeToken }, Context.Request.Scheme);
                                     <tr>
                                         <td class="ps-4 fw-semibold text-dark">Meja @table.Number</td>
@@ -60,9 +61,13 @@
                                             {
                                                 <span class="badge bg-secondary-subtle text-secondary border">Nonaktif</span>
                                             }
-                                            else if (isOccupied)
+                                            else if (hasOccupiedSession)
                                             {
                                                 <span class="badge bg-warning-subtle text-warning border">Terisi</span>
+                                            }
+                                            else if (hasClaimedSession)
+                                            {
+                                                <span class="badge bg-info-subtle text-info border">Dipegang Sementara</span>
                                             }
                                             else
                                             {
@@ -82,6 +87,15 @@
                                         </td>
                                         <td class="text-end pe-4">
                                             <div class="btn-group shadow-sm" role="group">
+                                                <form asp-action="ToggleActive" asp-route-id="@table.Id" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit"
+                                                            class="btn btn-outline-@(table.IsActive ? "secondary" : "success") btn-sm"
+                                                            onclick="return confirm('@(table.IsActive ? $"Nonaktifkan meja {table.Number}? Sesi aktif akan ditutup." : $"Aktifkan kembali meja {table.Number}?")')"
+                                                            title="@(table.IsActive ? "Nonaktifkan" : "Aktifkan") Meja">
+                                                        <i class="bi @(table.IsActive ? "bi-toggle-off" : "bi-toggle-on")"></i>
+                                                    </button>
+                                                </form>
                                                 <a asp-action="Edit" asp-route-id="@table.Id" class="btn btn-outline-warning btn-sm" title="Edit Meja">
                                                     <i class="bi bi-pencil-square"></i>
                                                 </a>

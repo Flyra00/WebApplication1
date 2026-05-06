@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Menu Item Detail Modal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400..700;1,400..700&amp;family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "outline-variant": "#e0c0b2",
+                    "on-secondary": "#ffffff",
+                    "primary": "#9c3f00",
+                    "surface-bright": "#fcf9f8",
+                    "on-primary-fixed": "#351000",
+                    "on-tertiary": "#ffffff",
+                    "surface-tint": "#a04100",
+                    "on-secondary-container": "#636451",
+                    "surface-container-high": "#eae7e7",
+                    "surface-dim": "#dcd9d9",
+                    "tertiary-container": "#1c871e",
+                    "outline": "#8c7166",
+                    "surface-variant": "#e5e2e1",
+                    "on-secondary-fixed": "#1b1d0e",
+                    "surface-container-highest": "#e5e2e1",
+                    "on-primary": "#ffffff",
+                    "tertiary-fixed-dim": "#77dd6a",
+                    "on-tertiary-container": "#f8fff0",
+                    "tertiary": "#006c0c",
+                    "on-secondary-fixed-variant": "#474836",
+                    "error": "#ba1a1a",
+                    "error-container": "#ffdad6",
+                    "on-primary-container": "#fffbff",
+                    "on-error-container": "#93000a",
+                    "on-background": "#1c1b1b",
+                    "secondary-fixed-dim": "#c8c8b0",
+                    "tertiary-fixed": "#92fa83",
+                    "on-primary-fixed-variant": "#7a3000",
+                    "secondary-container": "#e1e1c9",
+                    "surface-container": "#f0eded",
+                    "primary-container": "#c45100",
+                    "surface-container-lowest": "#ffffff",
+                    "on-surface": "#1c1b1b",
+                    "primary-fixed-dim": "#ffb693",
+                    "background": "#fcf9f8",
+                    "surface": "#fcf9f8",
+                    "inverse-primary": "#ffb693",
+                    "secondary": "#5e604d",
+                    "primary-fixed": "#ffdbcc",
+                    "inverse-on-surface": "#f3f0ef",
+                    "on-tertiary-fixed-variant": "#005307",
+                    "on-error": "#ffffff",
+                    "on-surface-variant": "#584238",
+                    "surface-container-low": "#f6f3f2",
+                    "inverse-surface": "#313030",
+                    "secondary-fixed": "#e4e4cc",
+                    "on-tertiary-fixed": "#002201"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "lg": "48px",
+                    "gutter": "24px",
+                    "base": "8px",
+                    "container-max": "1280px",
+                    "md": "24px",
+                    "sm": "12px",
+                    "xs": "4px",
+                    "xl": "80px"
+            },
+            "fontFamily": {
+                    "h1": [
+                            "notoSerif"
+                    ],
+                    "body-sm": [
+                            "inter"
+                    ],
+                    "h3": [
+                            "notoSerif"
+                    ],
+                    "label-caps": [
+                            "inter"
+                    ],
+                    "h2": [
+                            "notoSerif"
+                    ],
+                    "body-lg": [
+                            "inter"
+                    ],
+                    "body-md": [
+                            "inter"
+                    ]
+            },
+            "fontSize": {
+                    "h1": [
+                            "48px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "body-sm": [
+                            "14px",
+                            {
+                                    "lineHeight": "1.5",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "h3": [
+                            "24px",
+                            {
+                                    "lineHeight": "1.4",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "label-caps": [
+                            "12px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "h2": [
+                            "36px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "1.6",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "body-md": [
+                            "16px",
+                            {
+                                    "lineHeight": "1.6",
+                                    "fontWeight": "400"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex items-center justify-center relative overflow-hidden">
+<!-- Modal Backdrop -->
+<div class="fixed inset-0 bg-inverse-surface/40 backdrop-blur-sm z-40"></div>
+<!-- Modal Container -->
+<div class="relative z-50 w-full max-w-4xl max-h-[921px] overflow-y-auto bg-surface rounded-xl shadow-2xl flex flex-col md:flex-row m-gutter">
+<!-- Close Button -->
+<button class="absolute top-sm right-sm z-50 p-xs bg-surface/80 rounded-full text-on-surface hover:text-primary transition-colors duration-200 shadow-sm backdrop-blur-md">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+<!-- Image Area -->
+<div class="w-full md:w-1/2 h-64 md:h-auto relative">
+<img alt="Rendang Daging Sapi" class="w-full h-full object-cover rounded-t-xl md:rounded-l-xl md:rounded-tr-none" data-alt="A close up, high-fidelity photograph of an authentic Indonesian Rendang Daging Sapi. The rich, dark brown, slow-cooked beef chunks are glistening with complex spices, resting on an elegant, rustic ceramic plate. The lighting is warm and directional, emphasizing the tactile textures of the thick sauce and the tender meat. Subtle garnishes of fresh green kaffir lime leaves are visible. The overall mood is luxurious, authentic, and appetizing, fitting perfectly within a high-end, modern Indonesian culinary aesthetic characterized by warm beige and terracotta tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDxU2zd4DGORcQZfLyjrHzVq0H92J5em8F9PeFFGIjbVyyu8jyQzMW22yqL8bkzx2nTK5jBmTGpb7UiN2hHiBrVbrrGfmjS9ddN9EW_eP5psVPNJ5R5EraozOu4rjeaAZdG9UdvaW3dMbmpBnKtlZ4H_2p2zTQ-G3jmmsq5oqt2T4FSNnJ0gMw_o8LPiNIp1ufky3MZQXjzgQLPO8qXzf1joOmZG9JTP2HCPPx2B8a4-RGjdxq1uBL5-7963cBI0GnpM8c9tGJUtjUg"/>
+</div>
+<!-- Content Area -->
+<div class="w-full md:w-1/2 p-lg flex flex-col justify-between bg-surface rounded-b-xl md:rounded-r-xl md:rounded-bl-none">
+<div>
+<!-- Header -->
+<div class="mb-gutter">
+<h2 class="font-h2 text-h2 text-on-surface mb-xs">Rendang Daging Sapi</h2>
+<p class="font-label-caps text-label-caps text-primary tracking-widest uppercase mb-sm">Hidangan Utama</p>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                        Daging sapi pilihan yang dimasak perlahan selama 8 jam dengan campuran rempah-rempah tradisional Minangkabau dan santan kental. Menghasilkan tekstur yang sangat empuk dan rasa yang dalam, gurih, serta sedikit pedas. Disajikan dengan taburan serundeng kelapa sangrai.
+                    </p>
+</div>
+<!-- Price & Quantity -->
+<div class="flex items-center justify-between mb-lg pt-gutter border-t border-surface-variant">
+<span class="font-h3 text-h3 text-on-surface">Rp 120.000</span>
+<div class="flex items-center gap-sm bg-surface-container-low rounded-full p-xs border border-outline-variant">
+<button class="w-8 h-8 rounded-full bg-surface text-on-surface hover:text-primary hover:bg-surface-container flex items-center justify-center transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="remove">remove</span>
+</button>
+<span class="font-body-lg text-body-lg text-on-surface w-8 text-center font-medium">1</span>
+<button class="w-8 h-8 rounded-full bg-surface text-on-surface hover:text-primary hover:bg-surface-container flex items-center justify-center transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Action Button -->
+<button class="w-full py-sm px-md bg-primary text-on-primary font-body-lg text-body-lg rounded-lg hover:bg-primary-container transition-colors duration-300 flex items-center justify-center gap-sm shadow-md">
+<span class="material-symbols-outlined" data-icon="shopping_cart">shopping_cart</span>
+                Tambah ke Keranjang
+            </button>
+</div>
+</div>
+</body></html>

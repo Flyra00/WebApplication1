@@ -34,7 +34,7 @@ namespace WebApplication1.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = AppRoles.Admin)]
-        public async Task<IActionResult> Create([Bind("Name,Category,Price,Stock,IsAvailable")] Product product, IFormFile? ImageFile)
+        public async Task<IActionResult> Create([Bind("Name,Category,Price,MemberDiscountPercentage,Stock,IsAvailable")] Product product, IFormFile? ImageFile)
         {
             if (ModelState.IsValid)
             {
@@ -50,8 +50,8 @@ namespace WebApplication1.Controllers
             return View(product);
         }
 
-        //update
-        [Authorize(Roles = AppRoles.Admin)]
+//update
+        [Authorize(Roles = $"{AppRoles.Admin},{AppRoles.Supervisor}")]
         public async Task<IActionResult> Edit (int id)
         {
             var product = await _context.Products
@@ -61,10 +61,10 @@ namespace WebApplication1.Controllers
             return View(product);
         }
 
-        [HttpPost]
+[HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = AppRoles.Admin)]
-        public async Task<IActionResult> Edit (int id, [Bind("Id,Name,Price,Category,ImageFileName,Stock,IsAvailable")]Product product, IFormFile? ImageFile)
+        [Authorize(Roles = $"{AppRoles.Admin},{AppRoles.Supervisor}")]
+        public async Task<IActionResult> Edit (int id, [Bind("Id,Name,Price,MemberDiscountPercentage,Category,ImageFileName,Stock,IsAvailable")]Product product, IFormFile? ImageFile)
         {
             if (id != product.Id) return NotFound();
             if (ModelState.IsValid)
@@ -72,9 +72,10 @@ namespace WebApplication1.Controllers
                 var existingProduct = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
                 if (existingProduct == null) return NotFound();
 
-                existingProduct.Name = product.Name;
+existingProduct.Name = product.Name;
                 existingProduct.Category = product.Category;
                 existingProduct.Price = product.Price;
+                existingProduct.MemberDiscountPercentage = product.MemberDiscountPercentage;
                 existingProduct.Stock = product.Stock;
                 existingProduct.IsAvailable = product.IsAvailable;
 

@@ -5,5 +5,6 @@ namespace WebApplication1.Models
         public const string Cash     = "Cash";
         public const string QRIS     = "QRIS";
         public const string Transfer = "Transfer";
+        public const string Midtrans = "Midtrans";
     }
 }

@@ -41,7 +41,7 @@
                                         <span asp-validation-for="Name" class="text-danger small"></span>
                                     </div>
 
-                                    <div class="row">
+<div class="row">
                                         <div class="col-md-6 mb-4">
                                             <label asp-for="Category" class="form-label fw-bold text-secondary">Kategori</label>
                                             <select asp-for="Category" class="form-select shadow-sm">
@@ -65,16 +65,28 @@
 
                                     <div class="row">
                                         <div class="col-md-6 mb-4">
-                                            <label asp-for="Stock" class="form-label fw-bold text-secondary">Stok Menu</label>
-                                            <input asp-for="Stock" type="number" min="0" class="form-control shadow-sm" placeholder="Contoh: 25" />
-                                            <span asp-validation-for="Stock" class="text-danger small"></span>
+                                            <label asp-for="MemberDiscountPercentage" class="form-label fw-bold text-secondary">Diskon Member (%)</label>
+                                            <div class="input-group shadow-sm">
+                                                <input asp-for="MemberDiscountPercentage" type="number" min="0" max="100" step="0.01" class="form-control" placeholder="Contoh: 10" />
+                                                <span class="input-group-text bg-warning text-dark">%</span>
+                                            </div>
+                                            <span asp-validation-for="MemberDiscountPercentage" class="text-danger small"></span>
+                                            <div class="form-text text-muted">Kosongkan jika tidak ada diskon member.</div>
                                         </div>
 
                                         <div class="col-md-6 mb-4 d-flex align-items-end">
-                                            <div class="form-check form-switch">
+                                            <div class="form-check form-switch" style="margin-bottom: 1rem;">
                                                 <input asp-for="IsAvailable" class="form-check-input" type="checkbox" />
                                                 <label asp-for="IsAvailable" class="form-check-label fw-bold text-secondary">Tersedia untuk dijual</label>
                                             </div>
+                                        </div>
+                                    </div>
+
+<div class="row">
+                                        <div class="col-md-6 mb-4">
+                                            <label asp-for="Stock" class="form-label fw-bold text-secondary">Stok Menu</label>
+                                            <input asp-for="Stock" type="number" min="0" class="form-control shadow-sm" placeholder="Contoh: 25" />
+                                            <span asp-validation-for="Stock" class="text-danger small"></span>
                                         </div>
                                     </div>
                                 </div>

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Checkout - Nusantara Heritage</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@600;700&amp;family=Inter:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "outline-variant": "#e0c0b2",
+                    "on-secondary": "#ffffff",
+                    "primary": "#9c3f00",
+                    "surface-bright": "#fcf9f8",
+                    "on-primary-fixed": "#351000",
+                    "on-tertiary": "#ffffff",
+                    "surface-tint": "#a04100",
+                    "on-secondary-container": "#636451",
+                    "surface-container-high": "#eae7e7",
+                    "surface-dim": "#dcd9d9",
+                    "tertiary-container": "#1c871e",
+                    "outline": "#8c7166",
+                    "surface-variant": "#e5e2e1",
+                    "on-secondary-fixed": "#1b1d0e",
+                    "surface-container-highest": "#e5e2e1",
+                    "on-primary": "#ffffff",
+                    "tertiary-fixed-dim": "#77dd6a",
+                    "on-tertiary-container": "#f8fff0",
+                    "tertiary": "#006c0c",
+                    "on-secondary-fixed-variant": "#474836",
+                    "error": "#ba1a1a",
+                    "error-container": "#ffdad6",
+                    "on-primary-container": "#fffbff",
+                    "on-error-container": "#93000a",
+                    "on-background": "#1c1b1b",
+                    "secondary-fixed-dim": "#c8c8b0",
+                    "tertiary-fixed": "#92fa83",
+                    "on-primary-fixed-variant": "#7a3000",
+                    "secondary-container": "#e1e1c9",
+                    "surface-container": "#f0eded",
+                    "primary-container": "#c45100",
+                    "surface-container-lowest": "#ffffff",
+                    "on-surface": "#1c1b1b",
+                    "primary-fixed-dim": "#ffb693",
+                    "background": "#fcf9f8",
+                    "surface": "#fcf9f8",
+                    "inverse-primary": "#ffb693",
+                    "secondary": "#5e604d",
+                    "primary-fixed": "#ffdbcc",
+                    "inverse-on-surface": "#f3f0ef",
+                    "on-tertiary-fixed-variant": "#005307",
+                    "on-error": "#ffffff",
+                    "on-surface-variant": "#584238",
+                    "surface-container-low": "#f6f3f2",
+                    "inverse-surface": "#313030",
+                    "secondary-fixed": "#e4e4cc",
+                    "on-tertiary-fixed": "#002201"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "lg": "48px",
+                    "gutter": "24px",
+                    "base": "8px",
+                    "container-max": "1280px",
+                    "md": "24px",
+                    "sm": "12px",
+                    "xs": "4px",
+                    "xl": "80px"
+            },
+            "fontFamily": {
+                    "h1": ["Noto Serif", "serif"],
+                    "body-sm": ["Inter", "sans-serif"],
+                    "h3": ["Noto Serif", "serif"],
+                    "label-caps": ["Inter", "sans-serif"],
+                    "h2": ["Noto Serif", "serif"],
+                    "body-lg": ["Inter", "sans-serif"],
+                    "body-md": ["Inter", "sans-serif"]
+            },
+            "fontSize": {
+                    "h1": ["48px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                    "body-sm": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                    "h3": ["24px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                    "label-caps": ["12px", { "lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                    "h2": ["36px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                    "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                    "body-md": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[data-weight="fill"] {
+          font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased font-body-md font-body-md selection:bg-primary-container selection:text-on-primary-container min-h-screen flex flex-col">
+<!-- Supressing Navigation (TopNavBar & Footer) as this is a linear transactional page (Checkout) -->
+<main class="flex-grow flex items-center justify-center py-xl px-gutter">
+<div class="w-full max-w-container-max mx-auto">
+<header class="mb-lg text-center md:text-left flex items-center gap-sm">
+<a class="text-on-surface-variant hover:text-primary transition-colors p-sm rounded-full hover:bg-surface-variant inline-flex items-center justify-center" href="#">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</a>
+<h1 class="font-h1 text-h1 text-on-background tracking-tight">Selesaikan Pesanan</h1>
+</header>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-lg items-start">
+<!-- Left Column: Order Summary -->
+<section class="lg:col-span-7 bg-surface-container-lowest rounded-xl p-md md:p-lg shadow-[0_4px_20px_rgba(0,0,0,0.05)] border border-surface-variant/50">
+<h2 class="font-h3 text-h3 text-on-surface mb-md pb-sm border-b border-surface-variant">Ringkasan Pesanan</h2>
+<div class="space-y-md mb-lg">
+<!-- Item 1 -->
+<div class="flex items-start gap-md group">
+<div class="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-surface-variant relative shadow-sm">
+<img alt="Nasi Goreng Kampoeng" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" data-alt="A beautifully plated traditional Indonesian Nasi Goreng Kampoeng served on a ceramic plate. The dish features fragrant fried rice, a sunny-side-up egg, crispy prawn crackers, and fresh cucumber slices. The lighting is warm and inviting, highlighting the rich textures and vibrant colors of the dish against a minimalist wooden table setting. Modern Indonesian luxury dining aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmwPOmjq2sekgd4hfJde8AzaEmwpz6IQ_XEG79RmFWCdWvnS7yMiMMopFiSrOf4tGO-61ibnBUDpJTyajyZmRlkTsYa6wn42Df6_yAZNxYWTogsE2N0bHQdbeLE1eTurO_sperWT4gIdqduO1I4N1mxXsz8uozmtmIVkTDTUpUjaOJ4aCBEAddUpMr7G-YRFtmeKC0jtzffA5kYk6WOiNZUFr3ZFHypBeTou7ANd_gkz2HVDBHsybbCGVmOX_AQINMdfaMDxzFhIbP"/>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-body-lg text-body-lg font-semibold text-on-surface">Nasi Goreng Kampoeng</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">Ekstra Telur Ceplok, Pedas Sedang</p>
+</div>
+<span class="font-body-lg text-body-lg font-semibold text-primary">Rp 85.000</span>
+</div>
+<div class="flex items-center gap-sm mt-sm">
+<span class="font-body-sm text-body-sm text-on-surface-variant bg-surface-container px-sm py-xs rounded-full">Qty: 2</span>
+</div>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="flex items-start gap-md group">
+<div class="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-surface-variant relative shadow-sm">
+<img alt="Sate Ayam Madura" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" data-alt="A serving of authentic Indonesian Sate Ayam Madura, consisting of grilled chicken skewers generously coated in a rich, dark peanut sauce. The skewers rest on a pristine white rectangular plate, garnished with sliced shallots and a wedge of lime. The lighting is focused, casting soft shadows that emphasize the glossy, appetizing texture of the peanut sauce in a high-end restaurant context." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfOYc9kYJb3_oa6giUkTwrpxeQ2r7jlSz7yeG7pAr_-CmVH1WntM-URplSySd-Ur5oOhqCPZH4ptsL9NqMUmuWLtspx1StdeL-c0rKT9jI8TZnvjXZTb0pec7rw3NnMEI6lb4TGqEMCHtp-768i070mUbTCTrTanlyn_6UeuWBKOE0_wL-AoHXEai60v5mrmBOfzOJ_Knx1WHlhR_ig8zPJQQIBUM0xq6GWUD88e_jzP5bMMUcvdzNPP051X-1U8BIz8AHjzHlWXVS"/>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-body-lg text-body-lg font-semibold text-on-surface">Sate Lilit Bali</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">Bumbu Genep Tradisional</p>
+</div>
+<span class="font-body-lg text-body-lg font-semibold text-primary">Rp 120.000</span>
+</div>
+<div class="flex items-center gap-sm mt-sm">
+<span class="font-body-sm text-body-sm text-on-surface-variant bg-surface-container px-sm py-xs rounded-full">Qty: 1</span>
+</div>
+</div>
+</div>
+</div>
+<div class="border-t border-surface-variant pt-md space-y-sm">
+<div class="flex justify-between items-center text-on-surface-variant font-body-md text-body-md">
+<span>Subtotal</span>
+<span>Rp 290.000</span>
+</div>
+<div class="flex justify-between items-center text-on-surface-variant font-body-md text-body-md">
+<span>Pajak (11%)</span>
+<span>Rp 31.900</span>
+</div>
+<div class="flex justify-between items-center text-on-surface-variant font-body-md text-body-md">
+<span>Layanan (5%)</span>
+<span>Rp 14.500</span>
+</div>
+<div class="flex justify-between items-center font-h3 text-h3 text-on-surface pt-sm border-t border-surface-variant mt-sm">
+<span>Total</span>
+<span class="text-primary">Rp 336.400</span>
+</div>
+</div>
+</section>
+<!-- Right Column: Payment & Details -->
+<section class="lg:col-span-5 space-y-md">
+<!-- Table Information -->
+<div class="bg-surface-container-lowest rounded-xl p-md shadow-[0_4px_20px_rgba(0,0,0,0.05)] border border-surface-variant/50 flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<div class="w-12 h-12 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="table_restaurant" data-weight="fill">table_restaurant</span>
+</div>
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant uppercase">Lokasi Bersantap</p>
+<p class="font-body-lg text-body-lg font-semibold text-on-surface">Meja 12 - Area Teras</p>
+</div>
+</div>
+<button class="text-primary font-body-sm text-body-sm font-semibold hover:underline">Ubah</button>
+</div>
+<!-- Notes -->
+<div class="bg-surface-container-lowest rounded-xl p-md shadow-[0_4px_20px_rgba(0,0,0,0.05)] border border-surface-variant/50">
+<label class="block font-body-md text-body-md font-semibold text-on-surface mb-sm" for="notes">Catatan Pesanan <span class="text-on-surface-variant font-normal">(Opsional)</span></label>
+<textarea class="w-full bg-surface-container-lowest border border-outline rounded-lg p-sm font-body-sm text-body-sm text-on-surface focus:ring-2 focus:ring-primary focus:border-primary transition-shadow placeholder:text-on-surface-variant/50" id="notes" placeholder="Contoh: Tolong pisahkan sambal, tidak pakai daun bawang..." rows="3"></textarea>
+</div>
+<!-- Payment Methods -->
+<div class="bg-surface-container-lowest rounded-xl p-md shadow-[0_4px_20px_rgba(0,0,0,0.05)] border border-surface-variant/50">
+<h2 class="font-h3 text-h3 text-on-surface mb-md">Metode Pembayaran</h2>
+<div class="space-y-sm">
+<!-- Bayar di Kasir -->
+<label class="flex items-center p-sm border border-outline rounded-lg cursor-pointer hover:bg-surface-container-low transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary-container/10">
+<input checked="" class="text-primary focus:ring-primary w-5 h-5 border-outline" name="payment_method" type="radio" value="kasir"/>
+<span class="ml-sm flex items-center gap-sm flex-grow">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="point_of_sale">point_of_sale</span>
+<span class="font-body-md text-body-md font-semibold text-on-surface">Bayar di Kasir</span>
+</span>
+</label>
+<!-- QRIS -->
+<label class="flex items-center p-sm border border-outline rounded-lg cursor-pointer hover:bg-surface-container-low transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary-container/10">
+<input class="text-primary focus:ring-primary w-5 h-5 border-outline" name="payment_method" type="radio" value="qris"/>
+<span class="ml-sm flex items-center gap-sm flex-grow">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="qr_code_scanner">qr_code_scanner</span>
+<span class="font-body-md text-body-md font-semibold text-on-surface">QRIS</span>
+</span>
+</label>
+<!-- Transfer Bank -->
+<label class="flex items-center p-sm border border-outline rounded-lg cursor-pointer hover:bg-surface-container-low transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary-container/10">
+<input class="text-primary focus:ring-primary w-5 h-5 border-outline" name="payment_method" type="radio" value="transfer"/>
+<span class="ml-sm flex items-center gap-sm flex-grow">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="account_balance">account_balance</span>
+<span class="font-body-md text-body-md font-semibold text-on-surface">Transfer Bank</span>
+</span>
+</label>
+</div>
+</div>
+<!-- Action Button -->
+<button class="w-full bg-primary hover:bg-primary/90 text-on-primary font-body-lg text-body-lg font-semibold py-md px-gutter rounded-lg transition-all transform hover:-translate-y-0.5 shadow-[0_4px_12px_rgba(156,63,0,0.3)] active:scale-[0.98] flex items-center justify-center gap-sm mt-lg">
+<span class="material-symbols-outlined" data-icon="check_circle">check_circle</span>
+                        Konfirmasi Pesanan
+                    </button>
+<p class="text-center font-body-sm text-body-sm text-on-surface-variant mt-sm">Dengan mengkonfirmasi, pesanan akan langsung diteruskan ke dapur.</p>
+</section>
+</div>
+</div>
+</main>
+</body></html>

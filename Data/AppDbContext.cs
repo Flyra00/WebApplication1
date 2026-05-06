@@ -20,6 +20,7 @@ namespace WebApplication1.Data
         public DbSet<Inventory> InventoryItems { get; set; }
         public DbSet<DamageReport> DamageReports { get; set; }
         public DbSet<MemberProfile> MemberProfiles { get; set; }
+        public DbSet<PhoneOtpVerification> PhoneOtpVerifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

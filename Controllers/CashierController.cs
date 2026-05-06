@@ -12,10 +12,12 @@ namespace WebApplication1.Controllers
     public class CashierController : Controller
     {
         private readonly AppDbContext _context;
+        private readonly ILogger<CashierController> _logger;
 
-        public CashierController(AppDbContext context)
+        public CashierController(AppDbContext context, ILogger<CashierController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // ─── Daftar order hari ini ───────────────────────────────────────────
@@ -101,7 +103,16 @@ namespace WebApplication1.Controllers
 
                 if (amountPaid < order.Total)
                 {
+                    _logger.LogWarning("Cashier payment rejected: insufficient amount for order {OrderId}", orderId);
                     TempData["Error"] = $"Nominal bayar kurang. Total: Rp {order.Total:N0}";
+                    return RedirectToAction(nameof(ProcessPayment), new { id = orderId });
+                }
+
+                var normalizedMethod = NormalizeCashierPaymentMethod(method);
+                if (normalizedMethod == null)
+                {
+                    _logger.LogWarning("Cashier payment rejected: invalid method for order {OrderId}", orderId);
+                    TempData["Error"] = "Metode pembayaran tidak valid.";
                     return RedirectToAction(nameof(ProcessPayment), new { id = orderId });
                 }
 
@@ -110,11 +121,11 @@ namespace WebApplication1.Controllers
                 var payment = new Payment
                 {
                     OrderId         = orderId,
-                    Method          = method,
-                    Amount          = amountPaid,
+                    Method          = normalizedMethod,
+                    Amount          = order.Total,
                     PaymentDate     = DateTime.UtcNow,
                     Status          = PaymentStatuses.Paid,
-                    ReferenceNumber = $"KSR-{DateTime.UtcNow:yyyyMMddHHmmss}",
+                    ReferenceNumber = $"KSR-{DateTime.UtcNow:yyyyMMddHHmmss}-{Random.Shared.Next(1000, 9999)}",
                     PaidByUserId    = cashierId
                 };
 
@@ -124,16 +135,36 @@ namespace WebApplication1.Controllers
                 await CloseSessionIfFullyPaidAsync(order.TableSessionId, order.Id);
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
+                _logger.LogInformation("Cashier payment confirmed for order {OrderId} with payment {PaymentId}", orderId, payment.Id);
 
                 TempData["Success"] = $"Pembayaran berhasil! Kembalian: Rp {(amountPaid - order.Total):N0}";
                 return RedirectToAction(nameof(PrintReceipt), new { id = payment.Id });
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync();
+                _logger.LogError(ex, "Cashier payment failed for order {OrderId}", orderId);
                 TempData["Error"] = "Pembayaran gagal diproses. Silakan coba lagi.";
                 return RedirectToAction(nameof(ProcessPayment), new { id = orderId });
             }
+        }
+
+        private static string? NormalizeCashierPaymentMethod(string? method)
+        {
+            if (string.IsNullOrWhiteSpace(method))
+                return null;
+
+            var normalized = method.Trim();
+            if (string.Equals(normalized, PaymentMethods.Cash, StringComparison.OrdinalIgnoreCase))
+                return PaymentMethods.Cash;
+            if (string.Equals(normalized, PaymentMethods.QRIS, StringComparison.OrdinalIgnoreCase))
+                return PaymentMethods.QRIS;
+            if (string.Equals(normalized, PaymentMethods.Transfer, StringComparison.OrdinalIgnoreCase))
+                return PaymentMethods.Transfer;
+            if (string.Equals(normalized, PaymentMethods.Midtrans, StringComparison.OrdinalIgnoreCase))
+                return PaymentMethods.Midtrans;
+
+            return null;
         }
 
         // ─── Cetak struk ─────────────────────────────────────────────────────

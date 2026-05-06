@@ -1,6 +1,7 @@
 ﻿@model List<Product>
 @{
     var canManage = User?.IsInRole(AppRoles.Admin) ?? false;
+    var canEdit = (User?.IsInRole(AppRoles.Admin) ?? false) || (User?.IsInRole(AppRoles.Supervisor) ?? false);
     Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
     ViewData["Title"] = "Daftar Menu";
 }
@@ -49,6 +50,7 @@
                             <tr>
                                 <th>Menu & Kategori</th>
                                 <th class="text-center">Harga</th>
+                                <th class="text-center">Diskon Member</th>
                                 <th class="text-center">Stok</th>
                                 <th class="text-center">Status</th>
                                 <th class="text-center">Foto</th>
@@ -79,8 +81,18 @@
                                             @product.Category
                                         </span>
                                     </td>
-                                    <td class="text-center fw-bold text-success">
+<td class="text-center fw-bold text-success">
                                         Rp @product.Price.ToString("N0")
+                                    </td>
+                                    <td class="text-center">
+                                        @if (product.MemberDiscountPercentage.HasValue && product.MemberDiscountPercentage > 0)
+                                        {
+                                            <span class="badge bg-warning-subtle text-warning border">@product.MemberDiscountPercentage.Value.ToString("N0")%</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
                                     </td>
                                     <td class="text-center">
                                         <span class="badge @(product.Stock > 0 ? "bg-info-subtle text-info" : "bg-danger-subtle text-danger") border">
@@ -114,20 +126,23 @@
                                             </div>
                                         }
                                     </td>
-                                    <td class="text-center text-muted small">
+<td class="text-center text-muted small">
                                         @product.Created.ToString("dd MMM yyyy")
                                     </td>
-                                    @if (canManage)
+                                    @if (canEdit)
                                     {
                                         <td class="text-center pe-4">
                                             <div class="btn-group shadow-sm">
                                                 <a asp-action="Edit" asp-route-id="@product.Id" class="btn btn-outline-warning btn-sm" title="Edit Menu">
                                                     <i class="bi bi-pencil-square"></i>
                                                 </a>
-                                                <a asp-action="Delete" asp-route-id="@product.Id" class="btn btn-outline-danger btn-sm"
-                                                   onclick="return confirm('Yakin mau hapus menu @product.Name?')" title="Delete Menu">
-                                                    <i class="bi bi-trash3-fill"></i>
-                                                </a>
+                                                @if (canManage)
+                                                {
+                                                    <a asp-action="Delete" asp-route-id="@product.Id" class="btn btn-outline-danger btn-sm"
+                                                       onclick="return confirm('Yakin mau hapus menu @product.Name?')" title="Delete Menu">
+                                                        <i class="bi bi-trash3-fill"></i>
+                                                    </a>
+                                                }
                                             </div>
                                         </td>
                                     }
