@@ -1,93 +1,367 @@
 @model IEnumerable<WebApplication1.Models.Order>
 @{
     ViewData["Title"] = "Antrian Dapur";
-    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    Layout = "~/Views/Shared/_LayoutOperational.cshtml";
 }
 
-<div class="d-flex align-items-center justify-content-between mb-4">
+<style>
+    .kitchen-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.25rem;
+        flex-wrap: wrap;
+        gap: .75rem;
+    }
+    .live-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: .45rem;
+        padding: .3rem .8rem;
+        border-radius: 999px;
+        font-size: .78rem;
+        font-weight: 700;
+        background: rgba(47,111,72,.1);
+        color: #2f6f48;
+        border: 1px solid rgba(47,111,72,.18);
+        letter-spacing: .04em;
+    }
+    .live-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #22c55e;
+        animation: pulse-dot 1.4s ease-in-out infinite;
+        flex-shrink: 0;
+    }
+    @@keyframes pulse-dot {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50%       { opacity: .5; transform: scale(.75); }
+    }
+    .kitchen-empty {
+        text-align: center;
+        padding: 4rem 1rem;
+    }
+    .order-card {
+        background: var(--op-surface);
+        border: 1px solid var(--op-border);
+        border-radius: 16px;
+        padding: 1.25rem;
+        height: 100%;
+        transition: border-color .3s;
+    }
+    .order-card.order-new {
+        animation: highlight-new 1.5s ease-out forwards;
+    }
+    @@keyframes highlight-new {
+        0%   { border-color: var(--op-accent); box-shadow: 0 0 0 3px rgba(245,158,11,.25); }
+        100% { border-color: var(--op-border);  box-shadow: none; }
+    }
+    .order-card.status-processing { border-left: 4px solid #f97316; }
+    .order-card.status-submitted  { border-left: 4px solid #3b82f6; }
+    .order-card.status-paid       { border-left: 4px solid #22c55e; }
+    .item-row {
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+        padding: .5rem .65rem;
+        border-radius: 8px;
+        background: var(--op-surface2);
+        margin-bottom: .4rem;
+        transition: background .2s;
+    }
+    .item-row:last-child { margin-bottom: 0; }
+    .ks-badge {
+        display: inline-block;
+        padding: .15rem .55rem;
+        border-radius: 20px;
+        font-size: .68rem;
+        font-weight: 700;
+        letter-spacing: .04em;
+        white-space: nowrap;
+    }
+    .ks-queued  { background:#64748b22;color:#94a3b8;border:1px solid #64748b55; }
+    .ks-cooking { background:#f9731622;color:#f97316;border:1px solid #f9731655; }
+    .ks-ready   { background:#22c55e22;color:#22c55e;border:1px solid #22c55e55; }
+    .ks-served  { background:#8b5cf622;color:#8b5cf6;border:1px solid #8b5cf655; }
+    .ks-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        padding: .22rem .6rem;
+        border-radius: 7px;
+        font-size: .73rem;
+        font-weight: 700;
+        border: none;
+        cursor: pointer;
+        transition: opacity .15s;
+        white-space: nowrap;
+    }
+    .ks-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .ks-btn-cook   { background:#3b82f6;color:#fff; }
+    .ks-btn-ready  { background:#22c55e;color:#07130a; }
+    .ks-btn-serve  { background:#8b5cf6;color:#fff; }
+    #orderGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap: 1rem; }
+    .order-type-badge {
+        display: inline-block;
+        padding: .15rem .5rem;
+        border-radius: 6px;
+        font-size: .68rem;
+        font-weight: 700;
+        background: rgba(156,63,0,.1);
+        color: var(--op-accent);
+    }
+</style>
+
+<div class="kitchen-topbar">
     <div>
-        <h4 class="mb-0 fw-bold"><i class="bi bi-fire me-2" style="color:#f97316;"></i>Antrian Dapur</h4>
-        <small style="color:var(--op-muted);">@Model.Count() pesanan aktif</small>
+        <h4 class="mb-0 fw-bold">
+            <i class="bi bi-fire me-2" style="color:var(--op-accent);"></i>Antrian Dapur
+        </h4>
+        <small style="color:var(--op-muted);" id="orderCount">@Model.Count() pesanan aktif</small>
     </div>
-    <button onclick="location.reload()" class="op-btn op-btn-secondary">
-        <i class="bi bi-arrow-clockwise me-1"></i>Refresh
-    </button>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="live-badge" id="liveBadge">
+            <span class="live-dot"></span>
+            LIVE &bull; <span id="lastUpdated">--:--:--</span>
+        </span>
+        <button onclick="fetchOrders()" class="op-btn op-btn-secondary" id="refreshBtn">
+            <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+        </button>
+    </div>
 </div>
 
-@if (!Model.Any())
-{
-    <div class="op-card text-center py-5">
-        <i class="bi bi-check-circle" style="font-size:3rem;color:#22c55e;"></i>
-        <h5 class="mt-3 fw-semibold">Semua pesanan selesai!</h5>
-        <p style="color:var(--op-muted);">Tidak ada pesanan yang perlu diproses saat ini.</p>
-    </div>
-}
-else
-{
-    <div class="row g-3">
-        @foreach (var order in Model)
-        {
-            <div class="col-md-6 col-xl-4">
-                <div class="op-card h-100" style="border-left:4px solid @(order.Status == "Processing" ? "#f97316" : "#3b82f6");">
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <div>
-                            <span class="fw-bold" style="font-size:1.1rem;">Meja @(order.TableSession?.Table?.Number ?? 0)</span>
-                            <small class="d-block" style="color:var(--op-muted);">@order.OrderDate.ToLocalTime().ToString("HH:mm") · @order.OrderNumber</small>
-                        </div>
-                        <a asp-action="PrintKitchenTicket" asp-route-id="@order.Id" target="_blank"
-                           class="op-btn op-btn-secondary" style="padding:.35rem .7rem;">
-                            <i class="bi bi-printer"></i>
-                        </a>
-                    </div>
+<div id="emptyState" class="op-card kitchen-empty" style="display:@(Model.Any() ? "none" : "block");">
+    <i class="bi bi-check-circle" style="font-size:3rem;color:#2f6f48;"></i>
+    <h5 class="mt-3 fw-semibold">Semua pesanan selesai!</h5>
+    <p style="color:var(--op-muted);">Tidak ada pesanan yang perlu diproses saat ini.</p>
+</div>
 
-                    @foreach (var item in order.Items)
-                    {
-                        var kColor = item.KitchenStatus switch {
-                            "Queued"  => "#64748b",
-                            "Cooking" => "#f97316",
-                            "Ready"   => "#22c55e",
-                            "Served"  => "#8b5cf6",
-                            _         => "#64748b"
-                        };
-                        <div class="d-flex align-items-center gap-2 mb-2 p-2" style="border-radius:8px;background:rgba(255,255,255,0.04);">
-                            <div class="flex-fill">
-                                <span class="fw-semibold" style="font-size:.9rem;">@item.Product?.Name</span>
-                                <small class="d-block" style="color:var(--op-muted);">x@item.Qty @(!string.IsNullOrWhiteSpace(item.Note) ? "· " + item.Note : "")</small>
-                            </div>
-                            <form asp-action="UpdateItemStatus" method="post" class="d-flex gap-1 align-items-center">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="itemId" value="@item.Id" />
-                                <span class="op-badge-status" style="background:@(kColor)22;color:@kColor;border:1px solid @(kColor)55;font-size:.7rem;">@item.KitchenStatus</span>
-                                @if (item.KitchenStatus == "Queued")
-                                {
-                                    <button name="kitchenStatus" value="Cooking" class="op-btn op-btn-primary" style="padding:.25rem .6rem;font-size:.75rem;">
-                                        <i class="bi bi-fire"></i> Masak
-                                    </button>
-                                }
-                                else if (item.KitchenStatus == "Cooking")
-                                {
-                                    <button name="kitchenStatus" value="Ready" class="op-btn op-btn-success" style="padding:.25rem .6rem;font-size:.75rem;">
-                                        <i class="bi bi-check"></i> Siap
-                                    </button>
-                                }
-                                else if (item.KitchenStatus == "Ready")
-                                {
-                                    <button name="kitchenStatus" value="Served" class="op-btn op-btn-secondary" style="padding:.25rem .6rem;font-size:.75rem;">
-                                        <i class="bi bi-send"></i> Sajikan
-                                    </button>
-                                }
-                            </form>
-                        </div>
-                    }
+<div id="orderGrid">
+    @foreach (var order in Model)
+    {
+        <div class="order-card status-@order.Status.ToLower()" data-order-id="@order.Id">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div>
+                    <span class="fw-bold" style="font-size:1.05rem;">
+                        @(order.OrderType == "Takeaway" ? "Takeaway" : $"Meja {order.TableSession?.Table?.Number ?? 0}")
+                    </span>
+                    <span class="order-type-badge ms-1">@order.OrderType</span>
+                    <small class="d-block" style="color:var(--op-muted);">
+                        @BusinessTime.ToBusinessTime(order.OrderDate).ToString("HH:mm") &bull; @order.OrderNumber
+                    </small>
                 </div>
+                <a asp-action="PrintKitchenTicket" asp-route-id="@order.Id" target="_blank"
+                   class="op-btn op-btn-secondary" style="padding:.3rem .65rem;">
+                    <i class="bi bi-printer"></i>
+                </a>
             </div>
-        }
-    </div>
-}
+
+            <div class="items-container" data-order-id="@order.Id">
+                @foreach (var item in order.Items)
+                {
+                    var ksBadge = item.KitchenStatus switch {
+                        "Queued"  => "ks-queued",
+                        "Cooking" => "ks-cooking",
+                        "Ready"   => "ks-ready",
+                        "Served"  => "ks-served",
+                        _         => "ks-queued"
+                    };
+                    <div class="item-row" data-item-id="@item.Id">
+                        <div class="flex-fill">
+                            <span class="fw-semibold" style="font-size:.88rem;">@item.Product?.Name</span>
+                            <small class="d-block" style="color:var(--op-muted);">
+                                x@item.Qty @(!string.IsNullOrWhiteSpace(item.Note) ? "· " + item.Note : "")
+                            </small>
+                        </div>
+                        <span class="ks-badge @ksBadge ks-status-badge" data-item-id="@item.Id">@item.KitchenStatus</span>
+                        @if (item.KitchenStatus == "Queued")
+                        {
+                            <button class="ks-btn ks-btn-cook" onclick="updateStatus(@item.Id,'Cooking',this)">
+                                <i class="bi bi-fire"></i> Masak
+                            </button>
+                        }
+                        else if (item.KitchenStatus == "Cooking")
+                        {
+                            <button class="ks-btn ks-btn-ready" onclick="updateStatus(@item.Id,'Ready',this)">
+                                <i class="bi bi-check"></i> Siap
+                            </button>
+                        }
+                        else if (item.KitchenStatus == "Ready")
+                        {
+                            <button class="ks-btn ks-btn-serve" onclick="updateStatus(@item.Id,'Served',this)">
+                                <i class="bi bi-send"></i> Sajikan
+                            </button>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
 
 @section Scripts {
 <script>
-    // Auto-refresh setiap 30 detik
-    setTimeout(() => location.reload(), 30000);
+(function () {
+    const POLL_INTERVAL = 5000; // 5 detik
+    const csrfToken = document.querySelector('meta[name="request-verification-token"]')?.content ?? '';
+    let knownOrderIds = new Set([...document.querySelectorAll('[data-order-id]')]
+        .map(el => el.getAttribute('data-order-id')).filter(Boolean));
+    let isFirstFetch = true;
+
+    // ─── Status badge helper ─────────────────────────────────────────────
+    const ksBadgeClass = { Queued:'ks-queued', Cooking:'ks-cooking', Ready:'ks-ready', Served:'ks-served' };
+    const ksLabel      = { Queued:'Queued', Cooking:'Cooking', Ready:'Ready', Served:'Served' };
+
+    function buildItemRow(item) {
+        const badgeClass = ksBadgeClass[item.kitchenStatus] || 'ks-queued';
+        let btnHtml = '';
+        if      (item.kitchenStatus === 'Queued')  btnHtml = `<button class="ks-btn ks-btn-cook"  onclick="updateStatus(${item.id},'Cooking',this)"><i class="bi bi-fire"></i> Masak</button>`;
+        else if (item.kitchenStatus === 'Cooking') btnHtml = `<button class="ks-btn ks-btn-ready" onclick="updateStatus(${item.id},'Ready',this)"><i class="bi bi-check"></i> Siap</button>`;
+        else if (item.kitchenStatus === 'Ready')   btnHtml = `<button class="ks-btn ks-btn-serve" onclick="updateStatus(${item.id},'Served',this)"><i class="bi bi-send"></i> Sajikan</button>`;
+        return `
+            <div class="item-row" data-item-id="${item.id}">
+                <div class="flex-fill">
+                    <span class="fw-semibold" style="font-size:.88rem;">${item.productName}</span>
+                    <small class="d-block" style="color:var(--op-muted);">x${item.qty}${item.note ? ' · '+item.note : ''}</small>
+                </div>
+                <span class="ks-badge ${badgeClass} ks-status-badge" data-item-id="${item.id}">${ksLabel[item.kitchenStatus]||item.kitchenStatus}</span>
+                ${btnHtml}
+            </div>`;
+    }
+
+    function buildOrderCard(order) {
+        const statusClass = (order.status||'').toLowerCase();
+        const tableLabel  = order.orderType === 'Takeaway' ? 'Takeaway' : `Meja ${order.tableNumber}`;
+        const itemsHtml   = order.items.map(buildItemRow).join('');
+        return `
+            <div class="order-card order-new status-${statusClass}" data-order-id="${order.id}">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                        <span class="fw-bold" style="font-size:1.05rem;">${tableLabel}</span>
+                        <span class="order-type-badge ms-1">${order.orderType}</span>
+                        <small class="d-block" style="color:var(--op-muted);">${order.orderDate} &bull; ${order.orderNumber}</small>
+                    </div>
+                    <a href="/Kitchen/PrintKitchenTicket/${order.id}" target="_blank"
+                       class="op-btn op-btn-secondary" style="padding:.3rem .65rem;">
+                        <i class="bi bi-printer"></i>
+                    </a>
+                </div>
+                <div class="items-container" data-order-id="${order.id}">${itemsHtml}</div>
+            </div>`;
+    }
+
+    // ─── Fetch dari server ───────────────────────────────────────────────
+    async function fetchOrders() {
+        try {
+            const resp = await fetch('/Kitchen/GetActiveOrders', { cache: 'no-cache' });
+            if (!resp.ok) return;
+            const json = await resp.json();
+            if (!json.success) return;
+
+            const orders  = json.data;
+            const grid    = document.getElementById('orderGrid');
+            const empty   = document.getElementById('emptyState');
+
+            // Update timestamp
+            document.getElementById('lastUpdated').textContent = json.serverTime;
+
+            // Cek order baru
+            const incomingIds = new Set(orders.map(o => String(o.id)));
+            const newIds      = [...incomingIds].filter(id => !knownOrderIds.has(id));
+
+            if (!isFirstFetch && newIds.length > 0) {
+                showNewOrderToast(newIds.length);
+            }
+            isFirstFetch = false;
+
+            // Hapus card yang sudah selesai
+            grid.querySelectorAll('[data-order-id]').forEach(card => {
+                const id = card.getAttribute('data-order-id');
+                if (!incomingIds.has(id)) card.remove();
+            });
+
+            // Tambah/update order
+            orders.forEach(order => {
+                const id      = String(order.id);
+                const existing = grid.querySelector(`[data-order-id="${id}"]`);
+                if (existing) {
+                    // Update status card
+                    existing.className = `order-card status-${(order.status||'').toLowerCase()}`;
+                    // Update items
+                    const itemsContainer = existing.querySelector('.items-container');
+                    if (itemsContainer) {
+                        order.items.forEach(item => {
+                            const itemRow = itemsContainer.querySelector(`[data-item-id="${item.id}"]`);
+                            if (itemRow) {
+                                // Update badge
+                                const badge = itemRow.querySelector('.ks-status-badge');
+                                if (badge) {
+                                    badge.className = `ks-badge ${ksBadgeClass[item.kitchenStatus]||'ks-queued'} ks-status-badge`;
+                                    badge.textContent = item.kitchenStatus;
+                                }
+                                // Update button — replace seluruh row untuk simpelnya
+                                itemRow.outerHTML = buildItemRow(item);
+                            }
+                        });
+                    }
+                } else {
+                    // Tambah card baru
+                    grid.insertAdjacentHTML('afterbegin', buildOrderCard(order));
+                }
+            });
+
+            knownOrderIds = incomingIds;
+
+            // Toggle empty state
+            const hasOrders = orders.length > 0;
+            empty.style.display = hasOrders ? 'none' : 'block';
+            document.getElementById('orderCount').textContent =
+                hasOrders ? `${orders.length} pesanan aktif` : 'Tidak ada pesanan aktif';
+
+        } catch (err) {
+            console.warn('[Kitchen] Polling error:', err);
+        }
+    }
+
+    function showNewOrderToast(count) {
+        if (typeof toastr !== 'undefined') {
+            toastr.info(`🍳 ${count} pesanan baru masuk!`, 'Dapur', { timeOut: 6000 });
+        }
+    }
+
+    // ─── Update status item via AJAX ─────────────────────────────────────
+    window.updateStatus = async function(itemId, newStatus, btn) {
+        if (btn) btn.disabled = true;
+        try {
+            const resp = await fetch('/Kitchen/UpdateItemStatusAjax', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': csrfToken
+                },
+                body: JSON.stringify({ itemId, kitchenStatus: newStatus })
+            });
+            const data = await resp.json();
+            if (data.success) {
+                // Refresh langsung setelah update
+                await fetchOrders();
+            } else {
+                if (window.toastr) {
+                    window.toastr.error(data.error || 'Gagal update status.');
+                }
+                if (btn) btn.disabled = false;
+            }
+        } catch (err) {
+            console.error(err);
+            if (btn) btn.disabled = false;
+        }
+    };
+
+    // ─── Mulai polling ───────────────────────────────────────────────────
+    fetchOrders(); // fetch pertama langsung
+    setInterval(fetchOrders, POLL_INTERVAL);
+
+})();
 </script>
 }

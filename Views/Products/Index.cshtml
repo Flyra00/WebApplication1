@@ -139,7 +139,7 @@
                                                 @if (canManage)
                                                 {
                                                     <a asp-action="Delete" asp-route-id="@product.Id" class="btn btn-outline-danger btn-sm"
-                                                       onclick="return confirm('Yakin mau hapus menu @product.Name?')" title="Delete Menu">
+                                                       data-confirm-title="Hapus Menu" data-confirm-message="Yakin mau hapus menu @product.Name?" title="Hapus Menu">
                                                         <i class="bi bi-trash3-fill"></i>
                                                     </a>
                                                 }

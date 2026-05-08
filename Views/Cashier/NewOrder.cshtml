@@ -1,25 +1,327 @@
 @{
     ViewData["Title"] = "Input Pesanan Kasir";
     Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
-    var tables   = ViewBag.Tables   as List<WebApplication1.Models.Table>;
+    var tables = ViewBag.Tables as List<WebApplication1.Models.Table>;
     var products = ViewBag.Products as List<WebApplication1.Models.Product>;
+    var fallbackImage = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80";
+    var groupedProducts = (products ?? new List<WebApplication1.Models.Product>())
+        .Where(p => p != null)
+        .GroupBy(p => string.IsNullOrWhiteSpace(p.Category) ? "Menu" : p.Category)
+        .OrderBy(g => g.Key)
+        .ToList();
 }
 
-<div class="d-flex align-items-center gap-3 mb-4">
-    <a asp-action="Index" class="op-btn op-btn-secondary"><i class="bi bi-arrow-left"></i></a>
-    <h4 class="mb-0 fw-bold">Pesanan Baru (Kasir)</h4>
+<style>
+    .new-order-hero {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+        flex-wrap: wrap;
+    }
+    .new-order-hero p {
+        margin: 0;
+        color: var(--op-muted);
+    }
+    .new-order-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr);
+        gap: 1.25rem;
+        align-items: start;
+    }
+    .section-label {
+        color: var(--op-muted);
+        font-size: .72rem;
+        font-weight: 800;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        margin-bottom: .75rem;
+    }
+    .table-pill-wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .5rem;
+    }
+    .table-btn {
+        min-width: 62px;
+        justify-content: center;
+        padding-inline: .9rem;
+    }
+    .menu-section + .menu-section { margin-top: 1.25rem; }
+    .menu-section-header {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: .8rem;
+    }
+    .menu-section-header h5 {
+        margin: 0;
+        font-weight: 800;
+        letter-spacing: -.02em;
+        text-transform: capitalize;
+    }
+    .menu-section-header small { color: var(--op-muted); }
+    .menu-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: .9rem;
+    }
+    .menu-card-btn {
+        width: 100%;
+        text-align: left;
+        padding: 0;
+        border-radius: 18px;
+        border: 1px solid var(--op-border);
+        background: var(--op-surface);
+        overflow: hidden;
+        transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+        position: relative;
+        box-shadow: 0 8px 24px rgba(44, 44, 44, .04);
+    }
+    .menu-card-btn:hover {
+        transform: translateY(-2px);
+        border-color: var(--op-accent);
+        box-shadow: 0 14px 30px rgba(156, 63, 0, .09);
+    }
+    .menu-card-btn.selected {
+        border-color: var(--op-accent);
+        box-shadow: 0 0 0 3px rgba(156, 63, 0, .09);
+    }
+    .menu-card-image {
+        position: relative;
+        aspect-ratio: 4 / 3;
+        background: var(--op-surface2);
+        overflow: hidden;
+    }
+    .menu-card-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+    .menu-card-badge {
+        position: absolute;
+        top: .85rem;
+        right: .85rem;
+        min-width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        background: rgba(28, 27, 27, .82);
+        color: #fff;
+        font-size: .75rem;
+        font-weight: 800;
+        padding: 0 .5rem;
+        opacity: 0;
+        transform: scale(.95);
+        transition: opacity .18s ease, transform .18s ease;
+    }
+    .menu-card-btn.selected .menu-card-badge {
+        opacity: 1;
+        transform: scale(1);
+    }
+    .menu-card-body {
+        padding: 1rem 1rem 1.05rem;
+        display: grid;
+        gap: .75rem;
+    }
+    .menu-card-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .75rem;
+    }
+    .menu-card-category {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        padding: 0 .7rem;
+        border-radius: 999px;
+        background: rgba(156, 63, 0, .08);
+        color: var(--op-accent);
+        font-size: .72rem;
+        font-weight: 800;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+    .menu-card-price {
+        color: var(--op-text);
+        font-weight: 800;
+        font-size: .95rem;
+        white-space: nowrap;
+    }
+    .menu-card-title {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 800;
+        line-height: 1.25;
+    }
+    .menu-card-subtitle {
+        margin: 0;
+        color: var(--op-muted);
+        font-size: .85rem;
+        line-height: 1.5;
+    }
+    .menu-card-action {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .75rem;
+        margin-top: .25rem;
+    }
+    .menu-card-action .mini-hint {
+        color: var(--op-muted);
+        font-size: .78rem;
+    }
+    .cart-panel {
+        position: sticky;
+        top: 80px;
+    }
+    .cart-header {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: .9rem;
+    }
+    .cart-header h6 { margin: 0; }
+    .cart-table {
+        display: grid;
+        gap: .75rem;
+        margin-top: .25rem;
+    }
+    .cart-empty {
+        padding: 1rem 0;
+        color: var(--op-muted);
+        font-size: .9rem;
+    }
+    .cart-item {
+        display: grid;
+        grid-template-columns: 52px minmax(0, 1fr);
+        gap: .8rem;
+        padding: .75rem;
+        border: 1px solid var(--op-border);
+        border-radius: 14px;
+        background: var(--op-surface);
+    }
+    .cart-item-thumb {
+        width: 52px;
+        height: 52px;
+        border-radius: 12px;
+        overflow: hidden;
+        background: var(--op-surface2);
+        flex-shrink: 0;
+    }
+    .cart-item-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+    .cart-item-main {
+        min-width: 0;
+        display: grid;
+        gap: .45rem;
+    }
+    .cart-item-head {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: .75rem;
+    }
+    .cart-item-name {
+        margin: 0;
+        font-weight: 800;
+        line-height: 1.25;
+        word-break: break-word;
+    }
+    .cart-item-price {
+        color: var(--op-muted);
+        font-size: .8rem;
+        margin: .15rem 0 0;
+    }
+    .cart-item-controls {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .65rem;
+        flex-wrap: wrap;
+    }
+    .qty-group {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        background: var(--op-surface2);
+        border: 1px solid var(--op-border);
+        border-radius: 999px;
+        padding: .22rem;
+    }
+    .qty-group .op-btn {
+        min-width: 32px;
+        height: 32px;
+        padding: 0;
+        justify-content: center;
+        border-radius: 999px;
+    }
+    .cart-item-total {
+        font-weight: 800;
+        white-space: nowrap;
+    }
+    .cart-summary {
+        display: grid;
+        gap: .7rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--op-border);
+    }
+    .cart-summary-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+    .cart-summary-row strong { font-size: 1.05rem; }
+    .sticky-note {
+        color: var(--op-muted);
+        font-size: .8rem;
+        line-height: 1.5;
+        margin-top: .6rem;
+    }
+    @@media (max-width: 992px) {
+        .new-order-grid { grid-template-columns: 1fr; }
+        .cart-panel { position: static; }
+    }
+    @@media (max-width: 576px) {
+        .menu-grid { grid-template-columns: 1fr; }
+        .menu-section-header,
+        .cart-header { flex-direction: column; align-items: start; }
+        .cart-item { grid-template-columns: 1fr; }
+        .cart-item-thumb { width: 100%; height: 140px; }
+        .cart-item-controls { align-items: start; }
+    }
+</style>
+
+<div class="new-order-hero">
+    <div>
+        <p class="section-label">Kasir • Pesanan Baru</p>
+        <h4 class="mb-1 fw-bold">Input Pesanan Baru</h4>
+        <p>Susun pesanan dengan cepat, lihat gambar menu, lalu kirim ke dapur tanpa alur yang berbelit.</p>
+    </div>
+    <a asp-action="Index" class="op-btn op-btn-secondary"><i class="bi bi-arrow-left"></i> Kembali</a>
 </div>
 
-<div class="row g-3">
-    <!-- Pilih Meja & Menu -->
-    <div class="col-lg-8">
+<div class="new-order-grid">
+    <div>
         <div class="op-card mb-3">
-            <label class="form-label fw-semibold" style="color:var(--op-muted);font-size:.75rem;text-transform:uppercase;">Pilih Meja</label>
-            <div class="d-flex flex-wrap gap-2" id="tableGrid">
+            <div class="section-label mb-2">Pilih Meja</div>
+            <div class="table-pill-wrap" id="tableGrid">
                 @foreach (var t in tables ?? new List<WebApplication1.Models.Table>())
                 {
-                    <button type="button" class="op-btn op-btn-secondary table-btn" data-num="@t.Number"
-                            style="min-width:60px;justify-content:center;">
+                    <button type="button" class="op-btn op-btn-secondary table-btn" data-num="@t.Number">
                         @t.Number
                     </button>
                 }
@@ -27,42 +329,87 @@
         </div>
 
         <div class="op-card">
-            <label class="form-label fw-semibold mb-3" style="color:var(--op-muted);font-size:.75rem;text-transform:uppercase;">Pilih Menu</label>
-            @{ var grouped = (products ?? new List<WebApplication1.Models.Product>()).GroupBy(p => p.Category); }
-            @foreach (var grp in grouped)
+            <div class="section-label">Pilih Menu</div>
+
+            @if (!groupedProducts.Any())
             {
-                <div class="mb-2">
-                    <p class="mb-2 fw-semibold" style="color:var(--op-accent);font-size:.8rem;">@grp.Key.ToUpper()</p>
-                    <div class="d-flex flex-wrap gap-2">
-                        @foreach (var p in grp)
-                        {
-                            <button type="button" class="op-btn op-btn-secondary product-btn"
-                                    data-id="@p.Id" data-name="@p.Name" data-price="@p.Price"
-                                    style="font-size:.8rem;">
-                                <span>@p.Name</span>
-                                <small style="color:var(--op-muted);">Rp @p.Price.ToString("N0")</small>
-                            </button>
-                        }
-                    </div>
-                </div>
+                <div class="cart-empty">Menu belum tersedia.</div>
+            }
+            else
+            {
+                foreach (var grp in groupedProducts)
+                {
+                    <section class="menu-section">
+                        <div class="menu-section-header">
+                            <div>
+                                <h5>@grp.Key</h5>
+                                <small>@grp.Count() item tersedia</small>
+                            </div>
+                        </div>
+
+                        <div class="menu-grid">
+                            @foreach (var p in grp)
+                            {
+                                var imageSrc = string.IsNullOrWhiteSpace(p.ImageFileName)
+                                    ? fallbackImage
+                                    : $"/products/{p.ImageFileName}";
+                                <button type="button"
+                                        class="menu-card-btn product-btn"
+                                        data-id="@p.Id"
+                                        data-name="@p.Name"
+                                        data-price="@p.Price.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                        data-category="@(string.IsNullOrWhiteSpace(p.Category) ? "Menu" : p.Category)"
+                                        data-image="@imageSrc"
+                                        aria-label="Tambah @p.Name">
+                                    <div class="menu-card-image">
+                                        <img src="@imageSrc" alt="@p.Name" loading="lazy" />
+                                        <span class="menu-card-badge" data-product-count="@p.Id">0</span>
+                                    </div>
+                                    <div class="menu-card-body">
+                                        <div class="menu-card-meta">
+                                            <span class="menu-card-category">@(string.IsNullOrWhiteSpace(p.Category) ? "Menu" : p.Category)</span>
+                                            <span class="menu-card-price">Rp @p.Price.ToString("N0")</span>
+                                        </div>
+                                        <div>
+                                            <h6 class="menu-card-title">@p.Name</h6>
+                                            <p class="menu-card-subtitle">Tap untuk menambah ke keranjang. Item dipilih akan diberi penanda.</p>
+                                        </div>
+                                        <div class="menu-card-action">
+                                            <span class="mini-hint"><i class="bi bi-cart-plus me-1"></i>Tambah ke order</span>
+                                            <span class="op-btn op-btn-primary" style="padding:.45rem .8rem;">Tambah</span>
+                                        </div>
+                                    </div>
+                                </button>
+                            }
+                        </div>
+                    </section>
+                }
             }
         </div>
     </div>
 
-    <!-- Keranjang -->
-    <div class="col-lg-4">
-        <div class="op-card" style="position:sticky;top:80px;">
-            <h6 class="fw-semibold mb-3" style="color:var(--op-muted);text-transform:uppercase;font-size:.75rem;">Keranjang</h6>
-            <div id="selectedTable" class="mb-2 fw-semibold" style="color:#f59e0b;">Meja belum dipilih</div>
-            <div id="cart" class="mb-3" style="min-height:80px;"></div>
-            <hr style="border-color:var(--op-border);" />
-            <div class="d-flex justify-content-between fw-bold mb-3">
-                <span>TOTAL</span>
-                <span id="totalDisplay" style="color:#f59e0b;">Rp 0</span>
+    <div>
+        <div class="op-card cart-panel">
+            <div class="cart-header">
+                <div>
+                    <div class="section-label mb-1">Keranjang</div>
+                    <h6 class="fw-semibold mb-0">Ringkasan Pesanan</h6>
+                </div>
+                <div id="selectedTable" class="op-badge-status" style="background:rgba(156,63,0,.1);color:var(--op-accent);border:1px solid rgba(156,63,0,.16);">Meja belum dipilih</div>
             </div>
-            <button id="submitOrder" class="op-btn op-btn-success w-100" style="justify-content:center;" disabled>
-                <i class="bi bi-send-fill me-2"></i>Kirim Pesanan
-            </button>
+
+            <div id="cart" class="cart-table"></div>
+
+            <div class="cart-summary">
+                <div class="cart-summary-row">
+                    <span class="fw-semibold">TOTAL</span>
+                    <strong id="totalDisplay" style="color:var(--op-accent);">Rp 0</strong>
+                </div>
+                <button id="submitOrder" class="op-btn op-btn-success w-100" style="justify-content:center;" disabled>
+                    <i class="bi bi-send-fill me-2"></i>Kirim Pesanan
+                </button>
+                <p class="sticky-note mb-0">Pastikan meja sudah dipilih dan semua item benar sebelum dikirim ke dapur.</p>
+            </div>
         </div>
     </div>
 </div>
@@ -71,6 +418,35 @@
 <script>
 let cart = [];
 let tableNumber = null;
+const fallbackImage = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80';
+const submitUrl = '@Url.Action("SubmitNewOrder", "Cashier")';
+
+function getItemCount(id) {
+    const item = cart.find(c => c.id === id);
+    return item ? item.qty : 0;
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function syncProductState() {
+    document.querySelectorAll('.product-btn').forEach(btn => {
+        const id = parseInt(btn.dataset.id);
+        const count = getItemCount(id);
+        btn.classList.toggle('selected', count > 0);
+        const badge = btn.querySelector('[data-product-count]');
+        if (badge) {
+            badge.textContent = String(count);
+            badge.style.display = count > 0 ? 'inline-flex' : 'none';
+        }
+    });
+}
 
 document.querySelectorAll('.table-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -87,26 +463,47 @@ document.querySelectorAll('.product-btn').forEach(btn => {
         const id = parseInt(btn.dataset.id);
         const existing = cart.find(c => c.id === id);
         if (existing) existing.qty++;
-        else cart.push({ id, name: btn.dataset.name, price: parseFloat(btn.dataset.price), qty: 1 });
+        else cart.push({
+            id,
+            name: btn.dataset.name,
+            price: parseFloat(btn.dataset.price),
+            qty: 1,
+            image: btn.dataset.image || fallbackImage,
+            category: btn.dataset.category || 'Menu'
+        });
         renderCart();
     });
 });
 
 function renderCart() {
     const div = document.getElementById('cart');
-    if (cart.length === 0) { div.innerHTML = '<p style="color:var(--op-muted);font-size:.85rem;">Belum ada item.</p>'; }
-    else {
+    if (cart.length === 0) {
+        div.innerHTML = '<div class="cart-empty">Belum ada item. Pilih menu untuk mulai menyusun pesanan.</div>';
+    } else {
         div.innerHTML = cart.map((c, i) => `
-            <div class="d-flex align-items-center gap-2 mb-2" style="font-size:.85rem;">
-                <span class="flex-fill">${c.name}</span>
-                <button onclick="changeQty(${i},-1)" class="op-btn op-btn-secondary" style="padding:.15rem .5rem;">−</button>
-                <span style="min-width:20px;text-align:center;">${c.qty}</span>
-                <button onclick="changeQty(${i},1)"  class="op-btn op-btn-secondary" style="padding:.15rem .5rem;">+</button>
-                <span style="min-width:80px;text-align:right;">Rp ${(c.price*c.qty).toLocaleString('id-ID')}</span>
+            <div class="cart-item">
+                <div class="cart-item-thumb"><img src="${c.image || fallbackImage}" alt="${escapeHtml(c.name)}" /></div>
+                <div class="cart-item-main">
+                    <div class="cart-item-head">
+                        <div>
+                            <p class="cart-item-name">${escapeHtml(c.name)}</p>
+                            <div class="cart-item-price">${escapeHtml(c.category || 'Menu')} • Rp ${Number(c.price).toLocaleString('id-ID')}</div>
+                        </div>
+                        <span class="cart-item-total">Rp ${(c.price * c.qty).toLocaleString('id-ID')}</span>
+                    </div>
+                    <div class="cart-item-controls">
+                        <div class="qty-group">
+                            <button type="button" onclick="changeQty(${i},-1)" class="op-btn op-btn-secondary">−</button>
+                            <span style="min-width:24px;text-align:center;font-weight:700;">${c.qty}</span>
+                            <button type="button" onclick="changeQty(${i},1)" class="op-btn op-btn-secondary">+</button>
+                        </div>
+                    </div>
+                </div>
             </div>`).join('');
     }
     const total = cart.reduce((s,c) => s + c.price*c.qty, 0);
     document.getElementById('totalDisplay').textContent = 'Rp ' + total.toLocaleString('id-ID');
+    syncProductState();
     checkSubmit();
 }
 
@@ -128,7 +525,7 @@ document.getElementById('submitOrder').addEventListener('click', async () => {
     };
     try {
         const token = document.querySelector('meta[name="request-verification-token"]')?.getAttribute('content') || '';
-        const res = await fetch('/CustomerOrder/Submit', {
+        const res = await fetch(submitUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -140,9 +537,14 @@ document.getElementById('submitOrder').addEventListener('click', async () => {
         if (data.success) {
             window.location.href = '/Cashier';
         } else {
-            alert('Gagal: ' + data.error);
+            const message = 'Gagal: ' + data.error;
+            if (window.toastr) window.toastr.error(message);
+            else alert(message);
         }
-    } catch(e) { alert('Terjadi kesalahan.'); }
+    } catch(e) {
+        if (window.toastr) window.toastr.error('Terjadi kesalahan.');
+        else alert('Terjadi kesalahan.');
+    }
 });
 
 renderCart();

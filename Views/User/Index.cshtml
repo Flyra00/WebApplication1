@@ -86,8 +86,9 @@
                                                     @Html.AntiForgeryToken()
                                                     <button type="submit"
                                                             class="btn btn-outline-danger btn-sm"
-                                                            onclick="return confirm('Yakin mau hapus user @user.UserName?')"
-                                                            title="Delete User">
+                                                            data-confirm-title="Hapus User"
+                                                            data-confirm-message="Yakin mau hapus user @user.UserName?"
+                                                            title="Hapus User">
                                                         <i class="bi bi-trash3-fill"></i>
                                                     </button>
                                                 </form>

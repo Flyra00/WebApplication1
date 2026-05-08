@@ -1,0 +1,172 @@
+@model WebApplication1.ViewModels.TrackOrder.TrackOrderViewModel
+@{
+    Layout = "~/Views/Shared/_PublicLayout.cshtml";
+    ViewData["Title"] = "Lacak Pesanan";
+    var statusUrl = Url.Content($"~/TrackOrder/{Model.OrderNumber}/Status");
+}
+
+@section Styles {
+    <style>
+        :root { --bg:#fbf7f3; --card:#fff; --text:#1f1b18; --muted:#6b5c54; --forest:#5e604d; --terracotta:#9c3f00; --ok:#2d6a4f; --line:#eadbd3; --shadow:0 18px 50px rgba(44,44,44,.08); }
+        * { box-sizing:border-box; }
+        body { min-height:100vh; background:linear-gradient(180deg,#fff8f2 0%, var(--bg) 100%); color:var(--text); font-family:Inter,sans-serif; }
+        .wrap { width:min(100% - 32px, 980px); margin:0 auto; padding:32px 0 48px; }
+        .hero { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; margin-bottom:20px; }
+        h1 { margin:0 0 8px; font-size:clamp(28px,4vw,40px); }
+        .sub { margin:0; color:var(--muted); line-height:1.6; }
+        .card { background:var(--card); border:1px solid var(--line); border-radius:24px; box-shadow:var(--shadow); padding:22px; margin-top:18px; }
+        .badge { display:inline-flex; align-items:center; gap:8px; padding:8px 14px; border-radius:999px; background:#f4ede3; color:var(--forest); font-weight:700; }
+        .progress { margin-top:14px; }
+        .bar { height:12px; border-radius:999px; background:#f1e7e1; overflow:hidden; }
+        .bar > span { display:block; height:100%; width:@($"{Model.ProgressPercent}%"); background:linear-gradient(90deg,var(--terracotta),#c05a1a); border-radius:999px; transition:width .25s ease; }
+        .steps { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:14px; }
+        .step { padding:12px; border-radius:16px; background:#f8f3ef; border:1px solid #efe0d6; font-size:13px; color:var(--muted); text-align:center; }
+        .step.active { background:#f4ede3; border-color:#dfc1b2; color:var(--text); font-weight:700; }
+        .grid { display:grid; grid-template-columns:1fr; gap:16px; }
+        .item { display:flex; justify-content:space-between; gap:14px; padding:14px 0; border-top:1px solid #f0e4dc; }
+        .item:first-child { border-top:0; padding-top:0; }
+        .item:last-child { padding-bottom:0; }
+        .item h3 { margin:0 0 6px; font-size:16px; }
+        .item p { margin:0; color:var(--muted); }
+        .status { display:inline-flex; align-items:center; padding:7px 12px; border-radius:999px; background:#f4ede3; color:var(--forest); font-size:13px; font-weight:700; white-space:nowrap; }
+        .status.good { background:#e7f4ee; color:var(--ok); }
+        .status.warn { background:#fff4de; color:#8a5b00; }
+        .meta { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+        .meta .box { padding:14px; border-radius:16px; background:#faf6f3; border:1px solid #efe0d6; }
+        .meta .label { display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
+        .meta .value { font-weight:800; }
+        .empty { padding:18px; border-radius:16px; background:#faf6f3; color:var(--muted); }
+        @@media (max-width:720px) { .hero { flex-direction:column; } .meta,.steps { grid-template-columns:1fr; } .item { flex-direction:column; } }
+    </style>
+}
+
+<main class="wrap">
+        <div class="hero">
+            <div>
+                <h1>Lacak Pesanan</h1>
+                <p class="sub">Pantau status pesanan Anda secara langsung dari dapur sampai selesai.</p>
+            </div>
+            <span class="badge"><span class="material-symbols-outlined">receipt_long</span>@Model.OrderNumber</span>
+        </div>
+
+        <section class="card">
+            <div class="meta">
+                <div class="box">
+                    <span class="label">Status Pesanan</span>
+                    <div class="value" id="orderStatusLabel">@Model.OrderStatusLabel</div>
+                </div>
+                <div class="box">
+                    <span class="label">Status Pembayaran</span>
+                    <div class="value" id="paymentStatusLabel">@Model.PaymentStatusLabel</div>
+                </div>
+                <div class="box">
+                    <span class="label">Progress</span>
+                    <div class="value" id="progressValue">@Model.ProgressPercent%</div>
+                </div>
+            </div>
+            <div class="progress">
+                <div class="bar"><span id="progressBar"></span></div>
+                <div class="steps" id="progressSteps">
+                    <div class="step">Pesanan Dikirim</div>
+                    <div class="step">Sedang Dimasak</div>
+                    <div class="step">Siap Disajikan</div>
+                    <div class="step">Selesai Dibayar</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2 style="margin:0 0 12px;">Status per Menu</h2>
+            <div id="itemsList" class="grid">
+                @if (Model.Items.Count == 0)
+                {
+                    <div class="empty">Belum ada item pesanan.</div>
+                }
+                else
+                {
+                    foreach (var item in Model.Items)
+                    {
+                        <div class="item">
+                            <div>
+                                <h3>@item.ProductName</h3>
+                                <p>Jumlah: @item.Qty</p>
+                            </div>
+                            <span class="status" data-kitchen-status="@item.KitchenStatus">@item.KitchenStatusLabel</span>
+                        </div>
+                    }
+                }
+            </div>
+        </section>
+    </main>
+
+@section Scripts {
+    <script>
+        (function () {
+            'use strict';
+
+            const statusUrl = '@statusUrl';
+            const progressBar = document.getElementById('progressBar');
+            const progressValue = document.getElementById('progressValue');
+            const orderStatusLabel = document.getElementById('orderStatusLabel');
+            const paymentStatusLabel = document.getElementById('paymentStatusLabel');
+            const itemsList = document.getElementById('itemsList');
+            const stepNodes = Array.from(document.querySelectorAll('#progressSteps .step'));
+
+            function applyProgress(percent) {
+                const value = Math.max(0, Math.min(100, Number(percent) || 0));
+                progressBar.style.width = value + '%';
+                progressValue.textContent = value + '%';
+                const activeStep = value >= 100 ? 3 : value >= 75 ? 2 : value >= 50 ? 1 : 0;
+                stepNodes.forEach((node, index) => node.classList.toggle('active', index <= activeStep));
+            }
+
+            function renderItems(items) {
+                if (!Array.isArray(items) || items.length === 0) {
+                    itemsList.innerHTML = '<div class="empty">Belum ada item pesanan.</div>';
+                    return;
+                }
+
+                itemsList.innerHTML = items.map(item => (
+                    '<div class="item">' +
+                        '<div><h3>' + escapeHtml(item.productName || 'Menu') + '</h3><p>Jumlah: ' + Number(item.qty || 0) + '</p></div>' +
+                        '<span class="status" data-kitchen-status="' + escapeHtml(item.kitchenStatus || '') + '">' + escapeHtml(item.kitchenStatusLabel || 'Menunggu') + '</span>' +
+                    '</div>'
+                )).join('');
+            }
+
+            function escapeHtml(value) {
+                return String(value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            function updateStatuses(data) {
+                if (!data || !data.success) return;
+                if (orderStatusLabel) orderStatusLabel.textContent = data.orderStatusLabel || '-';
+                if (paymentStatusLabel) paymentStatusLabel.textContent = data.paymentStatusLabel || '-';
+                applyProgress(data.progressPercent);
+                renderItems(data.items);
+
+                document.title = 'Lacak Pesanan - ' + (data.orderNumber || '@Model.OrderNumber');
+            }
+
+            async function pollStatus() {
+                try {
+                    const res = await fetch(statusUrl, { headers: { 'Accept': 'application/json' } });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    updateStatuses(data);
+                } catch {
+                    // silent retry
+                }
+            }
+
+            applyProgress(@Model.ProgressPercent);
+            pollStatus();
+            window.setInterval(pollStatus, 10000);
+        })();
+    </script>
+}

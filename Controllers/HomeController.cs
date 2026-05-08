@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -38,9 +39,25 @@ namespace WebApplication1.Controllers
                 .ToListAsync();
 
             ViewBag.ActiveTables = activeTables;
-            ViewBag.PpnPercentage = NormalizeChargeRate(_orderChargesOptions.PpnPercentage);
-            ViewBag.ServicePercentage = NormalizeChargeRate(_orderChargesOptions.ServicePercentage);
+            ViewBag.PpnPercentage = NormalizeChargeRate(await GetAppSettingPercentageAsync(AppSettingKeys.OrderPpnPercentage));
+            ViewBag.ServicePercentage = NormalizeChargeRate(await GetAppSettingPercentageAsync(AppSettingKeys.OrderServicePercentage));
             return View(products);
+        }
+
+        private async Task<decimal?> GetAppSettingPercentageAsync(string key)
+        {
+            var rawValue = await _context.AppSettings
+                .AsNoTracking()
+                .Where(setting => setting.Key == key)
+                .Select(setting => setting.Value)
+                .FirstOrDefaultAsync();
+
+            if (string.IsNullOrWhiteSpace(rawValue))
+                return null;
+
+            return decimal.TryParse(rawValue, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed)
+                ? parsed
+                : null;
         }
 
         private static decimal NormalizeChargeRate(decimal? rate)
@@ -65,6 +82,65 @@ namespace WebApplication1.Controllers
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+
+        // ── Track Order ────────────────────────────────────────────
+        [HttpGet]
+        public async Task<IActionResult> TrackOrder(string? orderNumber)
+        {
+            if (string.IsNullOrWhiteSpace(orderNumber))
+            {
+                ViewBag.OrderNumber = "";
+                ViewBag.OrderFound = false;
+                return View();
+            }
+
+            var order = await _context.Orders
+                .AsNoTracking()
+                .Include(o => o.Items)
+                    .ThenInclude(i => i.Product)
+                .FirstOrDefaultAsync(o => o.OrderNumber == orderNumber.Trim());
+
+            ViewBag.OrderNumber = orderNumber.Trim();
+            ViewBag.OrderFound = order != null;
+            return View(order);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetOrderStatus(string? orderNumber)
+        {
+            if (string.IsNullOrWhiteSpace(orderNumber))
+                return Json(new { found = false });
+
+            var order = await _context.Orders
+                .AsNoTracking()
+                .Include(o => o.Items)
+                    .ThenInclude(i => i.Product)
+                .FirstOrDefaultAsync(o => o.OrderNumber == orderNumber.Trim());
+
+            if (order == null)
+                return Json(new { found = false });
+
+            return Json(new
+            {
+                found = true,
+                orderNumber = order.OrderNumber,
+                status = order.Status,
+                orderType = order.OrderType,
+                subtotal = order.Subtotal,
+                ppnAmount = order.PpnAmount,
+                serviceAmount = order.ServiceAmount,
+                total = order.Total,
+                orderDate = order.OrderDate.ToString("yyyy-MM-dd HH:mm"),
+                items = order.Items.Select(item => new
+                {
+                    productName = item.Product?.Name ?? "Menu",
+                    qty = item.Qty,
+                    unitPrice = item.UnitPrice,
+                    lineTotal = item.LineTotal,
+                    kitchenStatus = item.KitchenStatus
+                })
+            });
         }
     }
 }

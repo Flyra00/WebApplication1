@@ -1,0 +1,112 @@
+@model WebApplication1.ViewModels.Reservations.ReservationFilterViewModel
+@{
+    ViewData["Title"] = "Reservasi";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+@section Styles {
+    <partial name="_ReservationStyles" />
+}
+
+<div class="reservation-page">
+    <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-between gap-3 mb-4">
+        <div>
+            <p class="reservation-eyebrow mb-2">Manajemen Reservasi</p>
+            <h1 class="reservation-title mb-2" style="font-size:clamp(28px,3vw,38px);">Daftar Reservasi</h1>
+            <p class="reservation-subtitle mb-0">Kelola reservasi customer dengan tampilan yang rapi, mudah dipindai, dan tetap nyaman di mobile.</p>
+        </div>
+        <a asp-action="Create" class="reservation-btn reservation-btn-primary">
+            <span class="material-symbols-outlined" style="font-size:18px;">add</span>
+            Reservasi Baru
+        </a>
+    </div>
+
+    <div class="reservation-card reservation-card-soft mb-4">
+        <div class="reservation-card-body">
+            <form method="get" asp-action="Index" class="reservation-grid-3">
+                <div class="reservation-field">
+                    <label asp-for="Date" class="reservation-label"></label>
+                    <input asp-for="Date" type="date" class="form-control reservation-control" value='@(Model.Date.HasValue ? Model.Date.Value.ToString("yyyy-MM-dd") : string.Empty)' />
+                </div>
+                <div class="reservation-field">
+                    <label asp-for="Status" class="reservation-label">Status</label>
+                    <select asp-for="Status" asp-items="Model.StatusOptions" class="form-select reservation-select"></select>
+                </div>
+                <div class="reservation-field">
+                    <label asp-for="Query" class="reservation-label">Cari</label>
+                    <input asp-for="Query" class="form-control reservation-control" placeholder="Nama / telepon" />
+                </div>
+                <div class="reservation-actions" style="grid-column:1 / -1; justify-content:flex-end;">
+                    <button type="submit" class="reservation-btn reservation-btn-primary">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="reservation-card">
+        <div class="reservation-table-wrap">
+            <table class="reservation-table">
+                <thead>
+                    <tr>
+                        <th>Kode</th>
+                        <th>Customer</th>
+                        <th>Waktu</th>
+                        <th>Tamu</th>
+                        <th>Meja</th>
+                        <th>Status</th>
+                        <th class="text-end">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Reservations.Any())
+                    {
+                        <tr>
+                            <td colspan="7">
+                                <div class="reservation-empty">Tidak ada reservasi.</div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var item in Model.Reservations)
+                        {
+                            var badge = item.Status switch
+                            {
+                                ReservationStatuses.Pending => "reservation-status-pending",
+                                ReservationStatuses.Confirmed => "reservation-status-confirmed",
+                                ReservationStatuses.CheckedIn => "reservation-status-checkedin",
+                                ReservationStatuses.Completed => "reservation-status-completed",
+                                ReservationStatuses.Rejected => "reservation-status-rejected",
+                                ReservationStatuses.Cancelled => "reservation-status-cancelled",
+                                ReservationStatuses.NoShow => "reservation-status-noshow",
+                                _ => "reservation-badge-muted"
+                            };
+                            <tr>
+                                <td><span class="reservation-table-code">@item.ReservationCode</span></td>
+                                <td>
+                                    <div class="reservation-table-meta">
+                                        <div class="fw-semibold">@item.CustomerName</div>
+                                        <small class="text-muted">@item.PhoneNumber</small>
+                                    </div>
+                                </td>
+                                <td>@BusinessTime.ToBusinessTime(item.ReservationTime).ToString("dd MMM yyyy HH:mm")</td>
+                                <td>@item.PartySize</td>
+                                <td>@(item.Table != null ? $"Meja {item.Table.Number}" : "-")</td>
+                                <td><span class="reservation-badge @badge">@item.Status</span></td>
+                                <td>
+                                    <div class="reservation-action-list">
+                                        <a asp-action="Details" asp-route-id="@item.Id" class="reservation-btn reservation-btn-outline reservation-inline-btn">Detail</a>
+                                        @if (item.Status == ReservationStatuses.Pending)
+                                        {
+                                            <a asp-action="Confirm" asp-route-id="@item.Id" class="reservation-btn reservation-btn-primary reservation-inline-btn">Konfirmasi</a>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

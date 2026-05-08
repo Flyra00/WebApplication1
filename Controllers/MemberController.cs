@@ -67,8 +67,17 @@ namespace WebApplication1.Controllers
                 .Take(6)
                 .ToListAsync();
 
-            var recommended = discountProducts
-                .Concat(discountProducts.Where(p => frequentlyBoughtIds.Contains(p.Id)))
+            var frequentlyBoughtProducts = await _context.Products
+                .Where(p => p.IsAvailable && p.Stock > 0 && frequentlyBoughtIds.Contains(p.Id))
+                .ToListAsync();
+
+            var frequentRank = frequentlyBoughtIds
+                .Select((productId, index) => new { productId, index })
+                .ToDictionary(item => item.productId, item => item.index);
+
+            var recommended = frequentlyBoughtProducts
+                .OrderBy(product => frequentRank[product.Id])
+                .Concat(discountProducts.Where(product => !frequentRank.ContainsKey(product.Id)))
                 .Distinct()
                 .Take(6)
                 .ToList();

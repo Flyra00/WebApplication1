@@ -50,7 +50,7 @@
                             @if (Model.Count == 0)
                             {
                                 <tr>
-                                    <td colspan="@(canManage ? 5 : 4)" class="text-center py-5 text-muted">Belum ada data Barang.</td>
+                                    <td colspan="@(canManage ? 5 : 4)" class="text-center py-5 text-muted">Belum ada data barang.</td>
                                 </tr>
                             }
                             else
@@ -86,15 +86,16 @@
                                         {
                                             <td class="text-end pe-4">
                                                 <div class="btn-group shadow-sm" role="group">
-                                                    <a asp-action="Edit" asp-route-id="@inven.Id" class="btn btn-outline-warning btn-sm" title="Edit Barang">
+                                                    <a asp-action="Edit" asp-route-id="@inven.Id" class="btn btn-outline-warning btn-sm" title="Ubah Barang">
                                                         <i class="bi bi-pencil-square"></i>
                                                     </a>
                                                     <form asp-action="Delete" asp-route-id="@inven.Id" method="post" class="d-inline">
                                                         @Html.AntiForgeryToken()
                                                         <button type="submit"
                                                                 class="btn btn-outline-danger btn-sm"
-                                                                onclick="return confirm('Yakin mau hapus barang @inven.ItemName?')"
-                                                                title="Delete Barang">
+                                                                data-confirm-title="Hapus Barang"
+                                                                data-confirm-message="Yakin mau hapus barang @inven.ItemName?"
+                                                                title="Hapus Barang">
                                                             <i class="bi bi-trash3-fill"></i>
                                                         </button>
                                                     </form>

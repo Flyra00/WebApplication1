@@ -1,0 +1,84 @@
+@using Microsoft.Extensions.Options
+@using WebApplication1.Models
+@using WebApplication1.Configuration
+@using WebApplication1.Security
+@inject IOptions<PublicSiteOptions> PublicSiteOptionsAccessor
+@{
+    var site = PublicSiteOptionsAccessor.Value;
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+    var action = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
+    var isHomePage = string.Equals(controller, "Home", StringComparison.OrdinalIgnoreCase) &&
+                     string.Equals(action, "Index", StringComparison.OrdinalIgnoreCase);
+    var useHomeActions = string.Equals(ViewData["PublicNavMode"]?.ToString(), "Home", StringComparison.OrdinalIgnoreCase) || isHomePage;
+    var tableNumber = Context.Request.Cookies["nr_tableNumber"] ?? "--";
+    var dashboardUrl = (User?.IsInRole(AppRoles.Admin) ?? false) ? "/Admin"
+        : (User?.IsInRole(AppRoles.Supervisor) ?? false) ? "/Supervisor"
+        : (User?.IsInRole(AppRoles.Kasir) ?? false) ? "/Cashier"
+        : (User?.IsInRole(AppRoles.Kitchen) ?? false) ? "/Kitchen"
+        : (User?.IsInRole(AppRoles.Owner) ?? false) ? "/Owner/Dashboard"
+        : (User?.IsInRole(AppRoles.Customer) ?? false) ? "/Member/Profile"
+        : null;
+    var dashboardLabel = (User?.IsInRole(AppRoles.Customer) ?? false) ? "Profil" : "Dasbor";
+    var isAuthenticated = User?.Identity?.IsAuthenticated ?? false;
+    var displayName = User?.Identity?.Name?.Trim();
+}
+<header class="site-header">
+    <nav class="site-nav page-shell" aria-label="Navigasi utama">
+        <a class="brand" href="/">
+            <span class="brand-mark" aria-hidden="true"><span class="material-symbols-outlined">restaurant</span></span>
+            <span class="brand-text">
+                <span class="brand-name">@site.BrandName</span>
+                <span class="brand-subtitle">@site.BrandSubtitle</span>
+            </span>
+        </a>
+        <div class="nav-links" role="list">
+            <a class="nav-link-chip" href="/#menu">Menu</a>
+            <a class="nav-link-chip" href="/#cara-pesan">Cara Pesan</a>
+            <a class="nav-link-chip" href="/Reservation/Create">Reservasi</a>
+            <a class="nav-link-chip" href="/Home/TrackOrder">Lacak Pesanan</a>
+            <a class="nav-link-chip" href="/#contact">Kontak</a>
+        </div>
+        <div class="nav-actions">
+            @if (!string.IsNullOrWhiteSpace(dashboardUrl))
+            {
+                <a class="account-link" href="@dashboardUrl">
+                    <span class="material-symbols-outlined">person</span>
+                    <span class="account-copy">
+                        <span class="account-label">@(string.IsNullOrWhiteSpace(displayName) ? dashboardLabel : displayName)</span>
+                        <span class="account-meta">@dashboardLabel</span>
+                    </span>
+                </a>
+            }
+            else if (isAuthenticated)
+            {
+                <span class="account-link" style="cursor:default;">
+                    <span class="material-symbols-outlined">person</span>
+                    <span class="account-copy">
+                        <span class="account-label">@displayName</span>
+                        <span class="account-meta">Akun aktif</span>
+                    </span>
+                </span>
+            }
+            @if (useHomeActions)
+            {
+                <button type="button" class="table-pill" id="openTableDialog">
+                    <span class="material-symbols-outlined">table_restaurant</span>
+                    Meja <span id="tableBadgeValue">@tableNumber</span>
+                </button>
+                <button type="button" class="cart-trigger" id="openCartIconButton" aria-label="Buka keranjang">
+                    <span class="material-symbols-outlined">shopping_cart</span>
+                    <span class="cart-trigger-badge" id="cartCountBadge">0</span>
+                </button>
+                <button type="button" id="openCartButton" class="outline-link">Keranjang</button>
+            }
+            @if (useHomeActions)
+            {
+                <button type="button" class="primary-link" id="openCartPrimaryButton">Pesan</button>
+            }
+            else
+            {
+                <a class="primary-link" href="/#menu">Pesan Sekarang</a>
+            }
+        </div>
+    </nav>
+</header>

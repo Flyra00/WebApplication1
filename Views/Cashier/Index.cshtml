@@ -2,14 +2,14 @@
 @{
     ViewData["Title"] = "Transaksi Kasir";
     Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
-    var statuses = new[] { "Semua", "Submitted", "Processing", "Completed", "Paid" };
+    var statuses = new[] { "Semua", "Dikirim", "Diproses", "Siap", "Lunas" };
     var sel = ViewBag.SelectedStatus as string;
 }
 
 <div class="d-flex align-items-center justify-content-between mb-3">
     <div>
         <h4 class="mb-0 fw-bold">Transaksi Hari Ini</h4>
-        <small class="text-muted">@DateTime.Now.ToString("dddd, dd MMMM yyyy")</small>
+        <small class="text-muted">@BusinessTime.BusinessNow.ToString("dddd, dd MMMM yyyy")</small>
     </div>
     <a asp-action="NewOrder" class="op-btn op-btn-primary">
         <i class="bi bi-plus-lg"></i> Pesanan Kasir
@@ -20,7 +20,7 @@
 <div class="d-flex gap-2 mb-4 flex-wrap">
     @foreach (var s in statuses)
     {
-        var q = s == "Semua" ? null : s;
+        var q = s switch { "Dikirim" => "Submitted", "Diproses" => "Processing", "Siap" => "Completed", "Lunas" => "Paid", _ => null };
         var active = (q == null && sel == null) || q == sel;
         <a asp-action="Index" asp-route-status="@q"
            class="op-btn @(active ? "op-btn-primary" : "op-btn-secondary")">@s</a>
@@ -40,10 +40,10 @@ else
         <table class="op-table">
             <thead>
                 <tr>
-                    <th>No Order</th>
+                    <th>No. Pesanan</th>
                     <th>Meja</th>
                     <th>Waktu</th>
-                    <th>Items</th>
+                    <th>Item</th>
                     <th>Total</th>
                     <th>Status</th>
                     <th>Aksi</th>
@@ -65,12 +65,19 @@ else
                         <td>
                             <span class="fw-semibold">Meja @(o.TableSession?.Table?.Number ?? 0)</span>
                         </td>
-                        <td style="color:var(--op-muted);font-size:0.8rem;">@o.OrderDate.ToLocalTime().ToString("HH:mm:ss")</td>
+                        <td style="color:var(--op-muted);font-size:0.8rem;">@BusinessTime.ToBusinessTime(o.OrderDate).ToString("HH:mm:ss")</td>
                         <td><span class="badge bg-secondary">@o.Items.Count item</span></td>
                         <td class="fw-semibold">Rp @o.Total.ToString("N0")</td>
                         <td>
                             <span class="op-badge-status" style="background:@(badgeColor)22;color:@badgeColor;border:1px solid @(badgeColor)55;">
-                                @o.Status
+                                @(o.Status switch {
+                                    "Submitted" => "Dikirim",
+                                    "Processing" => "Diproses",
+                                    "Completed" => "Siap",
+                                    "Paid" => "Lunas",
+                                    "Cancelled" => "Dibatalkan",
+                                    _ => o.Status
+                                })
                             </span>
                         </td>
                         <td>

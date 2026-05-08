@@ -1,0 +1,100 @@
+@model WebApplication1.Models.Reservation
+@{
+    ViewData["Title"] = "Detail Reservasi";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    var statusClass = Model.Status switch
+    {
+        ReservationStatuses.Pending => "reservation-status-pending",
+        ReservationStatuses.Confirmed => "reservation-status-confirmed",
+        ReservationStatuses.CheckedIn => "reservation-status-checkedin",
+        ReservationStatuses.Completed => "reservation-status-completed",
+        ReservationStatuses.Rejected => "reservation-status-rejected",
+        ReservationStatuses.Cancelled => "reservation-status-cancelled",
+        ReservationStatuses.NoShow => "reservation-status-noshow",
+        _ => "reservation-badge-muted"
+    };
+}
+
+@section Styles {
+    <partial name="_ReservationStyles" />
+}
+
+<div class="reservation-page">
+    <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-between gap-3 mb-4">
+        <div>
+            <p class="reservation-eyebrow mb-2">Manajemen Reservasi</p>
+            <h1 class="reservation-title mb-2" style="font-size:clamp(28px,3vw,38px);">Detail Reservasi</h1>
+            <p class="reservation-subtitle mb-0">Kode reservasi: <strong class="reservation-table-code">@Model.ReservationCode</strong></p>
+        </div>
+        <a asp-action="Index" class="reservation-btn reservation-btn-outline">Kembali</a>
+    </div>
+
+    <div class="reservation-hero">
+        <div class="reservation-card">
+            <div class="reservation-card-body reservation-section">
+                <div class="reservation-badge @statusClass" style="width:fit-content;">@Model.Status</div>
+                <div>
+                    <h2 class="reservation-section-title" style="margin-bottom:6px;">@Model.CustomerName</h2>
+                    <p class="reservation-section-subtitle">@Model.PhoneNumber</p>
+                </div>
+
+                <div class="reservation-kv">
+                    <div class="reservation-kv-item"><div class="reservation-kv-label">Waktu</div><div class="reservation-kv-value">@BusinessTime.ToBusinessTime(Model.ReservationTime).ToString("dd MMM yyyy HH:mm")</div></div>
+                    <div class="reservation-kv-item"><div class="reservation-kv-label">Tamu</div><div class="reservation-kv-value">@Model.PartySize</div></div>
+                    <div class="reservation-kv-item"><div class="reservation-kv-label">DP</div><div class="reservation-kv-value">@(Model.DpPercentage.HasValue ? $"{Model.DpPercentage.Value:0.##}%" : "0%")</div></div>
+                    <div class="reservation-kv-item"><div class="reservation-kv-label">Email</div><div class="reservation-kv-value">@(Model.Email ?? "-")</div></div>
+                    <div class="reservation-kv-item"><div class="reservation-kv-label">Meja</div><div class="reservation-kv-value">@(Model.Table != null ? $"Meja {Model.Table.Number}" : "-")</div></div>
+                    <div class="reservation-kv-item"><div class="reservation-kv-label">Permintaan</div><div class="reservation-kv-value">@(string.IsNullOrWhiteSpace(Model.SpecialRequest) ? "-" : Model.SpecialRequest)</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="reservation-card reservation-card-soft">
+            <div class="reservation-card-body reservation-section">
+                <div>
+                    <h2 class="reservation-section-title">Aksi</h2>
+                    <p class="reservation-section-subtitle">Gunakan aksi yang tersedia sesuai status reservasi.</p>
+                </div>
+
+                <div class="d-grid gap-2">
+                    @if (Model.Status == ReservationStatuses.Pending)
+                    {
+                        <a asp-action="Confirm" asp-route-id="@Model.Id" class="reservation-btn reservation-btn-primary">Konfirmasi</a>
+                        <form asp-action="Reject" asp-route-id="@Model.Id" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="reservation-btn reservation-btn-outline w-100" data-confirm-title="Tolak Reservasi" data-confirm-message="Tolak reservasi ini?">Reject</button>
+                        </form>
+                        <form asp-action="Cancel" asp-route-id="@Model.Id" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="reservation-btn reservation-btn-outline w-100" data-confirm-title="Batalkan Reservasi" data-confirm-message="Batalkan reservasi ini?">Cancel</button>
+                        </form>
+                    }
+
+                    @if (Model.Status == ReservationStatuses.Confirmed)
+                    {
+                        <form asp-action="CheckIn" asp-route-id="@Model.Id" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="reservation-btn reservation-btn-primary w-100">Check In</button>
+                        </form>
+                        <form asp-action="MarkNoShow" asp-route-id="@Model.Id" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="reservation-btn reservation-btn-outline w-100" data-confirm-title="Tandai No Show" data-confirm-message="Tandai reservasi ini sebagai no show?">No Show</button>
+                        </form>
+                        <form asp-action="Cancel" asp-route-id="@Model.Id" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="reservation-btn reservation-btn-outline w-100" data-confirm-title="Batalkan Reservasi" data-confirm-message="Batalkan reservasi ini?">Cancel</button>
+                        </form>
+                    }
+
+                    @if (Model.Status == ReservationStatuses.CheckedIn)
+                    {
+                        <form asp-action="Complete" asp-route-id="@Model.Id" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="reservation-btn reservation-btn-primary w-100">Complete</button>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

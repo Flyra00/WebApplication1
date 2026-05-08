@@ -286,8 +286,8 @@ namespace WebApplication1.Controllers
                 }
 
                 order.Subtotal = order.Items.Sum(item => item.LineTotal);
-                var ppnRate = NormalizePercentage(_orderChargesOptions.PpnPercentage);
-                var serviceRate = NormalizePercentage(_orderChargesOptions.ServicePercentage);
+                var ppnRate = NormalizePercentage(await GetAppSettingPercentageAsync(AppSettingKeys.OrderPpnPercentage));
+                var serviceRate = NormalizePercentage(await GetAppSettingPercentageAsync(AppSettingKeys.OrderServicePercentage));
                 order.PpnPercentage = ppnRate > 0 ? ppnRate : null;
                 order.ServicePercentage = serviceRate > 0 ? serviceRate : null;
                 order.PpnAmount = ppnRate > 0 ? Math.Round(order.Subtotal * (ppnRate / 100m), 2) : 0;
@@ -444,6 +444,22 @@ namespace WebApplication1.Controllers
             if (normalized > 100)
                 return 100;
             return Math.Round(normalized, 2);
+        }
+
+        private async Task<decimal?> GetAppSettingPercentageAsync(string key)
+        {
+            var rawValue = await _context.AppSettings
+                .AsNoTracking()
+                .Where(setting => setting.Key == key)
+                .Select(setting => setting.Value)
+                .FirstOrDefaultAsync();
+
+            if (string.IsNullOrWhiteSpace(rawValue))
+                return null;
+
+            return decimal.TryParse(rawValue, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed)
+                ? parsed
+                : null;
         }
 
         private async Task<Table> GetOrCreateTakeawayTableAsync()

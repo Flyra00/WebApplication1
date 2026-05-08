@@ -129,6 +129,40 @@
     @RenderSection("Styles", required: false)
 </head>
 <body>
+    <style>
+        .confirm-toast-wrap {
+            position: fixed;
+            top: 88px;
+            right: 24px;
+            z-index: 9999;
+            display: none;
+            width: min(92vw, 360px);
+        }
+        .confirm-toast-card {
+            background: #fff;
+            border: 1px solid rgba(224, 192, 178, .9);
+            border-radius: 18px;
+            box-shadow: 0 18px 40px rgba(44,44,44,.15);
+            padding: 16px;
+        }
+        .confirm-toast-title {
+            margin: 0 0 6px;
+            color: #1c1b1b;
+            font-size: 15px;
+            font-weight: 800;
+        }
+        .confirm-toast-message {
+            margin: 0;
+            color: #584238;
+            line-height: 1.5;
+        }
+        .confirm-toast-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 14px;
+        }
+    </style>
     @{
         var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
         var action = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
@@ -156,17 +190,22 @@
                     <a asp-controller="Products" asp-action="Index" class="dashboard-nav-link @(controller == "Products" ? "active" : "")"><i class="bi bi-egg-fried"></i>Manajemen Menu</a>
                     <a asp-controller="Table" asp-action="Index" class="dashboard-nav-link @(controller == "Table" ? "active" : "")"><i class="bi bi-grid-3x3-gap"></i>Manajemen Meja</a>
                     <a asp-controller="User" asp-action="Index" class="dashboard-nav-link @(controller == "User" ? "active" : "")"><i class="bi bi-people"></i>Manajemen User</a>
-                    <a asp-controller="Ingredient" asp-action="Index" class="dashboard-nav-link @(controller == "Ingredient" ? "active" : "")"><i class="bi bi-basket"></i>Manajemen Bahan</a>
                     <a asp-controller="Inventory" asp-action="Index" class="dashboard-nav-link @(controller == "Inventory" ? "active" : "")"><i class="bi bi-box-seam"></i>Manajemen Inventory</a>
+                    <a asp-controller="AdminSettings" asp-action="Index" class="dashboard-nav-link @(controller == "AdminSettings" ? "active" : "")"><i class="bi bi-sliders"></i>Pengaturan Persentase</a>
                     <div class="dashboard-nav-label">Operasional</div>
                 }
                 @if (isKasir || isAdmin)
                 {
                     <a asp-controller="Cashier" asp-action="Index" class="dashboard-nav-link @(controller == "Cashier" ? "active" : "")"><i class="bi bi-receipt"></i>Kasir</a>
+                    <a asp-controller="PendingMemberSignups" asp-action="Index" class="dashboard-nav-link @(controller == "PendingMemberSignups" ? "active" : "")"><i class="bi bi-person-check"></i>Verifikasi Member</a>
                 }
                 @if (isKitchen || isAdmin)
                 {
                     <a asp-controller="Kitchen" asp-action="Index" class="dashboard-nav-link @(controller == "Kitchen" ? "active" : "")"><i class="bi bi-fire"></i>Dapur</a>
+                }
+                @if (isAdmin || isSupervisor || isKasir)
+                {
+                    <a asp-controller="Reservation" asp-action="Index" class="dashboard-nav-link @(controller == "Reservation" ? "active" : "")"><i class="bi bi-calendar2-event"></i>Reservasi</a>
                 }
                 @if (isSupervisor || isAdmin)
                 {
@@ -174,7 +213,6 @@
                     @if (!isAdmin)
                     {
                         <a asp-controller="Products" asp-action="Index" class="dashboard-nav-link @(controller == "Products" ? "active" : "")"><i class="bi bi-egg-fried"></i>Data Menu</a>
-                        <a asp-controller="Ingredient" asp-action="Index" class="dashboard-nav-link @(controller == "Ingredient" ? "active" : "")"><i class="bi bi-basket"></i>Bahan Mentah</a>
                         <a asp-controller="Inventory" asp-action="Index" class="dashboard-nav-link @(controller == "Inventory" ? "active" : "")"><i class="bi bi-box-seam"></i>Inventaris</a>
                     }
                     <a asp-controller="DamageReport" asp-action="Index" class="dashboard-nav-link @(controller == "DamageReport" ? "active" : "")"><i class="bi bi-exclamation-triangle"></i>Laporan Kerusakan</a>
@@ -204,12 +242,23 @@
         <main class="dashboard-main">
             <header class="dashboard-topbar">
                 <h2 class="dashboard-title">@ViewData["Title"]</h2>
-                <div class="dashboard-date">@DateTime.Now.ToString("dddd, dd MMMM yyyy")</div>
+                <div class="dashboard-date">@BusinessTime.BusinessNow.ToString("dddd, dd MMMM yyyy")</div>
             </header>
             <section class="dashboard-content">
                 @RenderBody()
             </section>
         </main>
+    </div>
+
+    <div class="confirm-toast-wrap" id="confirmToastWrap" aria-live="polite">
+        <div class="confirm-toast-card">
+            <p class="confirm-toast-title" id="confirmToastTitle">Konfirmasi</p>
+            <p class="confirm-toast-message" id="confirmToastMessage">Apakah Anda yakin?</p>
+            <div class="confirm-toast-actions">
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="confirmToastCancel">Batal</button>
+                <button type="button" class="btn btn-sm btn-danger" id="confirmToastOk">Lanjutkan</button>
+            </div>
+        </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -232,6 +281,67 @@
         {
             <text>toastr.error('@TempData["Error"]');</text>
         }
+
+        (function () {
+            const wrap = document.getElementById('confirmToastWrap');
+            const titleEl = document.getElementById('confirmToastTitle');
+            const msgEl = document.getElementById('confirmToastMessage');
+            const okBtn = document.getElementById('confirmToastOk');
+            const cancelBtn = document.getElementById('confirmToastCancel');
+            let pendingTrigger = null;
+
+            function hideConfirmToast() {
+                if (wrap) wrap.style.display = 'none';
+                pendingTrigger = null;
+            }
+
+            function showConfirmToast(trigger) {
+                if (!wrap || !trigger) return;
+                pendingTrigger = trigger;
+                titleEl.textContent = trigger.getAttribute('data-confirm-title') || 'Konfirmasi';
+                msgEl.textContent = trigger.getAttribute('data-confirm-message') || 'Apakah Anda yakin?';
+                wrap.style.display = 'block';
+            }
+
+            document.addEventListener('click', function (event) {
+                const trigger = event.target.closest('[data-confirm-message]');
+                if (!trigger) return;
+                if (trigger.dataset.confirmed === '1') {
+                    trigger.dataset.confirmed = '0';
+                    return;
+                }
+                event.preventDefault();
+                showConfirmToast(trigger);
+            });
+
+            cancelBtn?.addEventListener('click', hideConfirmToast);
+            okBtn?.addEventListener('click', function () {
+                if (!pendingTrigger) return;
+                pendingTrigger.dataset.confirmed = '1';
+                wrap.style.display = 'none';
+                pendingTrigger.click();
+            });
+
+            document.addEventListener('click', function (event) {
+                if (!wrap || wrap.style.display !== 'block') return;
+                if (event.target === wrap) hideConfirmToast();
+            });
+
+            document.querySelectorAll('[data-toggle-password]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    const sel = btn.getAttribute('data-toggle-password');
+                    const input = sel ? document.querySelector(sel) : null;
+                    if (!input) return;
+                    const isPassword = input.getAttribute('type') === 'password';
+                    input.setAttribute('type', isPassword ? 'text' : 'password');
+                    const icon = btn.querySelector('i');
+                    if (icon) {
+                        icon.classList.toggle('bi-eye');
+                        icon.classList.toggle('bi-eye-slash');
+                    }
+                });
+            });
+        })();
     </script>
     @RenderSection("Scripts", required: false)
 </body>

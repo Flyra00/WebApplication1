@@ -1,9 +1,9 @@
 @using System.Globalization
-@using Microsoft.AspNetCore.Antiforgery
-@inject IAntiforgery Antiforgery
 @model List<Product>
 @{
-    Layout = null;
+    Layout = "_PublicLayout";
+    ViewData["Title"] = "Menu Nusantara";
+    ViewData["PublicNavMode"] = "Home";
     var culture = new CultureInfo("id-ID");
     var activeTables = ViewBag.ActiveTables as List<Table> ?? new List<Table>();
     var products = Model ?? new List<Product>();
@@ -14,33 +14,14 @@
         .OrderBy(category => category)
         .ToList();
     var tableNumber = Context.Request.Cookies["nr_tableNumber"] ?? "--";
-    var tableToken = Context.Request.Cookies["nr_tableToken"] ?? string.Empty;
     var ppnPercentage = ViewBag.PpnPercentage is decimal ppn ? ppn : 0m;
     var servicePercentage = ViewBag.ServicePercentage is decimal service ? service : 0m;
     var featuredProduct = products.FirstOrDefault();
-    var dashboardUrl = (User?.IsInRole(AppRoles.Admin) ?? false) ? "/Admin"
-        : (User?.IsInRole(AppRoles.Supervisor) ?? false) ? "/Supervisor"
-        : (User?.IsInRole(AppRoles.Kasir) ?? false) ? "/Cashier"
-        : (User?.IsInRole(AppRoles.Kitchen) ?? false) ? "/Kitchen"
-        : (User?.IsInRole(AppRoles.Owner) ?? false) ? "/Owner/Dashboard"
-        : (User?.IsInRole(AppRoles.Customer) ?? false) ? "/Member/Profile"
-        : null;
     var isAuthenticated = User?.Identity?.IsAuthenticated ?? false;
     var isCustomer = User?.IsInRole(AppRoles.Customer) ?? false;
     var customerName = isCustomer ? User?.Identity?.Name : null;
 }
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="request-verification-token" content="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
-    <meta name="table-token" content="@tableToken" />
-    <title>Menu - Nusantara Heritage</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Serif:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+@section Styles {
     <style>
         :root {
             --surface: #fcf9f8;
@@ -80,86 +61,6 @@
         button { cursor: pointer; border: 0; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         .page-shell { width: min(100% - 48px, 1180px); margin: 0 auto; }
-
-        .site-header {
-            position: sticky;
-            top: 0;
-            z-index: 30;
-            border-bottom: 1px solid rgba(219, 193, 186, .65);
-            background: rgba(244, 237, 227, .88);
-            backdrop-filter: blur(16px);
-        }
-        .site-nav {
-            min-height: 82px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 28px;
-        }
-        .brand { display: inline-flex; align-items: center; gap: 14px; min-width: 0; }
-        .brand-mark {
-            width: 46px;
-            height: 46px;
-            border-radius: 50%;
-            display: grid;
-            place-items: center;
-            background: var(--surface-lowest);
-            color: var(--terracotta);
-            box-shadow: inset 0 0 0 1px rgba(219, 193, 186, .52);
-        }
-        .brand-text { display: grid; gap: 2px; }
-        .brand-name {
-            color: var(--terracotta-dark);
-            font-family: 'Noto Serif', serif;
-            font-size: 22px;
-            font-weight: 700;
-            line-height: 1;
-        }
-        .brand-subtitle { color: var(--on-surface-variant); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
-        .nav-links { display: flex; align-items: center; gap: 24px; color: var(--on-surface-variant); font-weight: 600; }
-        .nav-links a:hover { color: var(--terracotta-dark); }
-        .nav-actions { display: flex; align-items: center; gap: 12px; }
-        .table-pill, .outline-link, .primary-link {
-            min-height: 44px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            border-radius: 999px;
-            padding: 0 18px;
-            font-weight: 700;
-        }
-        .table-pill { background: var(--surface-lowest); color: var(--terracotta); border: 1px solid var(--outline-variant); }
-        .outline-link { background: transparent; color: var(--forest); border: 1px solid rgba(72, 102, 72, .45); }
-        .primary-link { background: var(--terracotta); color: #fff; }
-        .cart-trigger {
-            position: relative;
-            width: 44px;
-            height: 44px;
-            border-radius: 999px;
-            display: grid;
-            place-items: center;
-            color: var(--terracotta);
-            background: var(--surface-lowest);
-            border: 1px solid var(--outline-variant);
-        }
-        .cart-trigger-badge {
-            position: absolute;
-            top: -4px;
-            right: -4px;
-            min-width: 18px;
-            height: 18px;
-            border-radius: 999px;
-            background: var(--terracotta);
-            color: #fff;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 0 5px;
-            font-size: 11px;
-            font-weight: 700;
-        }
-        .cart-trigger-badge.visible { display: inline-flex; }
 
         .hero {
             display: grid;
@@ -206,6 +107,106 @@
         }
         .hero-button.primary { background: var(--terracotta); color: #fff; }
         .hero-button.secondary { background: var(--surface-lowest); color: var(--forest); border: 1px solid rgba(72, 102, 72, .42); }
+        .hero-button.ghost { background: rgba(255,255,255,.72); color: var(--terracotta-dark); border: 1px solid rgba(219, 193, 186, .9); }
+        .journey-panel {
+            display: grid;
+            gap: 18px;
+            margin-top: 30px;
+        }
+        .journey-overline {
+            margin: 0;
+            color: var(--forest);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+        }
+        .journey-card {
+            display: grid;
+            gap: 12px;
+            padding: 20px;
+            border-radius: 22px;
+            background: rgba(255, 255, 255, .68);
+            border: 1px solid rgba(219, 193, 186, .65);
+            box-shadow: 0 12px 30px rgba(44, 44, 44, .05);
+            backdrop-filter: blur(10px);
+        }
+        .journey-step-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+        }
+        .journey-step {
+            padding: 14px;
+            border-radius: 18px;
+            background: var(--surface-lowest);
+            border: 1px solid rgba(219, 193, 186, .55);
+            display: grid;
+            gap: 10px;
+        }
+        .journey-step-badge {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background: rgba(156, 63, 0, .1);
+            color: var(--terracotta);
+            font-weight: 800;
+            font-size: 13px;
+        }
+        .journey-step h3 {
+            margin: 0;
+            font-family: 'Noto Serif', serif;
+            font-size: 17px;
+            line-height: 1.2;
+        }
+        .journey-step p {
+            margin: 0;
+            color: var(--on-surface-variant);
+            font-size: 14px;
+            line-height: 1.55;
+        }
+        .reservation-choice-grid-home {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+        .reservation-choice-home {
+            display: grid;
+            gap: 12px;
+            padding: 18px;
+            border-radius: 20px;
+            background: var(--surface-lowest);
+            border: 1px solid rgba(219, 193, 186, .72);
+        }
+        .reservation-choice-home.active {
+            border-color: rgba(156, 63, 0, .28);
+            box-shadow: 0 10px 26px rgba(156, 63, 0, .08);
+        }
+        .reservation-choice-home .choice-kicker {
+            color: var(--forest);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+        }
+        .reservation-choice-home h3 {
+            margin: 0;
+            font-family: 'Noto Serif', serif;
+            font-size: 22px;
+            line-height: 1.1;
+        }
+        .reservation-choice-home p {
+            margin: 0;
+            color: var(--on-surface-variant);
+            line-height: 1.65;
+        }
+        .reservation-choice-home .choice-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
         .feature-card {
             overflow: hidden;
             border-radius: 30px;
@@ -289,23 +290,7 @@
             color: transparent;
             z-index: 1;
         }
-        .fab-add {
-            position: absolute;
-            right: 16px;
-            bottom: 0;
-            transform: translateY(50%);
-            width: 52px;
-            height: 52px;
-            border-radius: 999px;
-            border: 0;
-            background: var(--terracotta);
-            color: #fff;
-            display: grid;
-            place-items: center;
-             box-shadow: 0 6px 20px rgba(156, 63, 0, .35);
-            z-index: 3;
-        }
-        .fab-add .material-symbols-outlined { font-size: 24px; }
+
         .chef-badge {
             position: absolute;
             top: 14px;
@@ -358,10 +343,10 @@
             font-weight: 800;
             transition: transform .16s ease, background .16s ease, color .16s ease, border-color .16s ease;
         }
-         .add-button { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--forest); background: transparent; color: var(--forest); }
+         .add-button { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--forest); background: transparent; color: var(--forest); margin-top: 16px; }
          .add-button.primary { border-color: var(--terracotta); background: var(--terracotta-soft); color: #fff; }
         .add-button:active, .qty-button:active, .hero-button:active { transform: scale(.985); }
-        .quantity-control { display: none; align-items: center; justify-content: space-between; gap: 10px; min-height: 50px; border-radius: 12px; background: var(--surface-container); padding: 5px; }
+        .quantity-control { display: none; align-items: center; justify-content: space-between; gap: 10px; min-height: 50px; border-radius: 12px; background: var(--surface-container); padding: 5px; margin-top: 16px; }
         .quantity-control.active { display: flex; }
          .qty-button { width: 42px; min-height: 40px; display: grid; place-items: center; background: var(--surface-lowest); color: var(--on-surface); box-shadow: 0 2px 8px rgba(44, 44, 44, .06); }
         .qty-value { min-width: 28px; text-align: center; font-weight: 700; }
@@ -651,9 +636,6 @@
         .success-order { margin: 18px auto 0; border-radius: 10px; padding: 14px; background: var(--surface-low); max-width: 320px; }
         .success-order b { color: var(--terracotta); font-family: 'Noto Serif', serif; font-size: 34px; }
 
-         .site-footer { border-top: 1px solid rgba(219, 193, 186, .68); background: var(--warm-beige); color: var(--on-surface-variant); }
-        .footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 82px; }
-
         @@media (max-width: 1080px) {
             .hero { grid-template-columns: 1fr; }
             .feature-card { max-width: 560px; }
@@ -663,19 +645,16 @@
 
         @@media (max-width: 760px) {
             .page-shell { width: min(100% - 32px, 1180px); }
-            .site-nav { min-height: 72px; }
-            .brand-subtitle, .nav-links, .outline-link { display: none; }
-            .table-pill, .primary-link { min-height: 40px; padding: 0 13px; font-size: 13px; }
             .hero { padding: 48px 0 36px; gap: 30px; }
             .hero-title { font-size: clamp(38px, 12vw, 52px); }
             .hero-copy { font-size: 16px; }
+            .journey-step-grid { grid-template-columns: 1fr; }
             .toolbar { grid-template-columns: 1fr; }
             .section-heading { display: block; }
             .section-heading p { margin-top: 10px; }
             .menu-grid { gap: 18px; }
             .menu-title { font-size: 23px; min-height: auto; }
             .menu-price-inline { font-size: 19px; }
-            .footer-inner { display: block; padding: 22px 0; }
             .item-modal { padding: 0; align-items: end; }
             .item-modal-panel {
                 width: 100%;
@@ -693,6 +672,7 @@
             .hero-actions { display: grid; }
             .feature-title { font-size: 26px; }
             .cart-panel { padding: 18px; }
+            .journey-card { padding: 16px; }
         }
 
         .toast-container {
@@ -740,56 +720,353 @@
         }
         .toast.success .toast-icon { background: var(--forest); }
         .toast-message { flex: 1; line-height: 1.4; }
-    </style>
-</head>
-<body>
-    <header class="site-header">
-        <nav class="site-nav page-shell" aria-label="Navigasi utama">
-            <a class="brand" href="/">
-                <span class="brand-mark" aria-hidden="true"><span class="material-symbols-outlined">restaurant</span></span>
-                <span class="brand-text">
-                    <span class="brand-name">Nusantara Heritage</span>
-                    <span class="brand-subtitle">Authentic Indonesian Fine Dining</span>
-                </span>
-            </a>
-            <div class="nav-links">
-                <a href="#menu">Menu</a>
-                <a href="#cara-pesan">Cara Pesan</a>
-                <button type="button" id="openCartButton" style="background:none;padding:0;color:inherit;font:inherit;">Keranjang</button>
-            </div>
-            <div class="nav-actions">
-                <button type="button" class="table-pill" id="openTableDialog">
-                    <span class="material-symbols-outlined">table_restaurant</span>
-                    Meja <span id="tableBadgeValue">@tableNumber</span>
-                </button>
-                <button type="button" class="cart-trigger" id="openCartIconButton" aria-label="Buka keranjang">
-                    <span class="material-symbols-outlined">shopping_cart</span>
-                    <span class="cart-trigger-badge" id="cartCountBadge">0</span>
-                </button>
-                @if (!string.IsNullOrWhiteSpace(dashboardUrl))
-                {
-                    <a class="outline-link" href="@dashboardUrl">Dashboard</a>
-                }
-                <button type="button" class="primary-link" id="openCartPrimaryButton">Pesan</button>
-            </div>
-        </nav>
-    </header>
 
-    <main>
+        /* ── Member CTA Section ──────────────────────────────────── */
+        .member-cta {
+            padding: 36px 0 56px;
+        }
+        .member-cta-card {
+            position: relative;
+            overflow: hidden;
+            border-radius: 30px;
+            padding: 34px;
+            background:
+                linear-gradient(135deg, rgba(255,255,255,.9), rgba(248,242,236,.96)),
+                linear-gradient(135deg, #fcf7f1 0%, #f6ebe0 100%);
+            border: 1px solid rgba(219, 193, 186, .72);
+            box-shadow: 0 18px 48px rgba(44, 44, 44, .08);
+        }
+        .member-cta-card::before {
+            content: '';
+            position: absolute;
+            top: -110px;
+            right: -100px;
+            width: 320px;
+            height: 320px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(196, 81, 0, .12), transparent 70%);
+            pointer-events: none;
+        }
+        .member-cta-card::after {
+            content: '';
+            position: absolute;
+            bottom: -80px;
+            left: -70px;
+            width: 240px;
+            height: 240px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(94, 96, 77, .08), transparent 70%);
+            pointer-events: none;
+        }
+        .member-cta-inner {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr);
+            gap: 28px;
+            align-items: stretch;
+        }
+        .member-cta-eyebrow {
+            margin: 0 0 10px;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: .16em;
+            text-transform: uppercase;
+            color: var(--forest);
+        }
+        .member-cta-title {
+            margin: 0;
+            font-family: 'Noto Serif', serif;
+            font-size: clamp(30px, 4vw, 44px);
+            font-weight: 700;
+            line-height: 1.06;
+            letter-spacing: -.04em;
+            color: var(--on-surface);
+        }
+        .member-cta-desc {
+            margin: 16px 0 0;
+            color: var(--on-surface-variant);
+            line-height: 1.7;
+            font-size: 16px;
+            max-width: 560px;
+        }
+        .member-benefits {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 26px;
+        }
+        .member-benefit {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 18px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, .8);
+            border: 1px solid rgba(219, 193, 186, .7);
+            box-shadow: 0 10px 24px rgba(44, 44, 44, .04);
+        }
+        .member-benefit-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            border-radius: 999px;
+            background: rgba(94, 96, 77, .1);
+            color: var(--forest);
+            flex-shrink: 0;
+        }
+        .member-benefit .material-symbols-outlined {
+            font-size: 18px;
+            font-variation-settings: 'FILL' 1;
+        }
+        .member-benefit span:last-child {
+            color: var(--on-surface);
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 1.45;
+        }
+        .member-cta-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 28px;
+        }
+        .member-cta-btn {
+            min-height: 52px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border-radius: 999px;
+            padding: 0 24px;
+            font-weight: 800;
+            font-size: 15px;
+            border: 0;
+            cursor: pointer;
+            transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+        }
+        .member-cta-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(156, 63, 0, .16); }
+        .member-cta-btn.primary { background: var(--terracotta); color: #fff; }
+        .member-cta-btn.secondary { background: var(--surface-lowest); color: var(--forest); border: 1px solid rgba(72, 102, 72, .32); }
+        .member-cta-aside {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            padding: 22px;
+            border-radius: 24px;
+            background: linear-gradient(180deg, rgba(255,255,255,.78), rgba(247,240,234,.9));
+            border: 1px solid rgba(219, 193, 186, .72);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.72);
+        }
+        .member-cta-aside-heading { display: grid; gap: 6px; }
+        .member-cta-aside-kicker {
+            margin: 0;
+            color: var(--forest);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+        }
+        .member-cta-aside-title {
+            margin: 0;
+            color: var(--on-surface);
+            font-family: 'Noto Serif', serif;
+            font-size: 23px;
+            line-height: 1.15;
+        }
+        .member-cta-steps { display: grid; gap: 8px; }
+        .member-cta-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 0;
+            border-top: 1px solid rgba(219, 193, 186, .65);
+        }
+        .member-cta-step:first-child { border-top: 0; padding-top: 0; }
+        .member-cta-step-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background: rgba(94, 96, 77, .1);
+            color: var(--forest);
+            flex-shrink: 0;
+        }
+        .member-cta-step-icon .material-symbols-outlined {
+            font-size: 16px;
+            font-variation-settings: 'FILL' 1;
+        }
+        .member-cta-step span:last-child {
+            color: var(--on-surface-variant);
+            line-height: 1.55;
+            font-size: 14px;
+        }
+        .member-cta-note {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--terracotta-dark);
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .member-cta-note .material-symbols-outlined {
+            font-size: 18px;
+            font-variation-settings: 'FILL' 1;
+        }
+        /* Member greeting card (logged in) */
+        .member-greeting-card {
+            position: relative;
+            overflow: hidden;
+            border-radius: 28px;
+            background: linear-gradient(135deg, #0d2818 0%, #1a4a2e 40%, #2d6b45 100%);
+            color: #fff;
+            padding: 42px;
+            box-shadow: 0 24px 64px rgba(44, 44, 44, .22);
+        }
+        .member-greeting-card::before {
+            content: '';
+            position: absolute;
+            top: -80px;
+            right: -60px;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(47, 111, 72, .4), transparent 70%);
+            pointer-events: none;
+        }
+        .member-greeting-inner {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            gap: 32px;
+        }
+        .member-greeting-avatar {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.15);
+            display: grid;
+            place-items: center;
+            flex-shrink: 0;
+        }
+        .member-greeting-avatar .material-symbols-outlined {
+            font-size: 36px;
+            color: #a8e6cf;
+            font-variation-settings: 'FILL' 1;
+        }
+        .member-greeting-body { flex: 1; }
+        .member-greeting-name {
+            margin: 0;
+            font-family: 'Noto Serif', serif;
+            font-size: 26px;
+            font-weight: 700;
+        }
+        .member-greeting-level {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+            padding: 4px 14px;
+            border-radius: 999px;
+            background: rgba(255,255,255,.12);
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .member-greeting-perks {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 16px;
+        }
+        .member-greeting-perk {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 10px;
+            background: rgba(255,255,255,.08);
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .member-greeting-perk .material-symbols-outlined {
+            font-size: 18px;
+            color: #a8e6cf;
+        }
+        @@media (max-width: 760px) {
+            .member-cta { padding: 28px 0 48px; }
+            .member-cta-card { padding: 24px 18px; border-radius: 24px; }
+            .member-cta-inner { grid-template-columns: 1fr; gap: 18px; }
+            .member-benefits { grid-template-columns: 1fr; }
+            .member-cta-aside { padding: 18px; }
+            .member-cta-actions { gap: 10px; }
+            .member-cta-btn { width: 100%; }
+            .hero-actions { display: grid; }
+            .member-greeting-card { padding: 28px 20px; }
+            .member-greeting-inner { flex-direction: column; text-align: center; }
+            .member-greeting-perks { justify-content: center; }
+        }
+    </style>
+}
+
+<main>
         <section class="hero page-shell" id="cara-pesan">
             <div>
                 <p class="eyebrow">Nusantara Heritage</p>
-                <h1 class="hero-title">Menu utama dengan sentuhan warisan kuliner Nusantara.</h1>
-                <p class="hero-copy">Nikmati persembahan hidangan otentik yang merayakan rempah, teknik masak tradisional, dan presentasi modern. Pilih menu, atur jumlah, lalu kirim langsung dari meja Anda.</p>
+                <h1 class="hero-title">Pesan menu Nusantara dari meja, lalu lacak statusnya dengan mudah.</h1>
+                <p class="hero-copy">Pilih menu, atur jumlah, selesaikan pembayaran, lalu gunakan nomor order untuk memantau pesanan tanpa alur yang membingungkan.</p>
                 <div class="hero-actions">
                     <a class="hero-button primary" href="#menu">
                         Lihat Menu
                         <span class="material-symbols-outlined">arrow_downward</span>
                     </a>
+                    <a class="hero-button ghost" id="heroReservationButton" href="/Reservation/Create">
+                        Reservasi Online
+                        <span class="material-symbols-outlined">event_available</span>
+                    </a>
                     <button type="button" class="hero-button secondary" id="heroTableButton">
                         Ganti Nomor Meja
                         <span class="material-symbols-outlined">edit</span>
                     </button>
+                </div>
+
+                <div class="journey-panel">
+                    <p class="journey-overline">Cara Pesan</p>
+                    <div class="journey-card">
+                        <div class="journey-step-grid">
+                            <div class="journey-step">
+                                <span class="journey-step-badge">1</span>
+                                <div>
+                                    <h3>Pilih menu</h3>
+                                    <p>Buka daftar hidangan Nusantara, pilih menu favorit, lalu mulai susun pesanan dari meja.</p>
+                                </div>
+                            </div>
+                            <div class="journey-step">
+                                <span class="journey-step-badge">2</span>
+                                <div>
+                                    <h3>Atur jumlah</h3>
+                                    <p>Tetapkan porsi yang dibutuhkan, cek ringkasan keranjang, dan rapikan pesanan sebelum lanjut.</p>
+                                </div>
+                            </div>
+                            <div class="journey-step">
+                                <span class="journey-step-badge">3</span>
+                                <div>
+                                    <h3>Pilih pembayaran</h3>
+                                    <p>Selesaikan pesanan dengan metode yang tersedia agar dapur bisa segera memprosesnya.</p>
+                                </div>
+                            </div>
+                            <div class="journey-step">
+                                <span class="journey-step-badge">4</span>
+                                <div>
+                                    <h3>Lacak pesanan</h3>
+                                    <p>Simpan nomor order dari halaman sukses untuk memantau status hingga pesanan tiba.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             @if (featuredProduct != null)
@@ -807,7 +1084,7 @@
                 <aside class="feature-card" aria-label="Rekomendasi chef">
                     <img class="feature-image" src="@featuredImage" alt="@featuredProduct.Name" />
                     <div class="feature-body">
-                        <span class="feature-label">Chef's Recommendation</span>
+                        <span class="feature-label">Rekomendasi Chef</span>
                         <h2 class="feature-title">@featuredProduct.Name</h2>
                         <div class="feature-meta">
                             @if (featuredHasDiscount)
@@ -823,6 +1100,101 @@
                         </div>
                     </div>
                 </aside>
+            }
+        </section>
+
+        @* ── Member CTA Section ─────────────────────────────────────────── *@
+        <section class="member-cta page-shell">
+            @if (!isCustomer)
+            {
+                <div class="member-cta-card">
+                    <div class="member-cta-inner">
+                        <div>
+                            <p class="member-cta-eyebrow">Keuntungan Member</p>
+                            <h2 class="member-cta-title">Satu akun member, pengalaman makan yang lebih nyaman.</h2>
+                            <p class="member-cta-desc">Daftar member dikenakan biaya Rp300.000 via Midtrans untuk menikmati harga khusus member, prioritas reservasi, dan riwayat pesanan yang tersimpan rapi.</p>
+                            <div class="member-benefits">
+                                <div class="member-benefit">
+                                    <span class="member-benefit-icon"><span class="material-symbols-outlined">check</span></span>
+                                    <span>Harga khusus member</span>
+                                </div>
+                                <div class="member-benefit">
+                                    <span class="member-benefit-icon"><span class="material-symbols-outlined">check</span></span>
+                                    <span>Prioritas reservasi</span>
+                                </div>
+                                <div class="member-benefit">
+                                    <span class="member-benefit-icon"><span class="material-symbols-outlined">check</span></span>
+                                    <span>Riwayat pesanan rapi</span>
+                                </div>
+                            </div>
+                            <div class="member-cta-actions">
+                                <button type="button" class="member-cta-btn primary" id="memberCtaRegisterBtn">
+                                    <span class="material-symbols-outlined">person_add</span>
+                                    Daftar Member Rp300.000
+                                </button>
+                                <button type="button" class="member-cta-btn secondary" id="memberCtaLoginBtn">
+                                    <span class="material-symbols-outlined">login</span>
+                                    Masuk Member
+                                </button>
+                            </div>
+                        </div>
+                        <div class="member-cta-aside">
+                            <div class="member-cta-aside-heading">
+                                <p class="member-cta-aside-kicker">Lebih tenang, lebih jelas</p>
+                                <h3 class="member-cta-aside-title">Ringkas, premium, dan mudah dipahami.</h3>
+                            </div>
+                            <div class="member-cta-steps">
+                                <div class="member-cta-step">
+                                    <div class="member-cta-step-icon"><span class="material-symbols-outlined">verified</span></div>
+                                    <span>Manfaat inti langsung terlihat tanpa elemen yang ramai.</span>
+                                </div>
+                                <div class="member-cta-step">
+                                    <div class="member-cta-step-icon"><span class="material-symbols-outlined">schedule</span></div>
+                                    <span>Tampilan lebih tenang, lebih mudah dipindai, dan nyaman di mobile.</span>
+                                </div>
+                                <div class="member-cta-step">
+                                    <div class="member-cta-step-icon"><span class="material-symbols-outlined">lock</span></div>
+                                    <span>Akses member tetap cepat dengan riwayat yang rapi.</span>
+                                </div>
+                            </div>
+                            <div class="member-cta-note">
+                                <span class="material-symbols-outlined">info</span>
+                                Pendaftaran aktif setelah pembayaran Midtrans Rp300.000
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="member-greeting-card">
+                    <div class="member-greeting-inner">
+                        <div class="member-greeting-avatar">
+                            <span class="material-symbols-outlined">person</span>
+                        </div>
+                        <div class="member-greeting-body">
+                            <h2 class="member-greeting-name">Selamat datang, @customerName!</h2>
+                            <div class="member-greeting-level">
+                                <span class="material-symbols-outlined" style="font-size:16px;">workspace_premium</span>
+                                Member Aktif
+                            </div>
+                            <div class="member-greeting-perks">
+                                <div class="member-greeting-perk">
+                                    <span class="material-symbols-outlined">discount</span>
+                                    Harga spesial aktif
+                                </div>
+                                <div class="member-greeting-perk">
+                                    <span class="material-symbols-outlined">loyalty</span>
+                                    Poin terus bertambah
+                                </div>
+                                <div class="member-greeting-perk">
+                                    <span class="material-symbols-outlined">star</span>
+                                    Nikmati menu favorit Anda
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             }
         </section>
 
@@ -889,6 +1261,7 @@
                                      data-product-category="@categoryLabel"
                                      data-product-price="@displayPrice.ToString(CultureInfo.InvariantCulture)"
                                      data-product-regular-price="@product.Price.ToString(CultureInfo.InvariantCulture)"
+                                     data-product-stock="@product.Stock"
                                      data-product-member-discount="@(product.MemberDiscountPercentage?.ToString(CultureInfo.InvariantCulture) ?? "")"
                                      data-product-image="@imageSrc"
                                      data-product-detail="@detail">
@@ -897,21 +1270,13 @@
                                     <img class="menu-image" src="@imageSrc" alt="@product.Name" loading="lazy" />
                                     @if (i == 0)
                                     {
-                                        <span class="chef-badge">Chef's Rec</span>
+                                        <span class="chef-badge">Rekomendasi Chef</span>
                                     }
-                                    <button type="button"
-                                            class="fab-add"
-                                            data-cart-action="add"
-                                            data-product-id="@product.Id"
-                                            data-product-name="@product.Name"
-                                            data-product-price="@displayPrice.ToString(CultureInfo.InvariantCulture)"
-                                            aria-label="Tambah @product.Name">
-                                        <span class="material-symbols-outlined">add</span>
-                                    </button>
+
                                 </div>
                                 <div class="menu-body">
                                     <div class="menu-heading">
-                                        <button type="button class="menu-title" data-open-item="@product.Id">@product.Name</button>
+                                        <button type="button" class="menu-title" data-open-item="@product.Id">@product.Name</button>
                                         <div class="menu-price-wrapper">
                                             <span class="menu-price-inline">Rp @displayPrice.ToString("N0", culture)</span>
                                             @if (hasMemberDiscount)
@@ -929,7 +1294,7 @@
                                         }
                                     </div>
                                     <button type="button"
-                                            class="add-button @(i == 0 ? "primary" : string.Empty)"
+                                            class="add-button"
                                             data-cart-action="add"
                                             data-product-id="@product.Id"
                                             data-product-name="@product.Name"
@@ -956,7 +1321,7 @@
                     }
                 </div>
 
-                <div></div>
+
             </div>
         </section>
     </main>
@@ -1055,21 +1420,26 @@
 
     <div class="auth-dialog" id="authDialog" role="dialog" aria-modal="true" aria-labelledby="authDialogTitle">
         <div class="auth-panel">
-            <h3 id="authDialogTitle">Login Member</h3>
-            <p>Masuk sebagai member untuk melanjutkan pemesanan meja.</p>
+            <h3 id="authDialogTitle">Masuk Member</h3>
+            <p>Masuk sebagai member atau daftar member Rp300.000 untuk mengaktifkan akun Anda.</p>
             <div class="auth-tabs">
-                <button type="button" class="auth-tab active" id="authLoginTab">Login</button>
-                <button type="button" class="auth-tab" id="authRegisterTab">Register</button>
+                <button type="button" class="auth-tab active" id="authLoginTab">Masuk</button>
+                <button type="button" class="auth-tab" id="authRegisterTab">Daftar</button>
             </div>
 
             <div id="loginForm">
                 <div class="auth-group">
-                    <label for="authLoginUsername">Username</label>
+                    <label for="authLoginUsername">Nama Pengguna</label>
                     <input class="auth-input" id="authLoginUsername" type="text" autocomplete="username" />
                 </div>
                 <div class="auth-group">
-                    <label for="authLoginPassword">Password</label>
-                    <input class="auth-input" id="authLoginPassword" type="password" autocomplete="current-password" />
+                    <label for="authLoginPassword">Kata Sandi</label>
+                    <div style="position:relative;">
+                        <input class="auth-input" id="authLoginPassword" type="password" autocomplete="current-password" style="padding-right:52px;" />
+                        <button type="button" data-toggle-home-password="#authLoginPassword" aria-label="Tampilkan atau sembunyikan kata sandi" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--on-surface-variant);display:grid;place-items:center;padding:0;">
+                            <span class="material-symbols-outlined" style="font-size:20px;">visibility</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -1079,12 +1449,17 @@
                     <input class="auth-input" id="authRegName" type="text" autocomplete="name" />
                 </div>
                 <div class="auth-group">
-                    <label for="authRegUsername">Username</label>
+                    <label for="authRegUsername">Nama Pengguna</label>
                     <input class="auth-input" id="authRegUsername" type="text" autocomplete="username" />
                 </div>
                 <div class="auth-group">
-                    <label for="authRegPassword">Password</label>
-                    <input class="auth-input" id="authRegPassword" type="password" autocomplete="new-password" />
+                    <label for="authRegPassword">Kata Sandi</label>
+                    <div style="position:relative;">
+                        <input class="auth-input" id="authRegPassword" type="password" autocomplete="new-password" style="padding-right:52px;" />
+                        <button type="button" data-toggle-home-password="#authRegPassword" aria-label="Tampilkan atau sembunyikan kata sandi" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--on-surface-variant);display:grid;place-items:center;padding:0;">
+                            <span class="material-symbols-outlined" style="font-size:20px;">visibility</span>
+                        </button>
+                    </div>
                 </div>
                 <div class="auth-group">
                     <label for="authRegPhone">Nomor Telepon</label>
@@ -1097,6 +1472,7 @@
                         <button type="button" class="secondary-button" id="sendOtpButton" style="white-space:nowrap;min-height:52px;width:100%;">Kirim OTP</button>
                     </div>
                 </div>
+                <p class="text-muted" style="margin: 6px 0 0; font-size: 13px;">Setelah OTP valid, pembayaran Midtrans Rp300.000 akan dibuka untuk mengaktifkan akun.</p>
             </div>
 
             <button type="button" class="submit-button" id="authSubmitButton">Lanjut</button>
@@ -1140,19 +1516,17 @@
                 <div>Nomor Pesanan</div>
                 <b id="successOrderNumber">-</b>
             </div>
-            <button type="button" class="submit-button" id="successCloseBtn">Kembali ke Menu</button>
+            <a href="#" class="submit-button" id="successTrackBtn" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;margin-top:18px;background:var(--forest);">
+                <span class="material-symbols-outlined">location_searching</span>
+                Lacak Pesanan
+            </a>
+            <button type="button" class="submit-button" id="successCloseBtn" style="background:var(--surface-container);color:var(--on-surface);">Kembali ke Menu</button>
         </div>
     </div>
 
     <div class="toast-container" id="toastContainer"></div>
 
-    <footer class="site-footer">
-        <div class="footer-inner page-shell">
-            <span>Nusantara Resto</span>
-            <span>Pesan dari meja, diproses langsung oleh dapur.</span>
-        </div>
-    </footer>
-
+@section Scripts {
     <script>
         (function () {
             'use strict';
@@ -1207,6 +1581,7 @@
             const successDialog = document.getElementById('successDialog');
             const successMessage = document.getElementById('successMessage');
             const successOrderNumber = document.getElementById('successOrderNumber');
+            const successTrackBtn = document.getElementById('successTrackBtn');
             const toastContainer = document.getElementById('toastContainer');
 
             function showToast(message) {
@@ -1221,15 +1596,67 @@
                 setTimeout(() => {
                     toast.classList.remove('show');
                     setTimeout(() => toast.remove(), 400);
-                }, 15000);
+                }, 4000);
             }
+
+            function setSuccessTrackLink(orderNumber) {
+                if (!successTrackBtn) return;
+                const value = String(orderNumber || '').trim();
+                successTrackBtn.href = value ? '/TrackOrder/' + encodeURIComponent(value) : '#';
+            }
+
+            function getProductCard(productId) {
+                return document.querySelector('[data-product-card][data-product-id="' + Number(productId) + '"]');
+            }
+
+            function getProductStock(productId) {
+                const card = getProductCard(productId);
+                if (!card) return 0;
+
+                const stock = Number(card.dataset.productStock);
+                return Number.isFinite(stock) && stock >= 0 ? Math.floor(stock) : 0;
+            }
+
+            function clampQtyToStock(productId, qty) {
+                const desiredQty = Math.max(0, Math.floor(Number(qty) || 0));
+                return Math.min(desiredQty, getProductStock(productId));
+            }
+
+            function notifyStockLimit(productId, requestedQty, appliedQty) {
+                const stock = getProductStock(productId);
+                if (stock <= 0) {
+                    showToast('Stok menu habis.');
+                    return;
+                }
+
+                if (Number(appliedQty) < Number(requestedQty)) {
+                    showToast('Stok maksimum tercapai.');
+                }
+            }
+
+            function syncCartQuantitiesToStock() {
+                const beforeState = cart.map(item => String(item.productId) + ':' + String(item.qty)).join('|');
+                cart = cart
+                    .map(item => ({
+                        ...item,
+                        qty: clampQtyToStock(item.productId, item.qty)
+                    }))
+                    .filter(item => Number(item.qty) > 0);
+
+                const afterState = cart.map(item => String(item.productId) + ':' + String(item.qty)).join('|');
+                return beforeState !== afterState;
+            }
+
             const authDialog = document.getElementById('authDialog');
+            const authDialogTitle = document.getElementById('authDialogTitle');
             const authLoginTab = document.getElementById('authLoginTab');
             const authRegisterTab = document.getElementById('authRegisterTab');
             const loginForm = document.getElementById('loginForm');
             const registerForm = document.getElementById('registerForm');
             const authSubmitButton = document.getElementById('authSubmitButton');
             const closeAuthDialog = document.getElementById('closeAuthDialog');
+            const memberCtaRegisterBtn = document.getElementById('memberCtaRegisterBtn');
+            const memberCtaLoginBtn = document.getElementById('memberCtaLoginBtn');
             const authError = document.getElementById('authError');
             const authLoginUsername = document.getElementById('authLoginUsername');
             const authLoginPassword = document.getElementById('authLoginPassword');
@@ -1499,10 +1926,23 @@
             }
 
             function addToCart(productId, name, price, qty) {
-                const quantity = Math.max(1, Number(qty) || 1);
+                const requestedQuantity = Math.max(1, Math.floor(Number(qty) || 1));
                 const existing = findCartItem(productId);
+                const currentQty = existing ? Math.max(0, Number(existing.qty) || 0) : 0;
+                const availableQty = Math.max(0, getProductStock(productId) - currentQty);
+                const quantity = Math.min(requestedQuantity, availableQty);
+
+                if (quantity <= 0) {
+                    notifyStockLimit(productId, requestedQuantity, 0);
+                    return false;
+                }
+
+                if (quantity < requestedQuantity) {
+                    notifyStockLimit(productId, requestedQuantity, quantity);
+                }
+
                 if (existing) {
-                    existing.qty += quantity;
+                    existing.qty = currentQty + quantity;
                 } else {
                     cart.push({
                         productId: Number(productId),
@@ -1511,12 +1951,19 @@
                         qty: quantity
                     });
                 }
+
+                return true;
             }
 
             function updateItem(productId, delta, sourceButton) {
                 const existing = findCartItem(productId);
                 if (existing) {
-                    existing.qty += delta;
+                    const requestedQty = Math.max(0, Math.floor((Number(existing.qty) || 0) + Number(delta || 0)));
+                    const nextQty = clampQtyToStock(productId, requestedQty);
+                    if (Number(delta) > 0 && nextQty < requestedQty) {
+                        notifyStockLimit(productId, requestedQty, nextQty);
+                    }
+                    existing.qty = nextQty;
                 } else if (delta > 0 && sourceButton) {
                     addToCart(
                         Number(productId),
@@ -1538,6 +1985,11 @@
             }
 
             function renderCart() {
+                const cartAdjusted = syncCartQuantitiesToStock();
+                if (cartAdjusted) {
+                    saveCart();
+                }
+
                 const totalQty = cart.reduce((sum, item) => sum + Number(item.qty || 0), 0);
                 const subtotal = cart.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.qty || 0)), 0);
                 const ppnAmount = ppnPercentage > 0 ? subtotal * (ppnPercentage / 100) : 0;
@@ -1649,6 +2101,25 @@
                 });
             }
 
+            async function syncMemberSignupPayment(signupCode) {
+                const data = await postJson('/Auth/SyncMemberSignupPayment', { signupCode });
+                if (!data || !data.success) {
+                    throw new Error((data && data.error) || 'Sinkronisasi pembayaran gagal.');
+                }
+
+                if (data.waitingVerification) {
+                    showToast(data.message || 'Pembayaran berhasil. Akun member menunggu verifikasi kasir/admin.');
+                    return;
+                }
+
+                if (data.activated) {
+                    showToast(data.message || 'Akun member sudah aktif.');
+                    return;
+                }
+
+                showToast(data.message || 'Status pembayaran diperbarui.');
+            }
+
             function applyFilter() {
                 const query = (searchInput.value || '').trim().toLowerCase();
                 let visibleCount = 0;
@@ -1717,16 +2188,34 @@
                 authRegisterTab.classList.toggle('active', authMode === 'register');
                 loginForm.style.display = authMode === 'login' ? '' : 'none';
                 registerForm.style.display = authMode === 'register' ? '' : 'none';
+                authSubmitButton.textContent = authMode === 'register' ? 'Lanjut ke Pembayaran' : 'Lanjut';
+                if (authDialogTitle) authDialogTitle.textContent = authMode === 'register' ? 'Daftar Member' : 'Masuk Member';
                 authError.textContent = '';
             }
 
             function setModalQty(value) {
-                modalItemQty = Math.max(1, Number(value) || 1);
+                if (!modalItem) {
+                    modalItemQty = 1;
+                    itemModalQty.textContent = '1';
+                    return;
+                }
+
+                const requestedQty = Math.max(0, Math.floor(Number(value) || 0));
+                const nextQty = Math.min(Math.max(1, requestedQty), Math.max(0, modalItem.stock || 0));
+                if (requestedQty > nextQty) {
+                    notifyStockLimit(modalItem.productId, requestedQty, nextQty);
+                }
+
+                modalItemQty = nextQty > 0 ? nextQty : 0;
                 itemModalQty.textContent = String(modalItemQty);
+                itemModalAdd.disabled = modalItem.stock <= 0;
+                itemModalAdd.innerHTML = modalItem.stock <= 0
+                    ? '<span class="material-symbols-outlined">block</span> Stok Habis'
+                    : '<span class="material-symbols-outlined">shopping_cart</span> Tambah ke Keranjang';
             }
 
             function openItemModal(productId) {
-                const card = document.querySelector('[data-product-card][data-product-id="' + Number(productId) + '"]');
+                const card = getProductCard(productId);
                 if (!card) return;
 
                 modalItem = {
@@ -1735,7 +2224,8 @@
                     category: card.dataset.productCategory || 'Menu',
                     detail: card.dataset.productDetail || '',
                     image: card.dataset.productImage || '',
-                    price: Number(card.dataset.productPrice || 0)
+                    price: Number(card.dataset.productPrice || 0),
+                    stock: getProductStock(card.dataset.productId)
                 };
 
                 itemModalImage.src = modalItem.image;
@@ -1836,11 +2326,13 @@
                             onSuccess: function () {
                                 setFeedback('Pembayaran berhasil diverifikasi.', 'success');
                                 successOrderNumber.textContent = data.orderNumber || '-';
+                                setSuccessTrackLink(data.orderNumber);
                                 successDialog.classList.add('open');
                             },
                             onPending: function () {
                                 setFeedback('Pembayaran sedang diproses. Cek status beberapa saat lagi.', 'success');
                                 successOrderNumber.textContent = data.orderNumber || '-';
+                                setSuccessTrackLink(data.orderNumber);
                                 successDialog.classList.add('open');
                             },
                             onError: function () {
@@ -1853,6 +2345,7 @@
                     } else {
                         setFeedback('Pesanan berhasil dikirim. Nomor order: ' + data.orderNumber + '.', 'success');
                         successOrderNumber.textContent = data.orderNumber || '-';
+                        setSuccessTrackLink(data.orderNumber);
                         successDialog.classList.add('open');
                     }
                 } catch {
@@ -1978,7 +2471,7 @@
 
                 setAuthMode('login');
                 openAuthModal();
-                setFeedback('Mode member aktif. Login member tersedia, atau lewati dulu untuk lanjut pesan.', 'success');
+                setFeedback('Mode member aktif. Fitur masuk member tersedia, atau lewati dulu untuk lanjut pesan.', 'success');
                 continueGuestButton.disabled = false;
                 continueMemberButton.disabled = false;
             });
@@ -1988,7 +2481,8 @@
             document.getElementById('itemModalIncrease').addEventListener('click', () => setModalQty(modalItemQty + 1));
             itemModalAdd.addEventListener('click', () => {
                 if (!modalItem) return;
-                addToCart(modalItem.productId, modalItem.name, modalItem.price, modalItemQty);
+                const added = addToCart(modalItem.productId, modalItem.name, modalItem.price, modalItemQty);
+                if (!added) return;
                 saveCart();
                 renderCart();
                 setFeedback('Menu ditambahkan ke keranjang.', 'success');
@@ -2021,6 +2515,21 @@
             });
 
             document.getElementById('successCloseBtn').addEventListener('click', () => successDialog.classList.remove('open'));
+            if (memberCtaRegisterBtn) memberCtaRegisterBtn.addEventListener('click', () => { setAuthMode('register'); openAuthModal(); });
+            if (memberCtaLoginBtn) memberCtaLoginBtn.addEventListener('click', () => { setAuthMode('login'); openAuthModal(); });
+            document.querySelectorAll('[data-toggle-home-password]').forEach(button => {
+                button.addEventListener('click', () => {
+                    const selector = button.getAttribute('data-toggle-home-password');
+                    const input = selector ? document.querySelector(selector) : null;
+                    if (!input) return;
+                    const isPassword = input.getAttribute('type') === 'password';
+                    input.setAttribute('type', isPassword ? 'text' : 'password');
+                    const icon = button.querySelector('.material-symbols-outlined');
+                    if (icon) {
+                        icon.textContent = isPassword ? 'visibility_off' : 'visibility';
+                    }
+                });
+            });
             authLoginTab.addEventListener('click', () => setAuthMode('login'));
             authRegisterTab.addEventListener('click', () => setAuthMode('register'));
             closeAuthDialog.addEventListener('click', async () => {
@@ -2091,13 +2600,13 @@
                         const username = String(authLoginUsername.value || '').trim();
                         const password = String(authLoginPassword.value || '');
                         if (!username || !password) {
-                            authError.textContent = 'Username dan password wajib diisi.';
+                            authError.textContent = 'Nama pengguna dan kata sandi wajib diisi.';
                             return;
                         }
 
                         const data = await postJson('/Auth/AjaxLogin', { username, password });
                         if (!data || !data.success) {
-                            authError.textContent = (data && data.error) || 'Login gagal.';
+                            authError.textContent = (data && data.error) || 'Masuk gagal.';
                             return;
                         }
 
@@ -2126,14 +2635,41 @@
 
                     const data = await postJson('/Auth/AjaxRegister', { fullName, username, password, phone, otpCode });
                     if (!data || !data.success) {
-                        authError.textContent = (data && data.error) || 'Register gagal.';
+                        authError.textContent = (data && data.error) || 'Pendaftaran gagal.';
                         return;
                     }
 
-                    if (data.isCustomer) {
-                        showToast('Selamat datang, ' + data.username + '! Anda sekarang adalah member dengan harga khusus.');
+                    if (!data.snapToken) {
+                        authError.textContent = 'Token pembayaran tidak tersedia.';
+                        return;
                     }
-                    window.location.href = data.redirectUrl || '/';
+
+                    await loadMidtransSnapScript(data.midtransClientKey, !!data.midtransIsProduction);
+                    showToast(data.message || 'Lanjutkan pembayaran member Anda.');
+                    authDialog.classList.remove('open');
+
+                    window.snap.pay(data.snapToken, {
+                        onSuccess: async function () {
+                            try {
+                                await syncMemberSignupPayment(data.signupCode);
+                            } catch (error) {
+                                authError.textContent = error?.message || 'Sinkronisasi pembayaran gagal.';
+                            }
+                        },
+                        onPending: async function () {
+                            try {
+                                await syncMemberSignupPayment(data.signupCode);
+                            } catch (error) {
+                                authError.textContent = error?.message || 'Sinkronisasi pembayaran gagal.';
+                            }
+                        },
+                        onError: function () {
+                            authError.textContent = 'Pembayaran gagal. Silakan coba lagi.';
+                        },
+                        onClose: function () {
+                            showToast('Popup pembayaran ditutup. Pendaftaran member masih menunggu pembayaran.');
+                        }
+                    });
                 } catch {
                     authError.textContent = 'Terjadi kesalahan jaringan. Silakan coba lagi.';
                 } finally {
@@ -2193,5 +2729,4 @@
             initTableState();
         })();
     </script>
-</body>
-</html>
+}

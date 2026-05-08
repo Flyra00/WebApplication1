@@ -61,7 +61,7 @@
                         <td class="fw-semibold">@d.InventoryItem?.ItemName</td>
                         <td>@d.Qty</td>
                         <td style="font-size:.8rem;color:var(--owner-muted);">@(d.ReportedByUser?.FullName ?? d.ReportedByUser?.UserName)</td>
-                        <td style="font-size:.8rem;color:var(--owner-muted);">@d.ReportDate.ToLocalTime().ToString("dd/MM HH:mm")</td>
+                        <td style="font-size:.8rem;color:var(--owner-muted);">@BusinessTime.ToBusinessTime(d.ReportDate).ToString("dd/MM HH:mm")</td>
                         <td><span class="badge" style="background:@(sc)22;color:@sc;border:1px solid @(sc)44;font-size:.7rem;">@d.Status</span></td>
                     </tr>
                 }

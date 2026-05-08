@@ -1,0 +1,98 @@
+@using Microsoft.Extensions.Options
+@using WebApplication1.Configuration
+@inject IOptions<PublicSiteOptions> PublicSiteOptionsAccessor
+@{
+    var site = PublicSiteOptionsAccessor.Value;
+    var phoneHref = new string((site.PhoneNumber ?? string.Empty).Where(ch => char.IsDigit(ch) || ch == '+').ToArray());
+    var whatsappNumber = new string((site.WhatsAppNumber ?? string.Empty).Where(char.IsDigit).ToArray());
+    var whatsappUrl = string.IsNullOrWhiteSpace(whatsappNumber) ? null : $"https://wa.me/{whatsappNumber}";
+    var socialLinks = new[]
+    {
+        new { Label = "Instagram", Url = site.InstagramUrl, Icon = "photo_camera" },
+        new { Label = "Facebook", Url = site.FacebookUrl, Icon = "groups" },
+        new { Label = "TikTok", Url = site.TiktokUrl, Icon = "play_circle" }
+    }.Where(link => !string.IsNullOrWhiteSpace(link.Url)).ToList();
+}
+<footer class="site-footer" id="contact">
+    <div class="page-shell footer-shell">
+        <div class="footer-grid">
+            <section class="footer-brand-card" aria-label="Tentang restoran">
+                <span class="footer-kicker">@site.BrandName</span>
+                <h2 class="footer-heading">@site.BrandSubtitle</h2>
+                <p class="footer-copy">Reservasi online, pemesanan dari meja, dan pelacakan order kini memakai satu tampilan publik yang konsisten dengan identitas Nusantara Heritage.</p>
+            </section>
+
+            <section class="footer-block" aria-label="Alamat restoran">
+                <span class="footer-kicker">Alamat</span>
+                <h2 class="footer-heading">Kunjungi Kami</h2>
+                @if (!string.IsNullOrWhiteSpace(site.GoogleMapsUrl))
+                {
+                    <a class="footer-contact-link" href="@site.GoogleMapsUrl" target="_blank" rel="noopener noreferrer">
+                        <span class="material-symbols-outlined">location_on</span>
+                        <span>@site.FullAddress</span>
+                    </a>
+                }
+                else
+                {
+                    <p class="footer-contact-link">
+                        <span class="material-symbols-outlined">location_on</span>
+                        <span>@site.FullAddress</span>
+                    </p>
+                }
+                <p class="footer-copy">@site.OpeningHours</p>
+            </section>
+
+            <section class="footer-block" aria-label="Kontak restoran">
+                <span class="footer-kicker">Hubungi</span>
+                <h2 class="footer-heading">Kontak</h2>
+                <div class="footer-list">
+                    @if (!string.IsNullOrWhiteSpace(site.PhoneNumber))
+                    {
+                        <a class="footer-contact-link" href="tel:@phoneHref">
+                            <span class="material-symbols-outlined">call</span>
+                            <span>@site.PhoneNumber</span>
+                        </a>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(whatsappUrl))
+                    {
+                        <a class="footer-contact-link" href="@whatsappUrl" target="_blank" rel="noopener noreferrer">
+                            <span class="material-symbols-outlined">chat</span>
+                            <span>Chat via WhatsApp</span>
+                        </a>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(site.ContactEmail))
+                    {
+                        <a class="footer-contact-link" href="mailto:@site.ContactEmail">
+                            <span class="material-symbols-outlined">mail</span>
+                            <span>@site.ContactEmail</span>
+                        </a>
+                    }
+                </div>
+            </section>
+
+            <section class="footer-block" aria-label="Sosial media dan tautan cepat">
+                <span class="footer-kicker">Tetap Terhubung</span>
+                <h2 class="footer-heading">Medsos &amp; Akses Cepat</h2>
+                <div class="footer-socials">
+                    @foreach (var social in socialLinks)
+                    {
+                        <a class="footer-social-link" href="@social.Url" target="_blank" rel="noopener noreferrer">
+                            <span class="material-symbols-outlined">@social.Icon</span>
+                            <span>@social.Label</span>
+                        </a>
+                    }
+                </div>
+                <div class="footer-list">
+                    <a class="footer-link" href="/Reservation/Create">Buat Reservasi</a>
+                    <a class="footer-link" href="/Reservation/Lookup">Cek Reservasi</a>
+                    <a class="footer-link" href="/Home/TrackOrder">Lacak Pesanan</a>
+                </div>
+            </section>
+        </div>
+
+        <div class="footer-bottom">
+            <span>@site.BrandName</span>
+            <span>&copy; @BusinessTime.BusinessNow.Year @site.BrandName. Semua hak dilindungi.</span>
+        </div>
+    </div>
+</footer>

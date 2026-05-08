@@ -29,7 +29,7 @@
                 {
                     var sc = d.Status switch { "Reported" => "#ef4444", "Reviewed" => "#f97316", "Resolved" => "#22c55e", _ => "#64748b" };
                     <tr>
-                        <td style="font-size:.8rem;color:var(--owner-muted);">@d.ReportDate.ToLocalTime().ToString("dd/MM/yy HH:mm")</td>
+                        <td style="font-size:.8rem;color:var(--owner-muted);">@BusinessTime.ToBusinessTime(d.ReportDate).ToString("dd/MM/yy HH:mm")</td>
                         <td class="fw-semibold">@d.InventoryItem?.ItemName</td>
                         <td style="font-size:.8rem;color:var(--owner-muted);">@d.InventoryItem?.Category</td>
                         <td class="text-end" style="color:#ef4444;font-weight:600;">@d.Qty</td>

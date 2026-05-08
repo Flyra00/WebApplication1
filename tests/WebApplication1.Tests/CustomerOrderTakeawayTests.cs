@@ -54,11 +54,104 @@ public class CustomerOrderTakeawayTests
         var success = (bool)(payload.GetType().GetProperty("success")?.GetValue(payload) ?? false);
         Assert.True(success);
 
-        var savedOrder = await db.Orders.Include(o => o.TableSession).ThenInclude(s => s.Table).FirstOrDefaultAsync();
+        var savedOrder = await db.Orders.Include(o => o.TableSession).ThenInclude(s => s!.Table).FirstOrDefaultAsync();
         Assert.NotNull(savedOrder);
-        Assert.Equal(OrderTypes.Takeaway, savedOrder!.OrderType);
+        Assert.NotNull(savedOrder.TableSession);
+        Assert.NotNull(savedOrder.TableSession.Table);
+        Assert.Equal(OrderTypes.Takeaway, savedOrder.OrderType);
         Assert.Equal(TableSessionStatuses.Closed, savedOrder.TableSession.Status);
         Assert.Equal(-1, savedOrder.TableSession.Table.Number);
+    }
+
+    [Fact]
+    public async Task Takeaway_SubmitOrder_DecrementsProductStock()
+    {
+        await using var db = CreateDbContext();
+        db.Products.Add(new Product
+        {
+            Name = "Teh Manis",
+            Category = "Minuman",
+            Price = 8000,
+            Stock = 5,
+            IsAvailable = true
+        });
+        await db.SaveChangesAsync();
+
+        var controller = CreateController(db);
+        var product = await db.Products.FirstAsync();
+
+        var result = await controller.Submit(new CustomerOrderController.SubmitOrderRequest
+        {
+            OrderType = OrderTypes.Takeaway,
+            MembershipStatus = TableGuestTypes.Guest,
+            PaymentMethod = PaymentMethods.Cash,
+            GuestName = "Budi",
+            GuestPhone = "081234567890",
+            Items =
+            [
+                new CustomerOrderController.SubmitOrderItemRequest
+                {
+                    ProductId = product.Id,
+                    Qty = 2
+                }
+            ]
+        });
+
+        var json = Assert.IsType<JsonResult>(result);
+        var payload = json.Value!;
+        var success = (bool)(payload.GetType().GetProperty("success")?.GetValue(payload) ?? false);
+        Assert.True(success);
+
+        db.ChangeTracker.Clear();
+        var updatedProduct = await db.Products.SingleAsync(item => item.Id == product.Id);
+        Assert.Equal(3, updatedProduct.Stock);
+    }
+
+    [Fact]
+    public async Task Takeaway_SubmitOrder_RejectsQuantityAboveStock()
+    {
+        await using var db = CreateDbContext();
+        db.Products.Add(new Product
+        {
+            Name = "Es Jeruk",
+            Category = "Minuman",
+            Price = 10000,
+            Stock = 1,
+            IsAvailable = true
+        });
+        await db.SaveChangesAsync();
+
+        var controller = CreateController(db);
+        var product = await db.Products.FirstAsync();
+
+        var result = await controller.Submit(new CustomerOrderController.SubmitOrderRequest
+        {
+            OrderType = OrderTypes.Takeaway,
+            MembershipStatus = TableGuestTypes.Guest,
+            PaymentMethod = PaymentMethods.Cash,
+            GuestName = "Budi",
+            GuestPhone = "081234567890",
+            Items =
+            [
+                new CustomerOrderController.SubmitOrderItemRequest
+                {
+                    ProductId = product.Id,
+                    Qty = 2
+                }
+            ]
+        });
+
+        var json = Assert.IsType<JsonResult>(result);
+        var payload = json.Value!;
+        var success = (bool)(payload.GetType().GetProperty("success")?.GetValue(payload) ?? false);
+        var error = payload.GetType().GetProperty("error")?.GetValue(payload)?.ToString();
+
+        Assert.False(success);
+        Assert.Contains("Stok", error ?? string.Empty);
+
+        db.ChangeTracker.Clear();
+        var unchangedProduct = await db.Products.SingleAsync(item => item.Id == product.Id);
+        Assert.Equal(1, unchangedProduct.Stock);
     }
 
     private static CustomerOrderController CreateController(AppDbContext db)

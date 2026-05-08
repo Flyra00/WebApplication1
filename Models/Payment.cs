@@ -14,6 +14,10 @@ namespace WebApplication1.Models
         [MaxLength(20)]
         public string Method { get; set; } = PaymentMethods.Cash;
 
+        [Required]
+        [MaxLength(40)]
+        public string Purpose { get; set; } = PaymentPurpose.OrderRegular;
+
         [Precision(16, 2)]
         public decimal Amount { get; set; }
 

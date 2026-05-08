@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using WebApplication1.Data;
 using WebApplication1.Models;
 using WebApplication1.Security;
+using WebApplication1.Services.Time;
 
 namespace WebApplication1.Controllers
 {
@@ -11,28 +12,31 @@ namespace WebApplication1.Controllers
     public class OwnerController : Controller
     {
         private readonly AppDbContext _context;
+        private readonly IBusinessTime _businessTime;
 
-        public OwnerController(AppDbContext context)
+        public OwnerController(AppDbContext context, IBusinessTime businessTime)
         {
             _context = context;
+            _businessTime = businessTime;
         }
 
         // ─── Dashboard ringkasan ─────────────────────────────────────────────
         public async Task<IActionResult> Dashboard()
         {
-            var today     = DateTime.UtcNow.Date;
-            var thisMonth = new DateTime(today.Year, today.Month, 1);
+            var today = _businessTime.BusinessToday;
+            var (todayStartUtc, tomorrowStartUtc) = _businessTime.GetUtcDayRange(today);
+            var monthStartUtc = _businessTime.ToUtc(new DateTime(today.Year, today.Month, 1));
 
             var todayRevenue = await _context.Payments
-                .Where(p => p.Status == PaymentStatuses.Paid && p.PaymentDate.Date == today)
+                .Where(p => p.Status == PaymentStatuses.Paid && p.PaymentDate >= todayStartUtc && p.PaymentDate < tomorrowStartUtc)
                 .SumAsync(p => (decimal?)p.Amount) ?? 0;
 
             var monthRevenue = await _context.Payments
-                .Where(p => p.Status == PaymentStatuses.Paid && p.PaymentDate >= thisMonth)
+                .Where(p => p.Status == PaymentStatuses.Paid && p.PaymentDate >= monthStartUtc)
                 .SumAsync(p => (decimal?)p.Amount) ?? 0;
 
             var todayOrders = await _context.Orders
-                .CountAsync(o => o.OrderDate.Date == today);
+                .CountAsync(o => o.OrderDate >= todayStartUtc && o.OrderDate < tomorrowStartUtc);
 
             var lowIngredients = await _context.Ingredients
                 .Where(i => i.Qty <= i.MinimumStock)
@@ -57,13 +61,16 @@ namespace WebApplication1.Controllers
         // ─── Laporan penjualan ───────────────────────────────────────────────
         public async Task<IActionResult> SalesReport(DateTime? from, DateTime? to)
         {
-            var start = (from ?? DateTime.UtcNow.AddDays(-30)).Date;
-            var end   = (to   ?? DateTime.UtcNow).Date.AddDays(1);
+            var businessToday = _businessTime.BusinessToday;
+            var start = (from ?? businessToday.AddDays(-30)).Date;
+            var end = (to ?? businessToday).Date;
+            var startUtc = _businessTime.ToUtc(start);
+            var endUtc = _businessTime.ToUtc(end.AddDays(1));
 
             var orders = await _context.Orders
                 .Include(o => o.TableSession).ThenInclude(s => s.Table)
                 .Include(o => o.Items).ThenInclude(i => i.Product)
-                .Where(o => o.Status == OrderStatuses.Paid && o.OrderDate >= start && o.OrderDate < end)
+                .Where(o => o.Status == OrderStatuses.Paid && o.OrderDate >= startUtc && o.OrderDate < endUtc)
                 .OrderByDescending(o => o.OrderDate)
                 .ToListAsync();
 
@@ -79,7 +86,7 @@ namespace WebApplication1.Controllers
                 .ToList();
 
             ViewBag.From         = start;
-            ViewBag.To           = end.AddDays(-1);
+            ViewBag.To           = end;
             ViewBag.TotalRevenue = totalRevenue;
             ViewBag.TopProducts  = topProducts;
 

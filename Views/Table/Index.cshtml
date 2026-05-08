@@ -80,7 +80,8 @@
                                                 @Html.AntiForgeryToken()
                                                 <button type="submit"
                                                         class="btn btn-outline-secondary btn-sm"
-                                                        onclick="return confirm('Regenerate QR meja @table.Number? Link QR lama tidak bisa dipakai lagi.')">
+                                                        data-confirm-title="Regenerate QR"
+                                                        data-confirm-message="Regenerate QR meja @table.Number? Link QR lama tidak bisa dipakai lagi.">
                                                     <i class="bi bi-qr-code me-1"></i> Regenerate
                                                 </button>
                                             </form>
@@ -91,7 +92,8 @@
                                                     @Html.AntiForgeryToken()
                                                     <button type="submit"
                                                             class="btn btn-outline-@(table.IsActive ? "secondary" : "success") btn-sm"
-                                                            onclick="return confirm('@(table.IsActive ? $"Nonaktifkan meja {table.Number}? Sesi aktif akan ditutup." : $"Aktifkan kembali meja {table.Number}?")')"
+                                                            data-confirm-title="Konfirmasi Meja"
+                                                            data-confirm-message="@(table.IsActive ? $"Nonaktifkan meja {table.Number}? Sesi aktif akan ditutup." : $"Aktifkan kembali meja {table.Number}?")"
                                                             title="@(table.IsActive ? "Nonaktifkan" : "Aktifkan") Meja">
                                                         <i class="bi @(table.IsActive ? "bi-toggle-off" : "bi-toggle-on")"></i>
                                                     </button>
@@ -103,7 +105,8 @@
                                                     @Html.AntiForgeryToken()
                                                     <button type="submit"
                                                             class="btn btn-outline-danger btn-sm"
-                                                            onclick="return confirm('Yakin mau hapus meja @table.Number?')"
+                                                            data-confirm-title="Hapus Meja"
+                                                            data-confirm-message="Yakin mau hapus meja @table.Number?"
                                                             title="Delete Meja">
                                                         <i class="bi bi-trash3-fill"></i>
                                                     </button>

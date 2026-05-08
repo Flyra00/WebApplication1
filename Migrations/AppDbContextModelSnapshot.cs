@@ -155,6 +155,42 @@ namespace WebApplication1.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("WebApplication1.Models.AppSetting", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.ToTable("AppSettings", (string)null);
+                });
+
             modelBuilder.Entity("WebApplication1.Models.ApplicationUser", b =>
                 {
                     b.Property<string>("Id")
@@ -401,6 +437,9 @@ namespace WebApplication1.Migrations
                         .HasPrecision(5, 2)
                         .HasColumnType("decimal(5,2)");
 
+                    b.Property<int?>("ReservationId")
+                        .HasColumnType("int");
+
                     b.Property<decimal>("ServiceAmount")
                         .HasPrecision(16, 2)
                         .HasColumnType("decimal(16,2)");
@@ -418,7 +457,7 @@ namespace WebApplication1.Migrations
                         .HasPrecision(16, 2)
                         .HasColumnType("decimal(16,2)");
 
-                    b.Property<int>("TableSessionId")
+                    b.Property<int?>("TableSessionId")
                         .HasColumnType("int");
 
                     b.Property<decimal>("Total")
@@ -431,6 +470,10 @@ namespace WebApplication1.Migrations
 
                     b.HasIndex("OrderNumber")
                         .IsUnique();
+
+                    b.HasIndex("ReservationId")
+                        .IsUnique()
+                        .HasFilter("[ReservationId] IS NOT NULL");
 
                     b.HasIndex("TableSessionId");
 
@@ -507,6 +550,11 @@ namespace WebApplication1.Migrations
                     b.Property<DateTime>("PaymentDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
                     b.Property<string>("ReferenceNumber")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -523,6 +571,81 @@ namespace WebApplication1.Migrations
                     b.HasIndex("PaidByUserId");
 
                     b.ToTable("Payments");
+                });
+
+            modelBuilder.Entity("WebApplication1.Models.PendingMemberSignup", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("ActivatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(16, 2)
+                        .HasColumnType("decimal(16,2)");
+
+                    b.Property<DateTime?>("CancelledAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("FailedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("MidtransReference")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("PaidAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PasswordHashTemp")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("SignupCode")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("PendingPayment");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MidtransReference")
+                        .IsUnique();
+
+                    b.HasIndex("SignupCode")
+                        .IsUnique();
+
+                    b.ToTable("PendingMemberSignups");
                 });
 
             modelBuilder.Entity("WebApplication1.Models.PhoneOtpVerification", b =>
@@ -610,6 +733,124 @@ namespace WebApplication1.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Products");
+                });
+
+            modelBuilder.Entity("WebApplication1.Models.Reservation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AccessKey")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("nvarchar(24)");
+
+                    b.Property<DateTime?>("CancelledAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("CheckedInAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ConfirmedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CustomerName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("CustomerUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<decimal?>("DpPercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("NoShowAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("PartySize")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("RejectedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ReservationCode")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<int>("ReservationDurationHours")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ReservationTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("Online");
+
+                    b.Property<string>("SpecialRequest")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int?>("TableId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TableSessionId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccessKey")
+                        .IsUnique();
+
+                    b.HasIndex("CustomerUserId");
+
+                    b.HasIndex("ReservationCode")
+                        .IsUnique();
+
+                    b.HasIndex("ReservationTime");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("TableId");
+
+                    b.HasIndex("TableSessionId")
+                        .IsUnique()
+                        .HasFilter("[TableSessionId] IS NOT NULL");
+
+                    b.ToTable("Reservations");
                 });
 
             modelBuilder.Entity("WebApplication1.Models.Table", b =>
@@ -781,13 +1022,19 @@ namespace WebApplication1.Migrations
                         .HasForeignKey("CustomerUserId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("WebApplication1.Models.Reservation", "Reservation")
+                        .WithOne("Order")
+                        .HasForeignKey("WebApplication1.Models.Order", "ReservationId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("WebApplication1.Models.TableSession", "TableSession")
                         .WithMany("Orders")
                         .HasForeignKey("TableSessionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("CustomerUser");
+
+                    b.Navigation("Reservation");
 
                     b.Navigation("TableSession");
                 });
@@ -814,7 +1061,7 @@ namespace WebApplication1.Migrations
             modelBuilder.Entity("WebApplication1.Models.Payment", b =>
                 {
                     b.HasOne("WebApplication1.Models.Order", "Order")
-                        .WithMany()
+                        .WithMany("Payments")
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -827,6 +1074,30 @@ namespace WebApplication1.Migrations
                     b.Navigation("Order");
 
                     b.Navigation("PaidByUser");
+                });
+
+            modelBuilder.Entity("WebApplication1.Models.Reservation", b =>
+                {
+                    b.HasOne("WebApplication1.Models.ApplicationUser", "CustomerUser")
+                        .WithMany("CustomerReservations")
+                        .HasForeignKey("CustomerUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("WebApplication1.Models.Table", "Table")
+                        .WithMany()
+                        .HasForeignKey("TableId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("WebApplication1.Models.TableSession", "TableSession")
+                        .WithOne()
+                        .HasForeignKey("WebApplication1.Models.Reservation", "TableSessionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("CustomerUser");
+
+                    b.Navigation("Table");
+
+                    b.Navigation("TableSession");
                 });
 
             modelBuilder.Entity("WebApplication1.Models.TableSession", b =>
@@ -851,6 +1122,8 @@ namespace WebApplication1.Migrations
                 {
                     b.Navigation("CustomerOrders");
 
+                    b.Navigation("CustomerReservations");
+
                     b.Navigation("MemberProfile");
 
                     b.Navigation("MemberTableSessions");
@@ -859,11 +1132,18 @@ namespace WebApplication1.Migrations
             modelBuilder.Entity("WebApplication1.Models.Order", b =>
                 {
                     b.Navigation("Items");
+
+                    b.Navigation("Payments");
                 });
 
             modelBuilder.Entity("WebApplication1.Models.Product", b =>
                 {
                     b.Navigation("OrderItems");
+                });
+
+            modelBuilder.Entity("WebApplication1.Models.Reservation", b =>
+                {
+                    b.Navigation("Order");
                 });
 
             modelBuilder.Entity("WebApplication1.Models.Table", b =>

@@ -3,6 +3,15 @@
     ViewData["Title"] = "Dashboard Admin";
 }
 
+@{
+    var reservationPendingToday = (int)(ViewBag.ReservationPendingToday ?? 0);
+    var reservationConfirmedToday = (int)(ViewBag.ReservationConfirmedToday ?? 0);
+    var reservationCheckedInToday = (int)(ViewBag.ReservationCheckedInToday ?? 0);
+    var reservationWithPaidPayment = (int)(ViewBag.ReservationWithPaidPayment ?? 0);
+    var reservationPaymentPending = (int)(ViewBag.ReservationPaymentPending ?? 0);
+    var reservationUnpaidRemainder = (int)(ViewBag.ReservationUnpaidRemainder ?? 0);
+}
+
 <div class="row g-3 mb-4">
     <div class="col-6 col-xl-3">
         <div class="card h-100 text-center p-4">
@@ -35,6 +44,29 @@
             <div class="text-muted">Transaksi hari ini</div>
             <a asp-controller="Cashier" asp-action="Index" class="btn btn-primary btn-sm mt-3">Buka Modul</a>
         </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="card h-100 text-center p-4">
+            <i class="bi bi-person-check d-block mb-3" style="font-size:1.7rem;color:#8b5cf6;"></i>
+            <div class="display-6 fw-bold" style="color:#8b5cf6;">Member</div>
+            <div class="text-muted">Verifikasi member bayar</div>
+            <a asp-controller="PendingMemberSignups" asp-action="Index" class="btn btn-primary btn-sm mt-3">Buka Modul</a>
+        </div>
+    </div>
+</div>
+
+<div class="card p-4 mb-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h5 class="fw-bold mb-0">Ringkasan Reservasi</h5>
+        <span class="text-muted small">Hari ini</span>
+    </div>
+    <div class="row g-3">
+        <div class="col-6 col-xl-2"><div class="card h-100 p-3"><div class="text-muted small">Pending</div><div class="fs-3 fw-bold">@reservationPendingToday</div></div></div>
+        <div class="col-6 col-xl-2"><div class="card h-100 p-3"><div class="text-muted small">Confirmed</div><div class="fs-3 fw-bold">@reservationConfirmedToday</div></div></div>
+        <div class="col-6 col-xl-2"><div class="card h-100 p-3"><div class="text-muted small">Checked-in</div><div class="fs-3 fw-bold">@reservationCheckedInToday</div></div></div>
+        <div class="col-6 col-xl-2"><div class="card h-100 p-3"><div class="text-muted small">Sudah Bayar</div><div class="fs-3 fw-bold">@reservationWithPaidPayment</div></div></div>
+        <div class="col-6 col-xl-2"><div class="card h-100 p-3"><div class="text-muted small">Payment Pending</div><div class="fs-3 fw-bold">@reservationPaymentPending</div></div></div>
+        <div class="col-6 col-xl-2"><div class="card h-100 p-3"><div class="text-muted small">Sisa Bayar</div><div class="fs-3 fw-bold">@reservationUnpaidRemainder</div></div></div>
     </div>
 </div>
 

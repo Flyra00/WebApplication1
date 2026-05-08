@@ -1,0 +1,398 @@
+@model WebApplication1.ViewModels.Reservations.ReservationMenuViewModel
+@{
+    ViewData["Title"] = "Pilih Menu Reservasi Online";
+    Layout = "~/Views/Shared/_PublicLayout.cshtml";
+    var productFallbackImage = "data:image/svg+xml;charset=UTF-8," + System.Uri.EscapeDataString("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 600'><rect width='800' height='600' fill='#f6efe7'/><circle cx='640' cy='120' r='90' fill='#ead7c9'/><path d='M140 430c70-150 180-240 300-240s215 90 280 240' fill='#d9a58b'/><path d='M170 440c95-80 186-120 260-120s155 40 240 120' fill='#9c3f00'/><circle cx='260' cy='265' r='36' fill='#fff3d6'/><circle cx='360' cy='215' r='28' fill='#fff3d6'/><circle cx='468' cy='250' r='32' fill='#fff3d6'/><circle cx='570' cy='285' r='26' fill='#fff3d6'/></svg>");
+}
+
+@section Styles {
+    <partial name="_ReservationStyles" />
+    <style>
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 18px;
+        }
+
+        .menu-card {
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border-radius: 22px;
+            border: 1px solid rgba(219, 193, 186, .78);
+            background: linear-gradient(180deg, #fff, var(--surface-low));
+            box-shadow: 0 10px 30px rgba(44, 44, 44, .06);
+        }
+
+        .menu-image-wrap {
+            position: relative;
+            aspect-ratio: 4 / 3;
+            overflow: hidden;
+            background: var(--surface-container);
+        }
+
+        .menu-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transform: scale(1.01);
+        }
+
+        .menu-image-wrap::after {
+            content: '';
+            position: absolute;
+            inset: auto 0 0;
+            height: 42%;
+            background: linear-gradient(180deg, transparent, rgba(28, 27, 27, .46));
+            pointer-events: none;
+        }
+
+        .menu-badge {
+            position: absolute;
+            left: 14px;
+            top: 14px;
+            z-index: 1;
+            display: inline-flex;
+            align-items: center;
+            min-height: 32px;
+            padding: 0 12px;
+            border-radius: 999px;
+            background: rgba(244, 237, 227, .92);
+            color: var(--terracotta-dark);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: .04em;
+            backdrop-filter: blur(10px);
+        }
+
+        .menu-body {
+            display: grid;
+            gap: 12px;
+            padding: 18px;
+        }
+
+        .menu-title-row {
+            display: flex;
+            align-items: start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .menu-card h3 {
+            margin: 0;
+            color: var(--on-surface);
+            font-family: 'Noto Serif', serif;
+            font-size: 1.25rem;
+            line-height: 1.2;
+        }
+
+        .menu-meta {
+            color: var(--on-surface-variant);
+            font-size: .9rem;
+            line-height: 1.5;
+        }
+
+        .menu-price {
+            color: var(--terracotta);
+            font-family: 'Noto Serif', serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .menu-actions {
+            display: grid;
+            gap: 10px;
+        }
+
+        .menu-qty-control {
+            min-height: 52px;
+            display: grid;
+            grid-template-columns: 52px minmax(0, 1fr) 52px;
+            align-items: center;
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid rgba(156, 63, 0, .14);
+            background: rgba(156, 63, 0, .06);
+        }
+
+        .menu-qty-btn {
+            width: 52px;
+            height: 52px;
+            display: grid;
+            place-items: center;
+            background: var(--terracotta);
+            color: #fff;
+            transition: transform .16s ease, background .16s ease, opacity .16s ease;
+        }
+
+        .menu-qty-btn:hover { background: var(--terracotta-dark); }
+        .menu-qty-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+        .qty-value {
+            min-width: 0;
+            text-align: center;
+            font-weight: 800;
+            color: var(--on-surface);
+        }
+
+        .menu-qty-label {
+            padding: 0 12px;
+            text-align: center;
+            color: var(--on-surface-variant);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .menu-cart { position: sticky; top: 16px; }
+        .cart-list { display: flex; flex-direction: column; gap: 12px; }
+        .cart-item {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 12px;
+            padding: 14px;
+            border-radius: 16px;
+            background: var(--surface-lowest);
+            border: 1px solid rgba(219, 193, 186, .65);
+        }
+        .cart-item-name { margin: 0 0 4px; font-weight: 800; color: var(--on-surface); }
+        .cart-item-meta { color: var(--on-surface-variant); font-size: 13px; line-height: 1.45; }
+        .cart-item-controls { display: flex; align-items: center; gap: 8px; justify-content: end; }
+        .cart-item-controls .reservation-btn { min-width: 40px; padding: 0 12px; }
+        .cart-total-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 14px 16px;
+            border-radius: 16px;
+            background: rgba(156, 63, 0, .06);
+            border: 1px solid rgba(156, 63, 0, .12);
+        }
+        .cart-total-row strong { color: var(--terracotta); font-family: 'Noto Serif', serif; font-size: 1.3rem; }
+        .cart-actions { display: grid; gap: 10px; }
+
+        @@media (max-width: 760px) {
+            .menu-grid { grid-template-columns: 1fr; }
+            .menu-cart { position: static; }
+            .cart-item { grid-template-columns: 1fr; }
+            .cart-item-controls { justify-content: start; }
+        }
+    </style>
+}
+
+<main class="reservation-page page-shell">
+    <section class="reservation-intro">
+        <p class="reservation-eyebrow">Reservasi Online</p>
+        <h1 class="reservation-title">Pilih Menu</h1>
+        <p class="reservation-subtitle">Reservasi online <strong class="reservation-table-code">@Model.Reservation.ReservationCode</strong>. Silakan pilih menu sebelum pembayaran.</p>
+    </section>
+
+    <section class="reservation-hero">
+        <div class="reservation-card">
+            <div class="reservation-card-body reservation-section">
+                <div>
+                    <h2 class="reservation-section-title">Daftar Menu</h2>
+                    <p class="reservation-section-subtitle">Tambah menu ke keranjang, lalu konfirmasi untuk membuat order reservasi online.</p>
+                </div>
+
+                @if (!Model.Products.Any())
+                {
+                    <div class="reservation-alert">Belum ada menu tersedia.</div>
+                }
+                else
+                {
+                    <div class="menu-grid" id="menuGrid">
+                        @foreach (var product in Model.Products)
+                        {
+                            <div class="menu-card" data-product-id="@product.Id" data-name="@product.Name" data-price="@product.Price" data-stock="@product.Stock">
+                                <div class="menu-image-wrap">
+                                    <img class="menu-image" src="@(string.IsNullOrWhiteSpace(product.ImageFileName) ? productFallbackImage : $"/products/{product.ImageFileName}")" alt="@product.Name" loading="lazy" onerror="this.onerror=null;this.src='@productFallbackImage';" />
+                                    <span class="menu-badge">@((string.IsNullOrWhiteSpace(product.Category) ? "Menu Nusantara" : product.Category))</span>
+                                </div>
+                                <div class="menu-body">
+                                    <div class="menu-title-row">
+                                        <div>
+                                            <h3>@product.Name</h3>
+                                            <div class="menu-meta">@product.Category · Stok @product.Stock</div>
+                                        </div>
+                                        <div class="menu-price">Rp @product.Price.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("id-ID"))</div>
+                                    </div>
+                                    <div class="menu-actions">
+                                        <div class="menu-qty-control" aria-label="Jumlah @product.Name">
+                                            <button type="button" class="menu-qty-btn qty-btn" data-action="dec" aria-label="Kurangi @product.Name">-</button>
+                                            <span class="menu-qty-label qty-value">0</span>
+                                            <button type="button" class="menu-qty-btn qty-btn" data-action="inc" aria-label="Tambah @product.Name">+</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="reservation-card reservation-card-soft menu-cart">
+            <div class="reservation-card-body reservation-section">
+                <div>
+                    <h2 class="reservation-section-title">Keranjang</h2>
+                    <p class="reservation-section-subtitle">Ringkasan pesanan sebelum dibuat menjadi order reservasi online.</p>
+                </div>
+
+                <div class="cart-list" id="cartList">
+                    <div class="reservation-alert">Belum ada menu dipilih.</div>
+                </div>
+
+                <div class="cart-total-row" style="margin-top:8px;">
+                    <span>Total</span>
+                    <strong id="cartTotal">Rp 0</strong>
+                </div>
+
+                <div class="cart-actions">
+                    <a asp-action="DetailsByCode" asp-route-code="@Model.Reservation.ReservationCode" class="reservation-btn reservation-btn-outline">Kembali</a>
+                    <button type="button" id="confirmMenuBtn" class="reservation-btn reservation-btn-primary">Konfirmasi Menu</button>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+@section Scripts {
+<script>
+(function () {
+    const cart = new Map();
+    const cartList = document.getElementById('cartList');
+    const cartTotal = document.getElementById('cartTotal');
+    const confirmMenuBtn = document.getElementById('confirmMenuBtn');
+    const reservationCode = '@Model.Reservation.ReservationCode';
+
+    function formatCurrency(value) {
+        return 'Rp ' + Number(value || 0).toLocaleString('id-ID');
+    }
+
+    function renderCart() {
+        const items = Array.from(cart.values());
+        if (!items.length) {
+            cartList.innerHTML = '<div class="reservation-alert">Belum ada menu dipilih.</div>';
+            cartTotal.textContent = formatCurrency(0);
+            document.querySelectorAll('.menu-card').forEach(card => {
+                const qtyValue = card.querySelector('.qty-value');
+                if (qtyValue) qtyValue.textContent = '0';
+            });
+            return;
+        }
+
+        cartList.innerHTML = items.map(item => `
+            <div class="cart-item">
+                <div>
+                    <div class="cart-item-name">${item.name}</div>
+                    <div class="cart-item-meta">${item.qty} × ${formatCurrency(item.price)}</div>
+                    <div class="cart-item-meta"><strong>${formatCurrency(item.price * item.qty)}</strong></div>
+                </div>
+                <div class="cart-item-controls">
+                    <button type="button" class="reservation-btn reservation-btn-outline" data-remove="${item.id}" aria-label="Kurangi ${item.name}">-</button>
+                    <strong>${item.qty}</strong>
+                    <button type="button" class="reservation-btn reservation-btn-primary" data-add="${item.id}" aria-label="Tambah ${item.name}">+</button>
+                </div>
+            </div>`).join('');
+
+        const total = items.reduce((sum, item) => sum + (item.price * item.qty), 0);
+        cartTotal.textContent = formatCurrency(total);
+
+        document.querySelectorAll('.menu-card').forEach(card => {
+            const qtyValue = card.querySelector('.qty-value');
+            const id = Number(card.dataset.productId);
+            if (qtyValue) qtyValue.textContent = String(cart.get(id)?.qty ?? 0);
+        });
+    }
+
+    document.querySelectorAll('.menu-card').forEach(card => {
+        const id = Number(card.dataset.productId);
+        const name = card.dataset.name;
+        const price = Number(card.dataset.price);
+        const stock = Number(card.dataset.stock);
+        const qtyValue = card.querySelector('.qty-value');
+        let qty = 0;
+
+        function sync() { qtyValue.textContent = String(qty); }
+
+        card.querySelector('[data-action="inc"]').addEventListener('click', () => {
+            qty = Math.min(stock, qty + 1);
+            const current = cart.get(id) || { id, name, price, qty: 0 };
+            current.qty = Math.min(stock, current.qty + 1);
+            cart.set(id, current);
+            sync();
+            renderCart();
+        });
+        card.querySelector('[data-action="dec"]').addEventListener('click', () => {
+            qty = Math.max(0, qty - 1);
+            const current = cart.get(id);
+            if (current) {
+                current.qty -= 1;
+                if (current.qty <= 0) cart.delete(id); else cart.set(id, current);
+            }
+            sync();
+            renderCart();
+        });
+        sync();
+    });
+
+    cartList.addEventListener('click', ev => {
+        const addId = ev.target.closest('[data-add]')?.dataset.add;
+        const removeId = ev.target.closest('[data-remove]')?.dataset.remove;
+        if (addId) {
+            const item = cart.get(Number(addId));
+            if (item) { item.qty += 1; cart.set(item.id, item); renderCart(); }
+        }
+        if (removeId) {
+            const item = cart.get(Number(removeId));
+            if (item) {
+                item.qty -= 1;
+                if (item.qty <= 0) cart.delete(item.id); else cart.set(item.id, item);
+                renderCart();
+            }
+        }
+    });
+
+    confirmMenuBtn.addEventListener('click', async () => {
+        const items = Array.from(cart.values()).map(item => ({ productId: item.id, qty: item.qty }));
+        if (!items.length) {
+            window.showPublicToast?.('Silakan pilih menu terlebih dahulu.', 'info');
+            return;
+        }
+
+        confirmMenuBtn.disabled = true;
+        confirmMenuBtn.textContent = 'Memproses...';
+
+        try {
+            const token = document.querySelector('meta[name="request-verification-token"]')?.content ?? '';
+            const resp = await fetch('@Url.Action("SubmitMenu", "Reservation")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify({ code: reservationCode, items })
+            });
+            const data = await resp.json();
+            if (!data.success) {
+                window.showPublicToast?.(data.error ?? 'Gagal memproses menu.', 'error');
+                confirmMenuBtn.disabled = false;
+                confirmMenuBtn.textContent = 'Konfirmasi Menu';
+                return;
+            }
+
+            window.location.href = data.redirectUrl || '@Url.Action("DetailsByCode", "Reservation", new { code = Model.Reservation.ReservationCode })';
+        } catch (e) {
+            console.error(e);
+            window.showPublicToast?.('Terjadi kesalahan jaringan.', 'error');
+            confirmMenuBtn.disabled = false;
+            confirmMenuBtn.textContent = 'Konfirmasi Menu';
+        }
+    });
+
+    renderCart();
+})();
+</script>
+}

@@ -1,0 +1,115 @@
+@model WebApplication1.ViewModels.Reservations.ReservationLookupViewModel
+@{
+    ViewData["Title"] = "Cek Reservasi";
+    Layout = "~/Views/Shared/_PublicLayout.cshtml";
+}
+
+@section Styles {
+    <partial name="_ReservationStyles" />
+}
+
+<main class="reservation-page page-shell">
+    <section class="reservation-intro">
+        <p class="reservation-eyebrow">Reservasi Online</p>
+        <h1 class="reservation-title">Cek Reservasi</h1>
+        <p class="reservation-subtitle">Masukkan kode akses atau kode reservasi untuk melihat detail, status, dan tindak lanjut kunjungan.</p>
+    </section>
+
+    <section class="reservation-choice-grid" aria-label="Pilihan reservasi">
+        <article class="reservation-choice-card">
+            <span class="reservation-choice-kicker">Langkah 1</span>
+            <h2 class="reservation-choice-title">Buat Reservasi</h2>
+            <p class="reservation-choice-desc">Jika belum punya reservasi, buat dulu agar tanggal, jam mulai, durasi, dan meja tercatat rapi.</p>
+            <div class="reservation-choice-actions">
+                <a asp-action="Create" class="reservation-btn reservation-btn-outline">Buat Reservasi</a>
+            </div>
+        </article>
+        <article class="reservation-choice-card active">
+            <span class="reservation-choice-kicker">Langkah 2</span>
+            <h2 class="reservation-choice-title">Cek Reservasi</h2>
+            <p class="reservation-choice-desc">Buka detail reservasi yang sudah ada tanpa perlu masuk ke menu lain.</p>
+            <div class="reservation-choice-actions">
+                <span class="reservation-badge reservation-badge-terracotta">Sedang dibuka</span>
+            </div>
+        </article>
+    </section>
+
+    <section class="reservation-layout" style="margin-top:24px;">
+        <div class="reservation-card">
+            <div class="reservation-card-body reservation-section">
+                <form asp-action="Lookup" method="post" class="reservation-section" style="gap:16px;">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="text-danger small"></div>
+
+                    <div>
+                        <h2 class="reservation-section-title">Masukkan Kode</h2>
+                        <p class="reservation-section-subtitle">Gunakan kode akses dari halaman sukses atau kode reservasi lama untuk melihat status dan detail terbaru.</p>
+                    </div>
+
+                    <div class="reservation-field">
+                        <label asp-for="LookupKey" class="reservation-label"></label>
+                        <input asp-for="LookupKey" class="form-control reservation-control" placeholder="Contoh: AK-1A2B3C4D5E6F" />
+                        <div class="reservation-field-helper">Kode akses lebih singkat, tapi kode reservasi lama juga tetap didukung.</div>
+                        <span asp-validation-for="LookupKey" class="text-danger small"></span>
+                    </div>
+
+                    <div class="reservation-actions" style="justify-content:flex-start;flex-wrap:wrap;">
+                        <button type="submit" class="reservation-btn reservation-btn-primary">Lihat Reservasi</button>
+                        <a asp-action="Create" class="reservation-btn reservation-btn-outline">Buat Reservasi Baru</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <aside class="reservation-sidebar">
+            <div class="reservation-card reservation-card-soft">
+                <div class="reservation-card-body reservation-lookup-panel">
+                    <div>
+                        <h2 class="reservation-section-title">Alur reservasi</h2>
+                        <p class="reservation-section-subtitle">Pilih tanggal, jam mulai, durasi, meja, lalu lanjut menu &amp; pembayaran setelah meja terkonfirmasi.</p>
+                    </div>
+
+                    <div class="reservation-step-grid">
+                        <article class="reservation-step-card">
+                            <span class="reservation-step-number">1</span>
+                            <h3 class="reservation-step-title">Pilih tanggal</h3>
+                            <p class="reservation-step-desc">Pastikan tanggal kunjungan sudah sesuai sebelum lanjut.</p>
+                        </article>
+                        <article class="reservation-step-card">
+                            <span class="reservation-step-number">2</span>
+                            <h3 class="reservation-step-title">Atur jam mulai</h3>
+                            <p class="reservation-step-desc">Cek jam yang tertera agar reservasi tetap tepat waktu.</p>
+                        </article>
+                        <article class="reservation-step-card">
+                            <span class="reservation-step-number">3</span>
+                            <h3 class="reservation-step-title">Cek durasi</h3>
+                            <p class="reservation-step-desc">Durasi membantu staff memastikan meja tersedia di slot yang sama.</p>
+                        </article>
+                        <article class="reservation-step-card">
+                            <span class="reservation-step-number">4</span>
+                            <h3 class="reservation-step-title">Cek meja</h3>
+                            <p class="reservation-step-desc">Setelah meja cocok, Anda bisa lanjut menu &amp; pembayaran bila diperlukan.</p>
+                        </article>
+                    </div>
+                </div>
+            </div>
+
+            <div class="reservation-card">
+                <div class="reservation-card-body reservation-lookup-panel">
+                    <div>
+                        <h2 class="reservation-section-title">Perlu reservasi baru?</h2>
+                        <p class="reservation-section-subtitle">Buka form reservasi untuk membuat jadwal kunjungan baru.</p>
+                    </div>
+
+                    <div class="reservation-choice-actions">
+                        <a asp-action="Create" class="reservation-btn reservation-btn-primary">Buat Reservasi</a>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </section>
+</main>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

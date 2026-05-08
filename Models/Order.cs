@@ -8,8 +8,9 @@ namespace WebApplication1.Models
     {
         public int Id { get; set; }
 
-        [Required]
-        public int TableSessionId { get; set; }
+        public int? TableSessionId { get; set; }
+
+        public int? ReservationId { get; set; }
 
         [Required]
         [MaxLength(40)]
@@ -53,10 +54,14 @@ namespace WebApplication1.Models
         [Precision(16, 2)]
         public decimal Total { get; set; }
 
-        public TableSession TableSession { get; set; } = null!;
+        public TableSession? TableSession { get; set; }
+
+        public Reservation? Reservation { get; set; }
 
         public ApplicationUser? CustomerUser { get; set; }
 
         public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();
+
+        public ICollection<Payment> Payments { get; set; } = new List<Payment>();
     }
 }

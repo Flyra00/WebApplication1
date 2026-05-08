@@ -1,8 +1,11 @@
 @model WebApplication1.Models.Order
-@{
-    ViewData["Title"] = $"Detail Order #{Model.OrderNumber}";
+@{ 
+    ViewData["Title"] = $"Detail Pesanan #{Model.OrderNumber}";
     Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
     var payment = ViewBag.Payment as WebApplication1.Models.Payment;
+    var paidTotal = (decimal)(ViewBag.PaidTotal ?? 0m);
+    var outstandingAmount = (decimal)(ViewBag.OutstandingAmount ?? 0m);
+    var reservationDepositAmount = (decimal)(ViewBag.ReservationDepositAmount ?? 0m);
 }
 
 <div class="d-flex align-items-center gap-3 mb-4">
@@ -12,6 +15,16 @@
         <code style="color:#f59e0b;">@Model.OrderNumber</code>
     </div>
     <div class="ms-auto d-flex gap-2">
+        @if (payment != null && payment.Method == "Midtrans" && payment.Status == "Pending")
+        {
+            <form asp-action="VerifyMidtransPayment" method="post" style="display:inline;">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="paymentId" value="@payment.Id" />
+                <button type="submit" class="op-btn op-btn-primary">
+                    <i class="bi bi-arrow-repeat"></i> Verifikasi Midtrans
+                </button>
+            </form>
+        }
         @if (Model.Status != OrderStatuses.Paid && Model.Status != OrderStatuses.Cancelled)
         {
             <a asp-action="ProcessPayment" asp-route-id="@Model.Id" class="op-btn op-btn-success">
@@ -35,10 +48,14 @@
             <table style="width:100%;font-size:0.875rem;">
                 <tr><td style="color:var(--op-muted);padding-bottom:.5rem;">Tipe Pesanan</td><td class="fw-semibold">@(Model.OrderType == WebApplication1.Models.OrderTypes.Takeaway ? "Dibawa Pulang" : "Makan di Tempat")</td></tr>
                 <tr><td style="color:var(--op-muted);padding-bottom:.5rem;">Meja</td><td class="fw-semibold">@(Model.OrderType == WebApplication1.Models.OrderTypes.Takeaway ? "-" : $"Meja {Model.TableSession?.Table?.Number ?? 0}")</td></tr>
-                <tr><td style="color:var(--op-muted);padding-bottom:.5rem;">Waktu</td><td>@Model.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td></tr>
+                <tr><td style="color:var(--op-muted);padding-bottom:.5rem;">Waktu</td><td>@BusinessTime.ToBusinessTime(Model.OrderDate).ToString("dd/MM/yyyy HH:mm")</td></tr>
+                @if (Model.Reservation != null)
+                {
+                    <tr><td style="color:var(--op-muted);padding-bottom:.5rem;">Reservasi</td><td><a asp-controller="Reservation" asp-action="DetailsByCode" asp-route-code="@Model.Reservation.ReservationCode">@Model.Reservation.ReservationCode</a></td></tr>
+                }
                 <tr><td style="color:var(--op-muted);padding-bottom:.5rem;">Status</td><td>
                     @{ var c = Model.Status switch { "Paid" => "#22c55e", "Processing" => "#f97316", "Submitted" => "#3b82f6", "Completed" => "#8b5cf6", _ => "#64748b" }; }
-                    <span class="op-badge-status" style="background:@(c)22;color:@c;border:1px solid @(c)55;">@Model.Status</span>
+                    <span class="op-badge-status" style="background:@(c)22;color:@c;border:1px solid @(c)55;">@(Model.Status switch { "Paid" => "Lunas", "Processing" => "Diproses", "Submitted" => "Dikirim", "Completed" => "Siap", "Cancelled" => "Dibatalkan", _ => Model.Status })</span>
                 </td></tr>
                 @if (Model.CustomerUser != null)
                 {
@@ -47,7 +64,14 @@
                 @if (payment != null)
                 {
                     <tr><td style="color:var(--op-muted);padding-bottom:.5rem;">Metode Bayar</td><td class="fw-semibold text-success">@payment.Method</td></tr>
+                    <tr><td style="color:var(--op-muted);padding-bottom:.5rem;">Purpose</td><td>@payment.Purpose</td></tr>
                     <tr><td style="color:var(--op-muted);padding-bottom:.5rem;">Ref.</td><td><code style="font-size:0.75rem;">@payment.ReferenceNumber</code></td></tr>
+                }
+                <tr><td style="color:var(--op-muted);padding-bottom:.5rem;">Sudah Dibayar</td><td>Rp @paidTotal.ToString("N0")</td></tr>
+                <tr><td style="color:var(--op-muted);padding-bottom:.5rem;">Sisa Tagihan</td><td>Rp @outstandingAmount.ToString("N0")</td></tr>
+                @if (reservationDepositAmount > 0)
+                {
+                    <tr><td style="color:var(--op-muted);padding-bottom:.5rem;">DP Reservasi</td><td>Rp @reservationDepositAmount.ToString("N0")</td></tr>
                 }
             </table>
         </div>
@@ -77,7 +101,7 @@
                             <td class="text-center">@item.Qty</td>
                             <td class="text-end fw-semibold">Rp @item.LineTotal.ToString("N0")</td>
                             <td class="text-center">
-                                <span class="op-badge-status" style="background:@(kc)22;color:@kc;border:1px solid @(kc)55;font-size:0.7rem;">@item.KitchenStatus</span>
+                                <span class="op-badge-status" style="background:@(kc)22;color:@kc;border:1px solid @(kc)55;font-size:0.7rem;">@(item.KitchenStatus switch { "Queued" => "Antri", "Cooking" => "Dimasak", "Ready" => "Siap", "Served" => "Disajikan", _ => item.KitchenStatus })</span>
                             </td>
                         </tr>
                         @if (!string.IsNullOrWhiteSpace(item.Note))

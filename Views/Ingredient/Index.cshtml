@@ -79,8 +79,9 @@
                                                         @Html.AntiForgeryToken()
                                                         <button type="submit"
                                                                 class="btn btn-outline-danger btn-sm"
-                                                                onclick="return confirm('Yakin mau hapus bahan @ingredient.ItemName?')"
-                                                                title="Delete Bahan">
+                                                                data-confirm-title="Hapus Bahan"
+                                                                data-confirm-message="Yakin mau hapus bahan @ingredient.ItemName?"
+                                                                title="Hapus Bahan">
                                                             <i class="bi bi-trash3-fill"></i>
                                                         </button>
                                                     </form>

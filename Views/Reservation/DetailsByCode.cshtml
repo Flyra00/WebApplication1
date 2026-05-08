@@ -1,0 +1,194 @@
+@model WebApplication1.Models.Reservation
+@using WebApplication1.Models
+@{
+    ViewData["Title"] = "Detail Reservasi Online";
+    Layout = "~/Views/Shared/_PublicLayout.cshtml";
+    var statusClass = Model.Status switch
+    {
+        ReservationStatuses.Pending => "reservation-status-pending",
+        ReservationStatuses.Confirmed => "reservation-status-confirmed",
+        ReservationStatuses.CheckedIn => "reservation-status-checkedin",
+        ReservationStatuses.Completed => "reservation-status-completed",
+        ReservationStatuses.Rejected => "reservation-status-rejected",
+        ReservationStatuses.Cancelled => "reservation-status-cancelled",
+        ReservationStatuses.NoShow => "reservation-status-noshow",
+        _ => "reservation-badge-muted"
+    };
+
+    var isPaid = Context.Request.Query["paid"] == "1";
+    var isPending = Context.Request.Query["pending"] == "1";
+    var hasDp = Model.DpPercentage.HasValue && Model.DpPercentage > 0;
+    var order = Model.Order;
+    var paidTotal = order != null ? WebApplication1.Models.ReservationBillingHelper.GetPaidTotal(order) : 0m;
+    var outstanding = order != null ? WebApplication1.Models.ReservationBillingHelper.GetOutstandingAmount(order) : 0m;
+    var reservationTime = BusinessTime.ToBusinessTime(Model.ReservationTime);
+    var reservationEnd = reservationTime.AddHours(Model.ReservationDurationHours);
+    var successMsg = TempData["Success"]?.ToString();
+    var errorMsg = TempData["Error"]?.ToString();
+}
+
+@section Styles {
+    <partial name="_ReservationStyles" />
+}
+
+<main class="reservation-page page-shell">
+    @if (!string.IsNullOrWhiteSpace(successMsg))
+    {
+        <div class="reservation-alert reservation-alert-success reservation-alert-inline" style="margin-bottom:20px;">
+            <span class="material-symbols-outlined reservation-alert-icon">check_circle</span>
+            <span>@successMsg</span>
+        </div>
+    }
+    @if (!string.IsNullOrWhiteSpace(errorMsg))
+    {
+        <div class="reservation-alert reservation-alert-error reservation-alert-inline" style="margin-bottom:20px;">
+            <span class="material-symbols-outlined reservation-alert-icon">error</span>
+            <span>@errorMsg</span>
+        </div>
+    }
+    @if (isPaid)
+    {
+        <div class="reservation-alert reservation-alert-success reservation-alert-inline" style="margin-bottom:20px;">
+            <span class="material-symbols-outlined reservation-alert-icon">verified</span>
+            <span>Pembayaran berhasil dikonfirmasi. Reservasi Anda sedang diproses.</span>
+        </div>
+    }
+    @if (isPending)
+    {
+        <div class="reservation-alert reservation-alert-warning reservation-alert-inline" style="margin-bottom:20px;">
+            <span class="material-symbols-outlined reservation-alert-icon">schedule</span>
+            <span>Pembayaran Anda sedang diproses. Kami akan memberi notifikasi setelah dikonfirmasi.</span>
+        </div>
+    }
+
+    <section class="reservation-intro">
+        <p class="reservation-eyebrow">Reservasi Online</p>
+        <h1 class="reservation-title">Detail Reservasi Online</h1>
+        <p class="reservation-subtitle">Lihat status, jadwal, dan ringkasan reservasi Anda dalam tampilan lookup yang lebih mudah dibaca.</p>
+    </section>
+
+    <section class="reservation-hero">
+        <div class="reservation-card">
+            <div class="reservation-card-body reservation-section">
+                <div class="reservation-badge @statusClass" style="width:fit-content;">@Model.Status</div>
+                <div>
+                    <h2 class="reservation-section-title" style="margin-bottom:8px;">@Model.CustomerName</h2>
+                    <p class="reservation-section-subtitle">Kode reservasi: <strong class="reservation-table-code">@Model.ReservationCode</strong></p>
+                    <p class="reservation-section-subtitle">Kode akses: <strong class="reservation-table-code">@Model.AccessKey</strong></p>
+                </div>
+
+                <div class="reservation-chip-row">
+                    <span class="reservation-chip"><span class="material-symbols-outlined" style="font-size:16px;">event</span>@reservationTime.ToString("dd MMM yyyy HH:mm")</span>
+                    <span class="reservation-chip"><span class="material-symbols-outlined" style="font-size:16px;">schedule</span>@reservationEnd.ToString("HH:mm") selesai</span>
+                    <span class="reservation-chip"><span class="material-symbols-outlined" style="font-size:16px;">table_restaurant</span>@(Model.Table != null ? $"Meja {Model.Table.Number}" : "Meja akan ditentukan staff")</span>
+                    @if (hasDp)
+                    {
+                        <span class="reservation-chip"><span class="material-symbols-outlined" style="font-size:16px;">payments</span>@Model.DpPercentage!.Value.ToString("0.##")% DP</span>
+                    }
+                </div>
+
+                <div class="reservation-kv">
+                    <div class="reservation-kv-item">
+                        <div class="reservation-kv-label">Telepon</div>
+                        <div class="reservation-kv-value">@Model.PhoneNumber</div>
+                    </div>
+                    <div class="reservation-kv-item">
+                        <div class="reservation-kv-label">Email</div>
+                        <div class="reservation-kv-value">@(Model.Email ?? "-")</div>
+                    </div>
+                    @if (hasDp)
+                    {
+                        <div class="reservation-kv-item">
+                            <div class="reservation-kv-label">DP</div>
+                            <div class="reservation-kv-value" style="color:var(--terracotta);font-weight:700;">
+                                @Model.DpPercentage!.Value.ToString("0.##")% dari estimasi tagihan
+                            </div>
+                        </div>
+                    }
+                    <div class="reservation-kv-item">
+                        <div class="reservation-kv-label">Catatan</div>
+                        <div class="reservation-kv-value">@(string.IsNullOrWhiteSpace(Model.SpecialRequest) ? "-" : Model.SpecialRequest)</div>
+                    </div>
+                    <div class="reservation-kv-item">
+                        <div class="reservation-kv-label">Durasi</div>
+                        <div class="reservation-kv-value">@Model.ReservationDurationHours jam</div>
+                    </div>
+                    <div class="reservation-kv-item">
+                        <div class="reservation-kv-label">Menu</div>
+                        <div class="reservation-kv-value">@(order == null ? "Belum dipilih" : $"{order.Items.Sum(item => item.Qty)} item")</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="reservation-sidebar">
+            <div class="reservation-card reservation-card-soft">
+                <div class="reservation-card-body reservation-lookup-panel">
+                    <div>
+                        <h2 class="reservation-section-title">Ringkasan Cepat</h2>
+                        <p class="reservation-section-subtitle">Detail penting yang biasanya dicek staff sebelum kunjungan.</p>
+                    </div>
+
+                    <div class="reservation-statgrid">
+                        <div class="reservation-stat">
+                            <p class="reservation-stat-label">Jumlah Tamu</p>
+                            <div class="reservation-stat-value">@Model.PartySize</div>
+                        </div>
+                        <div class="reservation-stat">
+                            <p class="reservation-stat-label">Status Menu</p>
+                            <div class="reservation-stat-value" style="font-size:18px;">@(order == null ? "Belum ada" : "Siap")</div>
+                        </div>
+                    </div>
+
+                    @if (order == null)
+                    {
+                        <div class="reservation-alert reservation-alert-warning reservation-alert-inline">
+                            <span class="material-symbols-outlined reservation-alert-icon">info</span>
+                            <span>Menu belum dipilih. Meja reservasi akan ditetapkan staff setelah verifikasi.</span>
+                        </div>
+                        <div class="reservation-lookup-actions">
+                            <a asp-action="Menu" asp-route-code="@Model.ReservationCode" class="reservation-btn reservation-btn-primary">
+                                <span class="material-symbols-outlined" style="font-size:18px;">restaurant_menu</span>
+                                Pilih Menu
+                            </a>
+                            <a asp-action="Lookup" class="reservation-btn reservation-btn-outline">Cek Reservasi</a>
+                            <a href="/" class="reservation-btn reservation-btn-outline">Kembali ke Menu</a>
+                            <a asp-action="Create" class="reservation-btn reservation-btn-outline">Reservasi Baru</a>
+                        </div>
+                    }
+                    else if (outstanding > 0)
+                    {
+                        <div class="reservation-alert reservation-alert-warning reservation-alert-inline">
+                            <span class="material-symbols-outlined reservation-alert-icon">payments</span>
+                            <span>
+                                Tagihan masih tersisa <strong>Rp @outstanding.ToString("N0")</strong>.
+                                @(paidTotal > 0 ? "DP sudah dibayar, sisanya bisa dilunasi secara online." : "Silakan lanjut ke pembayaran.")
+                            </span>
+                        </div>
+                        <div class="reservation-lookup-actions">
+                            <a asp-action="Pay" asp-route-code="@Model.ReservationCode" class="reservation-btn reservation-btn-primary">
+                                <span class="material-symbols-outlined" style="font-size:18px;">payments</span>
+                                Lanjut Bayar
+                            </a>
+                            <a asp-action="Menu" asp-route-code="@Model.ReservationCode" class="reservation-btn reservation-btn-outline">Ubah Menu</a>
+                            <a asp-action="Lookup" class="reservation-btn reservation-btn-outline">Cek Reservasi</a>
+                            <a href="/" class="reservation-btn reservation-btn-outline">Kembali ke Menu</a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="reservation-alert reservation-alert-inline">
+                            <span class="material-symbols-outlined reservation-alert-icon">check_circle</span>
+                            <span>Reservasi dan pembayaran sudah lunas. Jika ada perubahan jadwal, hubungi staff sebelum waktu kedatangan.</span>
+                        </div>
+                        <div class="reservation-lookup-actions">
+                            <a asp-action="Lookup" class="reservation-btn reservation-btn-outline">Cek Reservasi</a>
+                            <a href="/" class="reservation-btn reservation-btn-outline">Kembali ke Menu</a>
+                            <a asp-action="Create" class="reservation-btn reservation-btn-primary">Buat Reservasi Baru</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </section>
+</main>

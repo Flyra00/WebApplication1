@@ -7,6 +7,8 @@ using System.Text;
 using WebApplication1.Data;
 using WebApplication1.Models;
 using WebApplication1.Security;
+using WebApplication1.Services.Membership;
+using WebApplication1.Services.Midtrans;
 
 namespace WebApplication1.Controllers
 {
@@ -17,6 +19,8 @@ namespace WebApplication1.Controllers
         private readonly AppDbContext _context;
         private readonly IWebHostEnvironment _env;
         private readonly ILogger<AuthController> _logger;
+        private readonly PendingMemberSignupService _memberSignupService;
+        private readonly MidtransService _midtrans;
 
         private const string RegisterOtpPurpose = "Register";
         private static readonly TimeSpan OtpLifetime = TimeSpan.FromMinutes(5);
@@ -28,13 +32,17 @@ namespace WebApplication1.Controllers
             UserManager<ApplicationUser> users,
             AppDbContext context,
             IWebHostEnvironment env,
-            ILogger<AuthController> logger)    
+            ILogger<AuthController> logger,
+            PendingMemberSignupService memberSignupService,
+            MidtransService midtrans)
         {
             _signIn = signIn;
             _users = users;
             _context = context;
             _env = env;
             _logger = logger;
+            _memberSignupService = memberSignupService;
+            _midtrans = midtrans;
         }
 
         [HttpGet("/Auth")]
@@ -60,6 +68,11 @@ namespace WebApplication1.Controllers
             public string? OtpCode { get; set; }
         }
 
+        public sealed class SyncMemberSignupRequest
+        {
+            public string? SignupCode { get; set; }
+        }
+
         public sealed class SendRegisterOtpRequest
         {
             public string? Phone { get; set; }
@@ -79,7 +92,15 @@ namespace WebApplication1.Controllers
             var existingPhoneProfile = await _context.MemberProfiles
                 .AsNoTracking()
                 .AnyAsync(m => m.Phone == phoneDigits);
-            if (existingPhoneProfile)
+            var existingPendingSignup = await _context.PendingMemberSignups
+                .AsNoTracking()
+                .AnyAsync(signup =>
+                    (signup.Status == PendingMemberSignupStatuses.PendingPayment ||
+                     signup.Status == PendingMemberSignupStatuses.WaitingVerification ||
+                     signup.Status == PendingMemberSignupStatuses.Paid ||
+                     signup.Status == PendingMemberSignupStatuses.Activated) &&
+                    signup.PhoneNumber == phoneDigits);
+            if (existingPhoneProfile || existingPendingSignup)
                 return Json(new { success = false, error = "Nomor telepon sudah dipakai member lain." });
 
             var now = DateTime.UtcNow;
@@ -211,47 +232,69 @@ namespace WebApplication1.Controllers
             if (existing != null)
                 return Json(new { success = false, error = "Username sudah dipakai." });
 
-            var existingPhoneProfile = await _context.MemberProfiles
-                .AsNoTracking()
-                .AnyAsync(m => m.Phone == phoneDigits);
-            if (existingPhoneProfile)
-                return Json(new { success = false, error = "Nomor telepon sudah dipakai member lain." });
-
             var otpVerified = await VerifyAndConsumeOtpAsync(phoneDigits, otpCode, RegisterOtpPurpose);
             if (!otpVerified)
                 return Json(new { success = false, error = "OTP tidak valid atau sudah kedaluwarsa." });
 
-            var user = new ApplicationUser
+            var signupResult = await _memberSignupService.CreatePendingSignupAsync(fullName, username, password, phoneDigits);
+            if (!signupResult.IsSuccess || signupResult.Signup == null || string.IsNullOrWhiteSpace(signupResult.SnapToken))
             {
-                FullName = fullName,
-                UserName = username,
-                PhoneNumber = phoneDigits,
-                EmailConfirmed = true
-            };
-
-            var create = await _users.CreateAsync(user, password);
-            if (!create.Succeeded)
-            {
-                var msg = string.Join(", ", create.Errors.Select(e => e.Description));
-                return Json(new { success = false, error = msg });
+                return Json(new { success = false, error = signupResult.ErrorMessage ?? "Pendaftaran member gagal." });
             }
 
-            await _users.AddToRoleAsync(user, AppRoles.Customer);
-
-            var profile = new MemberProfile
+            return Json(new
             {
-                UserId = user.Id,
-                Phone = phoneDigits,
-                Level = MemberLevels.Bronze,
-                Point = 0,
-                JoinedAt = DateTime.UtcNow
-            };
-            _context.MemberProfiles.Add(profile);
-            await _context.SaveChangesAsync();
+                success = true,
+                message = "Pendaftaran berhasil. Lanjutkan pembayaran Rp300.000. Setelah pembayaran berhasil, akun menunggu verifikasi kasir/admin.",
+                signupCode = signupResult.Signup.SignupCode,
+                snapToken = signupResult.SnapToken,
+                midtransClientKey = _midtrans.ClientKey,
+                midtransIsProduction = _midtrans.IsProduction,
+                amount = PendingMemberSignupService.SignupAmount
+            });
+        }
 
-            await _signIn.SignInAsync(user, isPersistent: false);
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SyncMemberSignupPayment([FromBody] SyncMemberSignupRequest req)
+        {
+            var signupCode = (req.SignupCode ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(signupCode))
+                return Json(new { success = false, error = "Kode pendaftaran tidak valid." });
 
-            return Json(new { success = true, redirectUrl = "/", username = user.UserName, isCustomer = true });
+            var statusDoc = await _midtrans.GetTransactionStatusAsync(signupCode);
+            if (statusDoc == null)
+                return Json(new { success = true, synced = false, message = "Status pembayaran belum dapat diambil." });
+
+            using var document = statusDoc;
+            var root = document.RootElement;
+            var mappedStatus = MapMidtransStatus(
+                root.TryGetProperty("transaction_status", out var transactionStatusElement) ? transactionStatusElement.GetString() : null,
+                root.TryGetProperty("fraud_status", out var fraudStatusElement) ? fraudStatusElement.GetString() : null);
+
+            var result = await _memberSignupService.ProcessPaymentStatusAsync(signupCode, mappedStatus);
+            if (!result.IsSuccess || result.Signup == null)
+                return Json(new { success = false, error = result.ErrorMessage ?? "Status pembayaran member gagal disinkronkan." });
+
+            return Json(new
+            {
+                success = true,
+                status = result.Signup.Status,
+                waitingVerification = result.Signup.Status == PendingMemberSignupStatuses.WaitingVerification || result.Signup.Status == PendingMemberSignupStatuses.Paid,
+                paid = result.Signup.Status == PendingMemberSignupStatuses.WaitingVerification || result.Signup.Status == PendingMemberSignupStatuses.Paid,
+                activated = result.Signup.Status == PendingMemberSignupStatuses.Activated,
+                alreadyActivated = result.AlreadyActivated,
+                username = result.User?.UserName,
+                isCustomer = result.Signup.Status == PendingMemberSignupStatuses.Activated,
+                message = result.Signup.Status == PendingMemberSignupStatuses.WaitingVerification || result.Signup.Status == PendingMemberSignupStatuses.Paid
+                    ? "Pembayaran berhasil. Akun member menunggu verifikasi kasir/admin."
+                    : result.Signup.Status == PendingMemberSignupStatuses.PendingPayment
+                        ? "Pembayaran masih menunggu konfirmasi Midtrans."
+                        : result.Signup.Status == PendingMemberSignupStatuses.Activated
+                            ? "Akun member sudah aktif."
+                            : "Status pembayaran diperbarui."
+            });
         }
 
         private async Task<bool> VerifyAndConsumeOtpAsync(string phoneDigits, string otpCode, string purpose)
@@ -291,6 +334,26 @@ namespace WebApplication1.Controllers
         {
             var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(code));
             return Convert.ToHexString(bytes);
+        }
+
+        private static string MapMidtransStatus(string? transactionStatus, string? fraudStatus)
+        {
+            var status = (transactionStatus ?? string.Empty).Trim().ToLowerInvariant();
+            var fraud = (fraudStatus ?? string.Empty).Trim().ToLowerInvariant();
+
+            if (status == "capture")
+                return fraud == "accept" ? PaymentStatuses.Paid : PaymentStatuses.Pending;
+
+            return status switch
+            {
+                "settlement" => PaymentStatuses.Paid,
+                "pending" => PaymentStatuses.Pending,
+                "deny" => PaymentStatuses.Failed,
+                "cancel" => PaymentStatuses.Failed,
+                "expire" => PaymentStatuses.Failed,
+                "failure" => PaymentStatuses.Failed,
+                _ => PaymentStatuses.Pending
+            };
         }
 
         private static string MaskPhone(string phone)

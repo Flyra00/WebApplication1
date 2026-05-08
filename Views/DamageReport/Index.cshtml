@@ -43,13 +43,13 @@ else
                         _ => "#64748b"
                     };
                     <tr>
-                        <td style="font-size:.8rem;color:var(--op-muted);">@d.ReportDate.ToLocalTime().ToString("dd/MM/yy HH:mm")</td>
+                        <td style="font-size:.8rem;color:var(--op-muted);">@BusinessTime.ToBusinessTime(d.ReportDate).ToString("dd/MM/yy HH:mm")</td>
                         <td class="fw-semibold">@d.InventoryItem?.ItemName</td>
                         <td><span class="badge" style="background:#ef444420;color:#ef4444;">@d.Qty unit</span></td>
                         <td>@(d.ReportedByUser?.FullName ?? d.ReportedByUser?.UserName)</td>
                         <td style="font-size:.8rem;color:var(--op-muted);max-width:200px;">@(d.Description?.Length > 60 ? d.Description[..60] + "…" : d.Description)</td>
                         <td>
-                            <span class="op-badge-status" style="background:@(sc)22;color:@sc;border:1px solid @(sc)55;font-size:.7rem;">@d.Status</span>
+                            <span class="op-badge-status" style="background:@(sc)22;color:@sc;border:1px solid @(sc)55;font-size:.7rem;">@(d.Status switch { "Reported" => "Dilaporkan", "Reviewed" => "Ditinjau", "Resolved" => "Selesai", _ => d.Status })</span>
                         </td>
                         <td>
                             <a asp-action="Detail" asp-route-id="@d.Id" class="op-btn op-btn-secondary" style="padding:.3rem .65rem;">

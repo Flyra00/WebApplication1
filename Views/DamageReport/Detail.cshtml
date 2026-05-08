@@ -18,9 +18,9 @@
                 <tr><td style="color:var(--op-muted);padding-bottom:.75rem;">Kategori</td><td>@Model.InventoryItem?.Category</td></tr>
                 <tr><td style="color:var(--op-muted);padding-bottom:.75rem;">Jumlah Rusak</td><td><span style="color:#ef4444;font-weight:700;font-size:1.1rem;">@Model.Qty unit</span></td></tr>
                 <tr><td style="color:var(--op-muted);padding-bottom:.75rem;">Dilaporkan oleh</td><td>@(Model.ReportedByUser?.FullName ?? Model.ReportedByUser?.UserName)</td></tr>
-                <tr><td style="color:var(--op-muted);padding-bottom:.75rem;">Tanggal</td><td>@Model.ReportDate.ToLocalTime().ToString("dd MMMM yyyy, HH:mm")</td></tr>
+                <tr><td style="color:var(--op-muted);padding-bottom:.75rem;">Tanggal</td><td>@BusinessTime.ToBusinessTime(Model.ReportDate).ToString("dd MMMM yyyy, HH:mm")</td></tr>
                 <tr><td style="color:var(--op-muted);padding-bottom:.75rem;">Status</td><td>
-                    <span class="op-badge-status" style="background:@(sc)22;color:@sc;border:1px solid @(sc)55;">@Model.Status</span>
+                    <span class="op-badge-status" style="background:@(sc)22;color:@sc;border:1px solid @(sc)55;">@(Model.Status switch { "Reported" => "Dilaporkan", "Reviewed" => "Ditinjau", "Resolved" => "Selesai", _ => Model.Status })</span>
                 </td></tr>
                 @if (!string.IsNullOrWhiteSpace(Model.Description))
                 {
@@ -31,7 +31,7 @@
             @if (User.IsInRole("Admin"))
             {
                 <hr style="border-color:var(--op-border);" />
-                <h6 class="fw-semibold mb-3" style="color:var(--op-muted);font-size:.75rem;text-transform:uppercase;">Update Status (Admin)</h6>
+                <h6 class="fw-semibold mb-3" style="color:var(--op-muted);font-size:.75rem;text-transform:uppercase;">Perbarui Status (Admin)</h6>
                 <div class="d-flex gap-2 flex-wrap">
                     @foreach (var s in new[] { "Reported", "Reviewed", "Resolved" })
                     {
@@ -39,7 +39,7 @@
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="id" value="@Model.Id" />
                             <button name="status" value="@s" class="op-btn @(Model.Status == s ? "op-btn-primary" : "op-btn-secondary")">
-                                @s
+                                @(s switch { "Reported" => "Dilaporkan", "Reviewed" => "Ditinjau", "Resolved" => "Selesai", _ => s })
                             </button>
                         </form>
                     }

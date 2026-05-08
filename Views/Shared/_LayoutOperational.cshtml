@@ -15,15 +15,15 @@
     <meta name="request-verification-token" content="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
     <style>
         :root {
-            --op-bg: #080d18;
-            --op-sidebar: #0d1322;
-            --op-surface: #131a2a;
-            --op-surface2: #192131;
-            --op-border: #243049;
-            --op-accent: #f59e0b;
-            --op-accent2: #3b82f6;
-            --op-text: #f8fafc;
-            --op-muted: #8294ba;
+            --op-bg: #fcf9f8;
+            --op-sidebar: #f4ede3;
+            --op-surface: #ffffff;
+            --op-surface2: #f0eded;
+            --op-border: #e0c0b2;
+            --op-accent: #9c3f00;
+            --op-accent2: #486648;
+            --op-text: #1c1b1b;
+            --op-muted: #584238;
         }
 
         * { box-sizing: border-box; }
@@ -35,33 +35,33 @@
         .op-brand small { color: var(--op-muted); display: block; margin-top: .55rem; }
         .op-nav { padding: 1.25rem 0; flex: 1; overflow-y: auto; }
         .op-nav a { display: flex; align-items: center; gap: .9rem; padding: .9rem 1.8rem; border-left: 4px solid transparent; color: var(--op-muted); text-decoration: none; font-weight: 500; transition: .18s ease; }
-        .op-nav a:hover { color: var(--op-text); background: rgba(255,255,255,.035); }
+        .op-nav a:hover { color: var(--op-text); background: rgba(156, 63, 0, .08); }
         .op-nav a.active { color: var(--op-accent); border-left-color: var(--op-accent); background: var(--op-surface2); }
         .op-nav i { width: 1.1rem; text-align: center; }
-        .op-profile { margin: 1rem 1.25rem 1.5rem; padding: 1rem; border: 1px solid var(--op-border); border-radius: .9rem; background: rgba(255,255,255,.025); }
+        .op-profile { margin: 1rem 1.25rem 1.5rem; padding: 1rem; border: 1px solid var(--op-border); border-radius: .9rem; background: rgba(255,255,255,.78); }
         .op-profile-name { color: var(--op-text); font-size: .9rem; font-weight: 700; margin-bottom: .15rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .op-profile-role { color: var(--op-muted); font-size: .76rem; margin-bottom: .85rem; }
         .op-profile-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; }
-        .op-profile-actions .btn { font-size: .78rem; border-color: #53627d; color: var(--op-muted); }
-        .op-profile-actions .btn:hover { color: var(--op-text); border-color: var(--op-accent); }
+        .op-profile-actions .btn { font-size: .78rem; border-color: var(--op-border); color: var(--op-muted); }
+        .op-profile-actions .btn:hover { color: var(--op-text); border-color: var(--op-accent); background: rgba(156, 63, 0, .05); }
         .op-main { flex: 1; min-width: 0; }
-        .op-topbar { height: 62px; border-bottom: 1px solid var(--op-border); display: flex; align-items: center; justify-content: space-between; padding: 0 1.85rem; background: rgba(13,19,34,.75); position: sticky; top: 0; z-index: 20; backdrop-filter: blur(14px); }
+        .op-topbar { height: 62px; border-bottom: 1px solid var(--op-border); display: flex; align-items: center; justify-content: space-between; padding: 0 1.85rem; background: rgba(244,237,227,.88); position: sticky; top: 0; z-index: 20; backdrop-filter: blur(14px); }
         .op-topbar h1 { font-size: 1.25rem; font-weight: 800; margin: 0; }
         .op-date { color: var(--op-muted); font-size: .9rem; }
         .op-content { padding: 1.85rem; max-width: none; margin: 0; }
         .op-card { background: var(--op-surface); border: 1px solid var(--op-border); border-radius: 16px; padding: 1.5rem; color: var(--op-text); }
         .op-badge-status { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
         .op-btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.875rem; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; text-decoration: none; }
-        .op-btn-primary { background: var(--op-accent); border-color: var(--op-accent); color: #111827; font-weight: 700; }
-        .op-btn-primary:hover { background: #d97706; border-color: #d97706; color: #111827; }
-        .op-btn-secondary { background: transparent; border-color: #53627d; color: var(--op-muted); }
+        .op-btn-primary { background: var(--op-accent); border-color: var(--op-accent); color: #fff; font-weight: 700; }
+        .op-btn-primary:hover { background: var(--op-accent); border-color: #7a3000; color: #fff; box-shadow: 0 8px 20px rgba(156, 63, 0, .12); }
+        .op-btn-secondary { background: transparent; border-color: var(--op-border); color: var(--op-muted); }
         .op-btn-secondary:hover { background: var(--op-surface2); color: var(--op-text); border-color: var(--op-accent); }
-        .op-btn-success { background: #22c55e; border-color: #22c55e; color: #07130a; font-weight: 700; }
-        .op-btn-success:hover { background: #16a34a; color: #07130a; }
+        .op-btn-success { background: #2f6f48; border-color: #2f6f48; color: #fff; font-weight: 700; }
+        .op-btn-success:hover { background: #245737; color: #fff; }
         .op-table { width: 100%; border-collapse: collapse; color: var(--op-text); }
         .op-table th { color: var(--op-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--op-border); padding: 0.75rem; }
-        .op-table td { padding: 0.875rem 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: middle; }
-        .op-table tr:hover td { background: rgba(255,255,255,0.03); }
+        .op-table td { padding: 0.875rem 0.75rem; border-bottom: 1px solid rgba(140,113,102,.18); vertical-align: middle; }
+        .op-table tr:hover td { background: rgba(156,63,0,.04); }
         .text-muted { color: var(--op-muted) !important; }
         .content-header { margin-bottom: 1.2rem; }
         .content-header .container-fluid { padding-left: 0; padding-right: 0; }
@@ -73,9 +73,9 @@
         .bg-white, .bg-light { background: transparent !important; }
         .table { --bs-table-bg: transparent; --bs-table-color: var(--op-text); --bs-table-hover-bg: rgba(255,255,255,.035); color: var(--op-text); }
         .table thead { color: var(--op-muted) !important; }
-        .table td, .table th { border-color: rgba(255,255,255,.065); }
-        .form-control, .form-select, .input-group-text { background: #0c1220; border-color: var(--op-border); color: var(--op-text); }
-        .form-control:focus, .form-select:focus { background: #0c1220; border-color: var(--op-accent); color: var(--op-text); box-shadow: 0 0 0 .2rem rgba(245,158,11,.15); }
+        .table td, .table th { border-color: rgba(140,113,102,.25); }
+        .form-control, .form-select, .input-group-text { background: #ffffff; border-color: var(--op-border); color: var(--op-text); }
+        .form-control:focus, .form-select:focus { background: #ffffff; border-color: var(--op-accent); color: var(--op-text); box-shadow: 0 0 0 .2rem rgba(156,63,0,.15); }
         @@media print { .op-sidebar, .op-topbar, .no-print { display: none !important; } body { background: #fff; color: #000; } .op-card { border: none; padding: 0; } }
         @@media (max-width: 991.98px) {
             .op-shell { display: block; }
@@ -129,9 +129,9 @@
                 <div class="op-profile-name">@userName</div>
                 <div class="op-profile-role">@roleName</div>
                 <div class="op-profile-actions">
-                    <a href="/" class="btn btn-sm btn-outline-secondary"><i class="bi bi-globe2 me-1"></i>Website</a>
+                    <a href="/" class="btn btn-sm btn-outline-secondary"><i class="bi bi-globe2 me-1"></i>Situs</a>
                     <form action="/Auth/Logout" method="post">
-                        <button type="submit" class="btn btn-sm btn-outline-secondary w-100"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>
+                        <button type="submit" class="btn btn-sm btn-outline-secondary w-100"><i class="bi bi-box-arrow-right me-1"></i>Keluar</button>
                     </form>
                 </div>
             </div>
@@ -140,7 +140,7 @@
         <main class="op-main">
             <header class="op-topbar">
                 <h1>@ViewData["Title"]</h1>
-                <div class="op-date">@DateTime.Now.ToString("dddd, dd MMMM yyyy")</div>
+                <div class="op-date">@BusinessTime.BusinessNow.ToString("dddd, dd MMMM yyyy")</div>
             </header>
             <div class="op-content">
                 @RenderBody()

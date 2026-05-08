@@ -98,7 +98,7 @@
                             <tr>
                                 <td><code style="color:#f59e0b;font-size:.75rem;">@o.OrderNumber</code></td>
                                 <td>Meja @(o.TableSession?.Table?.Number ?? 0)</td>
-                                <td style="font-size:.8rem;color:var(--owner-muted);">@o.OrderDate.ToLocalTime().ToString("dd/MM HH:mm")</td>
+                                <td style="font-size:.8rem;color:var(--owner-muted);">@BusinessTime.ToBusinessTime(o.OrderDate).ToString("dd/MM HH:mm")</td>
                                 <td class="text-end fw-semibold">Rp @o.Total.ToString("N0")</td>
                             </tr>
                         }

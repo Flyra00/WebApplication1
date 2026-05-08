@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -8,6 +9,7 @@ using WebApplication1.Controllers;
 using WebApplication1.Data;
 using WebApplication1.Models;
 using WebApplication1.Security;
+using WebApplication1.Services.Membership;
 using WebApplication1.Services.Midtrans;
 
 namespace WebApplication1.Tests;
@@ -85,7 +87,13 @@ public class PaymentStatusAccessTests
         });
 
         var midtransService = new MidtransService(new HttpClient(), midtransOptions);
-        var controller = new PaymentController(context, midtransService, NullLogger<PaymentController>.Instance)
+        var memberSignupService = new PendingMemberSignupService(
+            context,
+            midtransService,
+            new PasswordHasher<ApplicationUser>(),
+            NullLogger<PendingMemberSignupService>.Instance);
+
+        var controller = new PaymentController(context, midtransService, memberSignupService, NullLogger<PaymentController>.Instance)
         {
             ControllerContext = new ControllerContext
             {

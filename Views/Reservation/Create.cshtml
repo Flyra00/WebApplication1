@@ -1,0 +1,223 @@
+@model WebApplication1.ViewModels.Reservations.ReservationCreateViewModel
+@{ 
+    ViewData["Title"] = "Buat Reservasi Online";
+    Layout = "~/Views/Shared/_PublicLayout.cshtml";
+}
+
+@section Styles {
+    <partial name="_ReservationStyles" />
+}
+
+<main class="reservation-page page-shell">
+    <section class="reservation-intro">
+        <p class="reservation-eyebrow">Reservasi Online</p>
+        <h1 class="reservation-title">Buat Reservasi Online</h1>
+        <p class="reservation-subtitle">Pilih tanggal, jam mulai, durasi, dan jumlah tamu. Meja akan ditetapkan oleh staff saat konfirmasi.</p>
+    </section>
+
+    <section class="reservation-choice-grid" aria-label="Pilihan reservasi">
+        <article class="reservation-choice-card active">
+            <span class="reservation-choice-kicker">Langkah 1</span>
+            <h2 class="reservation-choice-title">Buat Reservasi</h2>
+            <p class="reservation-choice-desc">Isi data tamu, pilih tanggal, jam mulai, durasi, dan jumlah tamu agar reservasi langsung masuk antrean staff.</p>
+            <div class="reservation-choice-actions">
+                <span class="reservation-badge reservation-badge-terracotta">Sedang dibuka</span>
+            </div>
+        </article>
+        <article class="reservation-choice-card">
+            <span class="reservation-choice-kicker">Langkah 2</span>
+            <h2 class="reservation-choice-title">Cek Reservasi</h2>
+            <p class="reservation-choice-desc">Masukkan kode reservasi untuk melihat detail, status, dan tindak lanjut yang tersedia.</p>
+            <div class="reservation-choice-actions">
+                <a asp-action="Lookup" class="reservation-btn reservation-btn-outline">Cek Reservasi</a>
+            </div>
+        </article>
+    </section>
+
+    <section class="reservation-layout" style="margin-top:24px;">
+        <div class="reservation-card">
+            <div class="reservation-card-body">
+                <form asp-action="Create" method="post" class="reservation-section" id="reservationCreateForm" data-invalid-message="Masih ada field yang wajib diisi atau belum valid. Silakan cek bagian yang ditandai merah.">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="text-danger small"></div>
+
+                    <div>
+                        <h2 class="reservation-section-title">Data Pemesan</h2>
+                        <p class="reservation-section-subtitle">Kontak dipakai untuk konfirmasi dan penyesuaian kecil dari staff.</p>
+                    </div>
+
+                    <div class="reservation-grid-2">
+                        <div class="reservation-field" style="grid-column: 1 / -1;">
+                            <label asp-for="CustomerName" class="reservation-label"></label>
+                            <input asp-for="CustomerName" class="form-control reservation-control" />
+                            <span asp-validation-for="CustomerName" class="text-danger small"></span>
+                        </div>
+                        <div class="reservation-field">
+                            <label asp-for="PhoneNumber" class="reservation-label"></label>
+                            <input asp-for="PhoneNumber" class="form-control reservation-control" />
+                            <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                        </div>
+                        <div class="reservation-field">
+                            <label asp-for="Email" class="reservation-label"></label>
+                            <input asp-for="Email" class="form-control reservation-control" placeholder="Boleh dikosongkan" />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="reservation-section">
+                        <div>
+                            <h2 class="reservation-section-title">Jadwal Reservasi</h2>
+                            <p class="reservation-section-subtitle">Alur dimulai dari pilih tanggal, jam mulai, durasi, dan jumlah tamu. Staff akan menyiapkan meja setelah reservasi dibuat.</p>
+                        </div>
+
+                        <div class="reservation-grid-3">
+                            <div class="reservation-field">
+                                <label asp-for="ReservationDate" class="reservation-label"></label>
+                                <input asp-for="ReservationDate" type="date" class="form-control reservation-control" value='@(Model.ReservationDate.ToString("yyyy-MM-dd"))' />
+                                <span asp-validation-for="ReservationDate" class="text-danger small"></span>
+                            </div>
+
+                            <div class="reservation-field">
+                                <label asp-for="StartTime" class="reservation-label"></label>
+                                <select asp-for="StartTime" asp-items="Model.StartTimeOptions" class="form-select reservation-select"></select>
+                                <div class="reservation-field-helper">Jam mulai tersedia dari 10.00 sampai 21.00 dengan interval 30 menit.</div>
+                                <span asp-validation-for="StartTime" class="text-danger small"></span>
+                            </div>
+
+                            <div class="reservation-field">
+                                <label asp-for="ReservationDurationHours" class="reservation-label"></label>
+                                <select asp-for="ReservationDurationHours" asp-items="Model.DurationHourOptions" class="form-select reservation-select"></select>
+                                <div class="reservation-field-helper">Durasi menentukan waktu selesai dan dipakai untuk cek bentrok meja.</div>
+                                <span asp-validation-for="ReservationDurationHours" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="reservation-field">
+                            <label asp-for="PartySize" class="reservation-label"></label>
+                            <input asp-for="PartySize" type="number" min="1" class="form-control reservation-control" />
+                            <div class="reservation-field-helper">Jumlah tamu dipakai staff untuk menyiapkan meja yang sesuai.</div>
+                            <span asp-validation-for="PartySize" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="reservation-section">
+                        <div class="reservation-field">
+                            <label asp-for="SpecialRequest" class="reservation-label"></label>
+                            <textarea asp-for="SpecialRequest" class="form-control reservation-textarea" rows="4" placeholder="Contoh: meja dekat jendela, kursi bayi, atau catatan alergi."></textarea>
+                            <div class="reservation-field-helper">Permintaan khusus membantu staff menyiapkan pengalaman yang lebih nyaman.</div>
+                            <span asp-validation-for="SpecialRequest" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="reservation-actions">
+                        <a href="/" class="reservation-btn reservation-btn-outline">Batal</a>
+                        <button type="submit" class="reservation-btn reservation-btn-primary" id="submitReservationBtn">Buat Reservasi</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <aside class="reservation-sidebar">
+            <div class="reservation-card reservation-card-soft">
+                <div class="reservation-card-body reservation-lookup-panel">
+                    <div>
+                        <p class="reservation-eyebrow">Reservasi Cepat</p>
+                        <h2 class="reservation-section-title">Buat atau cek reservasi</h2>
+                        <p class="reservation-section-subtitle">Dua jalan masuk yang jelas, tanpa perlu kembali ke homepage.</p>
+                    </div>
+
+                    <div class="reservation-choice-grid">
+                        <article class="reservation-choice-card active">
+                            <span class="reservation-choice-kicker">Aktif</span>
+                            <h3 class="reservation-choice-title">Buat Reservasi</h3>
+                            <p class="reservation-choice-desc">Lanjutkan form ini untuk menyusun jadwal kunjungan baru.</p>
+                        </article>
+                        <article class="reservation-choice-card">
+                            <span class="reservation-choice-kicker">Lookup</span>
+                            <h3 class="reservation-choice-title">Cek Reservasi</h3>
+                            <p class="reservation-choice-desc">Buka detail reservasi dengan kode yang sudah Anda simpan.</p>
+                            <div class="reservation-choice-actions">
+                                <a asp-action="Lookup" class="reservation-btn reservation-btn-outline">Cek Reservasi</a>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+            </div>
+
+            <div class="reservation-card">
+                <div class="reservation-card-body reservation-lookup-panel">
+                    <div>
+                        <h2 class="reservation-section-title">Alur reservasi</h2>
+                        <p class="reservation-section-subtitle">Pilih tanggal, jam mulai, durasi, dan jumlah tamu. Meja akan ditentukan staff setelah reservasi dibuat.</p>
+                    </div>
+
+                    <div class="reservation-step-grid">
+                        <article class="reservation-step-card">
+                            <span class="reservation-step-number">1</span>
+                            <h3 class="reservation-step-title">Pilih tanggal</h3>
+                            <p class="reservation-step-desc">Tentukan hari kunjungan agar jadwal bisa disusun lebih cepat.</p>
+                        </article>
+                        <article class="reservation-step-card">
+                            <span class="reservation-step-number">2</span>
+                            <h3 class="reservation-step-title">Atur jam mulai</h3>
+                            <p class="reservation-step-desc">Pilih slot waktu yang paling pas untuk kedatangan Anda.</p>
+                        </article>
+                        <article class="reservation-step-card">
+                            <span class="reservation-step-number">3</span>
+                            <h3 class="reservation-step-title">Tentukan durasi</h3>
+                            <p class="reservation-step-desc">Durasi membantu staff menghitung waktu selesai dan cek bentrok meja.</p>
+                        </article>
+                        <article class="reservation-step-card">
+                            <span class="reservation-step-number">4</span>
+                            <h3 class="reservation-step-title">Tunggu konfirmasi</h3>
+                            <p class="reservation-step-desc">Staff akan memilih meja yang sesuai sebelum reservasi diproses lebih lanjut.</p>
+                        </article>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </section>
+</main>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (() => {
+            const form = document.getElementById('reservationCreateForm');
+            if (!form) return;
+
+            const showError = (message) => window.showPublicToast?.(message, 'error');
+
+            const focusFirstInvalidField = () => {
+                const invalidField = form.querySelector('.input-validation-error, :invalid');
+                if (!invalidField) return;
+
+                invalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                if (typeof invalidField.focus === 'function') {
+                    invalidField.focus({ preventScroll: true });
+                }
+            };
+
+            form.addEventListener('submit', (event) => {
+                if (window.jQuery && window.jQuery.fn?.validate) {
+                    const validator = window.jQuery(form).data('validator') || window.jQuery(form).validate();
+                    if (validator.form()) return;
+
+                    event.preventDefault();
+                    event.stopPropagation();
+                    focusFirstInvalidField();
+                    showError(form.dataset.invalidMessage || 'Form reservasi belum lengkap.');
+                    return;
+                }
+
+                if (form.checkValidity()) return;
+
+                event.preventDefault();
+                event.stopPropagation();
+                form.classList.add('was-validated');
+                focusFirstInvalidField();
+                showError(form.dataset.invalidMessage || 'Form reservasi belum lengkap.');
+            });
+        })();
+    </script>
+}

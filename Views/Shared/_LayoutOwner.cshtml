@@ -114,7 +114,7 @@
     <div class="ow-main">
         <div class="ow-topbar">
             <h5 class="mb-0 fw-600" style="font-size:0.95rem;">@ViewData["Title"]</h5>
-            <small class="text-muted">@DateTime.Now.ToString("dddd, dd MMMM yyyy")</small>
+            <small class="text-muted">@BusinessTime.BusinessNow.ToString("dddd, dd MMMM yyyy")</small>
         </div>
         <div class="ow-content">
             @RenderBody()

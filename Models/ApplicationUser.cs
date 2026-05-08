@@ -19,5 +19,7 @@ namespace WebApplication1.Models
         public ICollection<TableSession> MemberTableSessions { get; set; } = new List<TableSession>();
 
         public ICollection<Order> CustomerOrders { get; set; } = new List<Order>();
+
+        public ICollection<Reservation> CustomerReservations { get; set; } = new List<Reservation>();
     }
 }

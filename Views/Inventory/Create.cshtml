@@ -1,14 +1,14 @@
 @model WebApplication1.Models.Inventory
 @{
     Layout = "_LayoutAdmin";
-    ViewData["Title"] = "Tambah Inventory";
+    ViewData["Title"] = "Tambah Inventaris";
 }
 
 <div class="content-header">
     <div class="container-fluid">
         <div class="row mb-2 align-items-center">
             <div class="col-sm-6">
-                <h1 class="m-0 fw-bold text-dark"><i class="bi bi-plus-square me-2"></i>Tambah Barang Inventory</h1>
+                <h1 class="m-0 fw-bold text-dark"><i class="bi bi-plus-square me-2"></i>Tambah Barang Inventaris</h1>
             </div>
             <div class="col-sm-6 text-end">
                 <a asp-action="Index" class="btn btn-outline-secondary px-4">
@@ -45,23 +45,14 @@
                             </div>
 
                             <div class="mb-3">
-                                <label asp-for="Qty" class="form-label fw-semibold">Quantity</label>
+                                <label asp-for="Qty" class="form-label fw-semibold">Jumlah</label>
                                 <input asp-for="Qty" class="form-control" type="number" min="0" />
                                 <span asp-validation-for="Qty" class="text-danger small"></span>
                             </div>
 
-                            <div class="mb-1">
-                                <div class="row">
-                                    <div class="col-md-6 mb-4">
-                                        <label asp-for="Condition" class="form-label fw-bold text-secondary">Kondisi</label>
-                                        <select asp-for="Condition" class="form-select shadow-sm">
-                                            <option value="" selected disabled>-- Pilih Kondisi --</option>
-                                            <option value="Bagus">Bagus</option>
-                                            <option value="Rusak">Rusak</option>
-                                            <option value="Perbaikan">Perbaikan</option>
-                                        </select>
-                                        <span asp-validation-for="Category" class="text-danger small"></span>
-                                    </div>
+                            <input type="hidden" asp-for="Condition" value="Bagus" />
+                            <div class="alert alert-light border small text-muted mb-1">
+                                Barang baru otomatis masuk dengan kondisi <strong>Bagus</strong>. Jika ada kerusakan, gunakan menu <strong>Laporan Kerusakan</strong>.
                             </div>
                         </div>
 

@@ -1,7 +1,10 @@
 @model WebApplication1.Models.Order
-@{
+@{ 
     ViewData["Title"] = "Proses Pembayaran";
     Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    var paidTotal = (decimal)(ViewBag.PaidTotal ?? 0m);
+    var outstandingAmount = (decimal)(ViewBag.OutstandingAmount ?? 0m);
+    var minAmount = (decimal)(ViewBag.MinAmount ?? Model.Total);
 }
 
 <div class="d-flex align-items-center gap-3 mb-4">
@@ -26,6 +29,14 @@
                 <span style="color:var(--op-muted);">Jumlah Item</span>
                 <span>@Model.Items.Sum(i => i.Qty) item</span>
             </div>
+            <div class="d-flex justify-content-between mb-2">
+                <span style="color:var(--op-muted);">Sudah Dibayar</span>
+                <span>Rp @paidTotal.ToString("N0")</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+                <span style="color:var(--op-muted);">Sisa Tagihan</span>
+                <span class="fw-semibold">Rp @outstandingAmount.ToString("N0")</span>
+            </div>
             <hr style="border-color:var(--op-border);" />
             @foreach (var item in Model.Items)
             {
@@ -44,32 +55,34 @@
         <!-- Form Pembayaran -->
         <div class="op-card">
             <h6 class="fw-semibold mb-3" style="color:var(--op-muted);text-transform:uppercase;font-size:0.75rem;">Input Pembayaran</h6>
-            <form asp-action="ConfirmPayment" method="post">
+            <form asp-action="ConfirmPayment" method="post" id="cashierPaymentForm">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="orderId" value="@Model.Id" />
 
                 <div class="mb-3">
                     <label class="form-label fw-semibold" style="color:var(--op-text);">Metode Pembayaran</label>
                     <div class="d-flex gap-2">
-                        @foreach (var m in new[] { "Cash", "QRIS", "Transfer" })
+                        @foreach (var m in new[] { "Tunai", "Bayar Online" })
                         {
                             <label class="flex-fill">
-                                <input type="radio" name="method" value="@m" class="d-none pay-method-radio" @(m == "Cash" ? "checked" : "") />
+                                <input type="radio" name="method" value="@(m == "Tunai" ? "Cash" : "Midtrans")" class="d-none pay-method-radio" @(m == "Tunai" ? "checked" : "") />
                                 <div class="op-card text-center pay-method-btn" style="cursor:pointer;padding:.75rem;border:2px solid transparent;transition:all .2s;">
-                                    <i class="bi @(m == "Cash" ? "bi-cash-stack" : m == "QRIS" ? "bi-qr-code" : "bi-bank") d-block mb-1" style="font-size:1.25rem;"></i>
+                                    <i class="bi @(m == "Tunai" ? "bi-cash-stack" : "bi-credit-card-2-front") d-block mb-1" style="font-size:1.25rem;"></i>
                                     <span style="font-size:.8rem;">@m</span>
                                 </div>
                             </label>
                         }
                     </div>
+                    <div class="form-text mt-2" id="methodHelpText">Tunai diproses langsung. Bayar Online akan membuka Snap Midtrans.</div>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-semibold" style="color:var(--op-text);">Nominal Diterima (Rp)</label>
+                    <label class="form-label fw-semibold" style="color:var(--op-text);" id="amountLabel">Nominal Diterima (Rp)</label>
                     <input type="number" name="amountPaid" id="amountPaid" class="form-control"
                            style="background:var(--op-border);border-color:var(--op-border);color:var(--op-text);font-size:1.1rem;"
-                           min="@((int)Model.Total)" step="1000" value="@((int)Math.Ceiling((double)Model.Total / 1000) * 1000)"
+                           min="@((int)Math.Ceiling(minAmount))" step="1" value="@((int)Math.Ceiling(minAmount))"
                            required />
+                    <div id="onlineAmountHint" class="form-text mt-2" style="display:none;">Nominal online mengikuti total tagihan yang disarankan sistem.</div>
                     <div class="mt-2 d-flex gap-2 flex-wrap">
                         @foreach (var nom in new long[] { 10000, 20000, 50000, 100000 })
                         {
@@ -95,15 +108,167 @@
 
 @section Scripts {
 <script>
-    const total = @Model.Total;
+    const minimumAmount = @((int)Math.Ceiling(minAmount));
+    const orderId = @Model.Id;
     const amountInput = document.getElementById('amountPaid');
     const kembalianBox = document.getElementById('kembalianBox');
     const kembalianVal = document.getElementById('kembalianVal');
+    const paymentForm = document.getElementById('cashierPaymentForm');
+    const methodHelpText = document.getElementById('methodHelpText');
+    const amountLabel = document.getElementById('amountLabel');
+    const onlineAmountHint = document.getElementById('onlineAmountHint');
+    const submitButton = paymentForm.querySelector('button[type="submit"]');
+    const quickNominalButtons = Array.from(document.querySelectorAll('.quick-nominal'));
+    const printReceiptBaseUrl = '@Url.Action("PrintReceipt", "Cashier", new { id = 0 })'.replace(/0$/, '');
+    const orderDetailUrl = '@Url.Action("OrderDetail", "Cashier", new { id = Model.Id })';
+    const requestTokenUrl = '@Url.Action("RequestPaymentToken", "Cashier")';
+    const syncStatusUrl = '@Url.Action("SyncPaymentStatus", "Cashier")';
+
+    function selectedMethod() {
+        return document.querySelector('input[name="method"]:checked')?.value || 'Cash';
+    }
+
+    function notify(message, type) {
+        if (window.toastr) {
+            if (type === 'success') window.toastr.success(message);
+            else if (type === 'warning') window.toastr.warning(message);
+            else window.toastr.info(message);
+            return;
+        }
+        alert(message);
+    }
+
+    function loadMidtransSnapScript(clientKey, isProduction) {
+        return new Promise((resolve, reject) => {
+            if (window.snap && typeof window.snap.pay === 'function') {
+                resolve();
+                return;
+            }
+
+            const existing = document.getElementById('midtrans-snap-script');
+            if (existing) {
+                existing.addEventListener('load', () => resolve());
+                existing.addEventListener('error', () => reject(new Error('Gagal memuat Snap script.')));
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.id = 'midtrans-snap-script';
+            script.src = isProduction
+                ? 'https://app.midtrans.com/snap/snap.js'
+                : 'https://app.sandbox.midtrans.com/snap/snap.js';
+            script.setAttribute('data-client-key', clientKey || '');
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error('Gagal memuat Snap script.'));
+            document.head.appendChild(script);
+        });
+    }
+
+    async function postJson(url, payload) {
+        const token = document.querySelector('meta[name="request-verification-token"]')?.getAttribute('content') || '';
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': token
+            },
+            body: JSON.stringify(payload)
+        });
+
+        return await response.json();
+    }
+
+    function setCashMode() {
+        submitButton.disabled = false;
+        amountLabel.textContent = 'Nominal Diterima (Rp)';
+        methodHelpText.textContent = 'Tunai diproses langsung dan kembalian akan dihitung otomatis.';
+        onlineAmountHint.style.display = 'none';
+        amountInput.readOnly = false;
+        amountInput.min = String(minimumAmount);
+        amountInput.value = String(Math.max(parseInt(amountInput.value || minimumAmount, 10), minimumAmount));
+        quickNominalButtons.forEach(btn => btn.style.display = 'inline-flex');
+        submitButton.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i> Konfirmasi Pembayaran';
+        updateKembalian();
+    }
+
+    function setOnlineMode() {
+        submitButton.disabled = false;
+        amountLabel.textContent = 'Nominal Bayar Online (Rp)';
+        methodHelpText.textContent = 'Bayar Online akan membuka Snap Midtrans, lalu status pembayaran akan disinkronkan otomatis.';
+        onlineAmountHint.style.display = '';
+        amountInput.readOnly = true;
+        amountInput.min = String(minimumAmount);
+        amountInput.value = String(minimumAmount);
+        quickNominalButtons.forEach(btn => btn.style.display = 'none');
+        kembalianBox.style.display = 'none';
+        submitButton.innerHTML = '<i class="bi bi-credit-card-2-front-fill me-2"></i> Bayar Online';
+    }
+
+    async function syncAndRedirect(paymentId, statusHint) {
+        const data = await postJson(syncStatusUrl, { paymentId, statusHint });
+        if (!data || !data.success) {
+            throw new Error((data && data.error) || 'Sinkronisasi pembayaran gagal.');
+        }
+
+        if (data.isPaid) {
+            window.location.href = printReceiptBaseUrl + (data.paymentId || paymentId);
+            return;
+        }
+
+        notify('Pembayaran masih menunggu konfirmasi. Status order akan tetap dipantau.', 'warning');
+        window.location.href = orderDetailUrl;
+    }
+
+    async function submitOnlinePayment() {
+        submitButton.disabled = true;
+        try {
+            const data = await postJson(requestTokenUrl, {
+                orderId,
+                paymentMethod: 'Midtrans'
+            });
+
+            if (!data || !data.success) {
+                throw new Error((data && data.error) || 'Gagal menyiapkan pembayaran online.');
+            }
+
+            await loadMidtransSnapScript(data.midtransClientKey, !!data.midtransIsProduction);
+
+            window.snap.pay(data.snapToken, {
+                onSuccess: async function () {
+                    try {
+                        await syncAndRedirect(data.paymentId, 'settlement');
+                    } catch (err) {
+                        notify(err.message || 'Sinkronisasi pembayaran gagal.', 'warning');
+                        window.location.href = orderDetailUrl;
+                    }
+                },
+                onPending: async function () {
+                    try {
+                        await syncAndRedirect(data.paymentId, 'pending');
+                    } catch (err) {
+                        notify(err.message || 'Sinkronisasi pembayaran gagal.', 'warning');
+                        window.location.href = orderDetailUrl;
+                    }
+                },
+                onError: function () {
+                    notify('Pembayaran online gagal diproses.', 'warning');
+                    submitButton.disabled = false;
+                },
+                onClose: function () {
+                    notify('Popup pembayaran ditutup. Silakan lanjutkan jika diperlukan.', 'info');
+                    submitButton.disabled = false;
+                }
+            });
+        } catch (err) {
+            notify(err.message || 'Gagal memproses pembayaran online.', 'warning');
+            submitButton.disabled = false;
+        }
+    }
 
     function updateKembalian() {
         const paid = parseFloat(amountInput.value) || 0;
-        const change = paid - total;
-        if (paid >= total) {
+        const change = paid - minimumAmount;
+        if (paid >= minimumAmount) {
             kembalianBox.style.display = '';
             kembalianVal.textContent = 'Rp ' + change.toLocaleString('id-ID');
         } else {
@@ -129,5 +294,27 @@
         });
         if (radio.checked) radio.nextElementSibling.style.borderColor = '#f97316';
     });
+
+    document.querySelectorAll('input[name="method"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            if (selectedMethod() === 'Midtrans') setOnlineMode();
+            else setCashMode();
+        });
+    });
+
+    paymentForm.addEventListener('submit', async (event) => {
+        if (selectedMethod() !== 'Midtrans') {
+            return;
+        }
+
+        event.preventDefault();
+        await submitOnlinePayment();
+    });
+
+    if (selectedMethod() === 'Midtrans') {
+        setOnlineMode();
+    } else {
+        setCashMode();
+    }
 </script>
 }

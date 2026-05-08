@@ -1,0 +1,68 @@
+@model WebApplication1.ViewModels.Reservations.ReservationConfirmViewModel
+@{
+    ViewData["Title"] = "Konfirmasi Reservasi";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    var reservationTime = Model.Reservation != null ? BusinessTime.ToBusinessTime(Model.Reservation.ReservationTime) : (DateTime?)null;
+}
+
+@section Styles {
+    <partial name="_ReservationStyles" />
+}
+
+<div class="reservation-page">
+    <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-between gap-3 mb-4">
+        <div>
+            <p class="reservation-eyebrow mb-2">Manajemen Reservasi</p>
+            <h1 class="reservation-title mb-2" style="font-size:clamp(28px,3vw,38px);">Konfirmasi Reservasi</h1>
+            <p class="reservation-subtitle mb-0">Kode reservasi: <strong class="reservation-table-code">@Model.Reservation?.ReservationCode</strong></p>
+        </div>
+        <a asp-action="Details" asp-route-id="@Model.ReservationId" class="reservation-btn reservation-btn-outline">Kembali</a>
+    </div>
+
+    <div class="reservation-hero">
+        <div class="reservation-card">
+            <div class="reservation-card-body reservation-section">
+                <div>
+                    <h2 class="reservation-section-title">Ringkasan</h2>
+                    <p class="reservation-section-subtitle">Pastikan informasi reservasi sudah benar sebelum memilih meja.</p>
+                </div>
+
+                <div class="reservation-kv">
+                    <div class="reservation-kv-item"><div class="reservation-kv-label">Waktu</div><div class="reservation-kv-value">@(reservationTime.HasValue && Model.Reservation != null ? $"{reservationTime.Value:dd MMM yyyy HH:mm} - {reservationTime.Value.AddHours(Model.Reservation.ReservationDurationHours):HH:mm}" : "-")</div></div>
+                    <div class="reservation-kv-item"><div class="reservation-kv-label">Durasi</div><div class="reservation-kv-value">@(Model.Reservation?.ReservationDurationHours ?? 0) jam</div></div>
+                    <div class="reservation-kv-item"><div class="reservation-kv-label">Tamu</div><div class="reservation-kv-value">@Model.Reservation?.PartySize</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="reservation-card reservation-card-soft">
+            <div class="reservation-card-body reservation-section">
+                <div>
+                    <h2 class="reservation-section-title">Pilih Meja</h2>
+                    <p class="reservation-section-subtitle">Kosongkan untuk auto assign.</p>
+                </div>
+
+                <form asp-action="Confirm" method="post" class="reservation-section" style="gap:14px;">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="ReservationId" />
+                    <div asp-validation-summary="ModelOnly" class="text-danger small"></div>
+
+                    <div class="reservation-field">
+                        <label asp-for="SelectedTableId" class="reservation-label">Pilih Meja</label>
+                        <select asp-for="SelectedTableId" asp-items="Model.TableOptions" class="form-select reservation-select">
+                            <option value="">Auto assign</option>
+                        </select>
+                        <div class="reservation-section-subtitle" style="font-size:13px;">Kosongkan untuk memilih meja otomatis.</div>
+                        <span asp-validation-for="SelectedTableId" class="text-danger small"></span>
+                    </div>
+
+                    <button type="submit" class="reservation-btn reservation-btn-primary w-100">Konfirmasi Reservasi</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

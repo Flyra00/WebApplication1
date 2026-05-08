@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using WebApplication1.Data;
 using WebApplication1.Models;
 using WebApplication1.Security;
+using WebApplication1.Services.Membership;
 using WebApplication1.Services.Midtrans;
 
 namespace WebApplication1.Controllers
@@ -14,12 +15,14 @@ namespace WebApplication1.Controllers
     {
         private readonly AppDbContext _context;
         private readonly MidtransService _midtransService;
+        private readonly PendingMemberSignupService _memberSignupService;
         private readonly ILogger<PaymentController> _logger;
 
-        public PaymentController(AppDbContext context, MidtransService midtransService, ILogger<PaymentController> logger)
+        public PaymentController(AppDbContext context, MidtransService midtransService, PendingMemberSignupService memberSignupService, ILogger<PaymentController> logger)
         {
             _context = context;
             _midtransService = midtransService;
+            _memberSignupService = memberSignupService;
             _logger = logger;
         }
 
@@ -46,17 +49,24 @@ namespace WebApplication1.Controllers
                 return Unauthorized(new { success = false, error = "Signature tidak valid." });
             }
 
+            var mappedStatus = MapMidtransStatus(payload.TransactionStatus, payload.FraudStatus);
+
             var payment = await _context.Payments
                 .Include(p => p.Order)
                 .FirstOrDefaultAsync(p => p.ReferenceNumber == payload.OrderId && p.Method == PaymentMethods.Midtrans);
 
             if (payment == null)
             {
+                var signupResult = await _memberSignupService.ProcessPaymentStatusAsync(payload.OrderId, mappedStatus);
+                if (signupResult.IsSuccess)
+                {
+                    return Ok(new { success = true, memberSignup = true });
+                }
+
                 _logger.LogWarning("Midtrans webhook order not found: {OrderId}", payload.OrderId);
-                return NotFound(new { success = false, error = "Transaksi tidak ditemukan." });
+                return NotFound(new { success = false, error = signupResult.ErrorMessage ?? "Transaksi tidak ditemukan." });
             }
 
-            var mappedStatus = MapMidtransStatus(payload.TransactionStatus, payload.FraudStatus);
             var currentRank = GetStatusRank(payment.Status);
             var incomingRank = GetStatusRank(mappedStatus);
 
@@ -72,12 +82,22 @@ namespace WebApplication1.Controllers
                     payment.PaymentDate = DateTime.UtcNow;
                 }
 
-                if (mappedStatus == PaymentStatuses.Paid)
+                var isReservationPayment = payment.Purpose == PaymentPurpose.ReservationDeposit || payment.Purpose == PaymentPurpose.ReservationFull;
+                var orderPaidTotal = await _context.Payments
+                    .Where(x => x.OrderId == payment.OrderId && x.Status == PaymentStatuses.Paid)
+                    .SumAsync(x => (decimal?)x.Amount) ?? 0m;
+
+                if (mappedStatus == PaymentStatuses.Paid && (!isReservationPayment || payment.Purpose == PaymentPurpose.ReservationFull))
                 {
                     payment.Order.Status = OrderStatuses.Paid;
                 }
 
                 if (mappedStatus == PaymentStatuses.Failed && payment.Order.Status == OrderStatuses.Paid)
+                {
+                    payment.Order.Status = OrderStatuses.Submitted;
+                }
+
+                if (isReservationPayment && payment.Purpose == PaymentPurpose.ReservationDeposit && orderPaidTotal < payment.Order.Total)
                 {
                     payment.Order.Status = OrderStatuses.Submitted;
                 }

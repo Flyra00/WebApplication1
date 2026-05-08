@@ -1,0 +1,316 @@
+@model WebApplication1.Models.Reservation
+@using WebApplication1.Models
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Pembayaran Reservasi Online";
+    Layout = "~/Views/Shared/_PublicLayout.cshtml";
+    var isMidtransConfigured = (bool)(ViewBag.IsMidtransConfigured ?? false);
+    var dpPercentage = Model.DpPercentage ?? 0m;
+    var hasDp = dpPercentage > 0;
+    var orderTotal = (decimal)(ViewBag.OrderTotal ?? 0m);
+    var paidTotal = (decimal)(ViewBag.PaidTotal ?? 0m);
+    var outstandingAmount = (decimal)(ViewBag.OutstandingAmount ?? 0m);
+    var depositAmount = (decimal)(ViewBag.DepositAmount ?? 0m);
+    var hasDepositOnly = (bool)(ViewBag.HasDepositOnly ?? false);
+    var midtransClientKey = (string)(ViewBag.MidtransClientKey ?? "");
+    var isProduction = (bool)(ViewBag.MidtransIsProduction ?? false);
+    var reservationTime = BusinessTime.ToBusinessTime(Model.ReservationTime);
+    var reservationEnd = reservationTime.AddHours(Model.ReservationDurationHours);
+    var snapJsUrl = isProduction
+        ? "https://app.midtrans.com/snap/snap.js"
+        : "https://app.sandbox.midtrans.com/snap/snap.js";
+}
+
+@section Styles {
+    <partial name="_ReservationStyles" />
+}
+
+<main class="reservation-page page-shell">
+    <section class="reservation-intro">
+        <p class="reservation-eyebrow">Reservasi Online</p>
+        <h1 class="reservation-title">Pilih Cara Bayar</h1>
+        <p class="reservation-subtitle">
+            Reservasi online <strong class="reservation-table-code">@Model.ReservationCode</strong> atas nama @Model.CustomerName.
+            Total tagihan dihitung dari menu aktual yang sudah dipilih.
+        </p>
+    </section>
+
+    <section class="reservation-hero">
+        <div class="reservation-card">
+            <div class="reservation-card-body reservation-section">
+                <div>
+                    <h2 class="reservation-section-title">Metode Pembayaran</h2>
+                    <p class="reservation-section-subtitle">
+                        @if (hasDp)
+                        {
+                            <span>DP sebesar <strong>@dpPercentage%</strong> dihitung dari total menu aktual.</span>
+                        }
+                        else
+                        {
+                            <span>Pilih cara pembayaran online berdasarkan total menu aktual.</span>
+                        }
+                    </p>
+                </div>
+
+                <div class="pay-option-grid" id="payOptionGrid">
+                    @if (isMidtransConfigured && paidTotal <= 0m)
+                    {
+                        @if (hasDp)
+                        {
+                            <label class="pay-option-card selected" for="opt-dp-online" id="card-dp-online">
+                                <input type="radio" name="payOption" id="opt-dp-online" value="dp-online" checked />
+                                <div class="pay-option-icon">
+                                    <span class="material-symbols-outlined">credit_card</span>
+                                </div>
+                                <p class="pay-option-title">DP Online (@dpPercentage%)</p>
+                                <p class="pay-option-desc">Bayar uang muka Rp @depositAmount.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("id-ID")) sekarang via pembayaran digital. Sisanya dibayar saat datang.</p>
+                                <span class="pay-option-badge">
+                                    <span class="material-symbols-outlined" style="font-size:12px;">bolt</span>
+                                    Langsung Terkonfirmasi
+                                </span>
+                            </label>
+
+                            <label class="pay-option-card" for="opt-full-online" id="card-full-online">
+                                <input type="radio" name="payOption" id="opt-full-online" value="full-online" />
+                                <div class="pay-option-icon">
+                                    <span class="material-symbols-outlined">wallet</span>
+                                </div>
+                                <p class="pay-option-title">Bayar Penuh Online</p>
+                                <p class="pay-option-desc">Bayar penuh Rp @orderTotal.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("id-ID")) secara online.</p>
+                                <span class="pay-option-badge" style="background:rgba(47,111,72,.1);color:#2f6f48;border-color:rgba(47,111,72,.18);">
+                                    <span class="material-symbols-outlined" style="font-size:12px;">verified</span>
+                                    Bayar Lunas
+                                </span>
+                            </label>
+                        }
+                        else
+                        {
+                            <label class="pay-option-card selected" for="opt-full-online" id="card-full-online">
+                                <input type="radio" name="payOption" id="opt-full-online" value="full-online" checked />
+                                <div class="pay-option-icon">
+                                    <span class="material-symbols-outlined">credit_card</span>
+                                </div>
+                                <p class="pay-option-title">Bayar Online</p>
+                                <p class="pay-option-desc">Bayar penuh Rp @orderTotal.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("id-ID")) secara digital.</p>
+                                <span class="pay-option-badge">
+                                    <span class="material-symbols-outlined" style="font-size:12px;">bolt</span>
+                                    Langsung Terkonfirmasi
+                                </span>
+                            </label>
+                        }
+                    }
+                </div>
+
+                @if (!isMidtransConfigured)
+                {
+                    <div class="reservation-alert" style="margin-top:16px;">
+                        Pembayaran online sedang tidak tersedia. Silakan coba lagi nanti.
+                    </div>
+                }
+
+                @if (hasDp && depositAmount > 0)
+                {
+                    <div class="pay-dp-info @(isMidtransConfigured ? "active" : "")" id="dpInfo">
+                        <strong>DP (@dpPercentage%):</strong>
+                        Rp @depositAmount.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("id-ID"))
+                        <br /><small>DP dihitung dari total menu aktual. Sisa tagihan dilunasi melalui pembayaran online berikutnya.</small>
+                    </div>
+                }
+
+                <div class="reservation-alert" style="margin-top:16px;">
+                    <strong>Ringkasan:</strong> Total Rp @orderTotal.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("id-ID")) · Sudah dibayar Rp @paidTotal.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("id-ID")) · Sisa Rp @outstandingAmount.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("id-ID"))
+                </div>
+
+                @if (hasDepositOnly)
+                {
+                    <div class="reservation-alert" style="margin-top:12px;background:rgba(94,96,77,.08);border-color:rgba(94,96,77,.18);color:var(--forest);">
+                        DP sudah dibayar. Silakan selesaikan pelunasan secara online.
+                    </div>
+                }
+
+                <div class="reservation-actions" style="justify-content:space-between; flex-wrap:wrap;">
+                    <a asp-action="DetailsByCode" asp-route-code="@Model.ReservationCode" class="reservation-btn reservation-btn-outline">Lihat Detail</a>
+                    <button type="button" id="proceedBtn" class="reservation-btn reservation-btn-primary">
+                        <span class="material-symbols-outlined" style="font-size:18px;">arrow_forward</span>
+                        Lanjutkan
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="reservation-card reservation-card-soft">
+            <div class="reservation-card-body reservation-section">
+                <div>
+                    <h2 class="reservation-section-title">Detail Reservasi</h2>
+                </div>
+                <div class="reservation-kv">
+                    <div class="reservation-kv-item">
+                        <div class="reservation-kv-label">Kode</div>
+                        <div class="reservation-kv-value reservation-table-code">@Model.ReservationCode</div>
+                    </div>
+                    <div class="reservation-kv-item">
+                        <div class="reservation-kv-label">Nama</div>
+                        <div class="reservation-kv-value">@Model.CustomerName</div>
+                    </div>
+                    <div class="reservation-kv-item">
+                        <div class="reservation-kv-label">Telepon</div>
+                        <div class="reservation-kv-value">@Model.PhoneNumber</div>
+                    </div>
+                    <div class="reservation-kv-item">
+                        <div class="reservation-kv-label">Waktu</div>
+                        <div class="reservation-kv-value">@reservationTime.ToString("dd MMM yyyy HH:mm") - @reservationEnd.ToString("HH:mm")</div>
+                    </div>
+                    <div class="reservation-kv-item">
+                        <div class="reservation-kv-label">Menu</div>
+                        <div class="reservation-kv-value">@(Model.Order == null ? "Belum dipilih" : $"{Model.Order.Items.Sum(item => item.Qty)} item")</div>
+                    </div>
+                    <div class="reservation-kv-item">
+                        <div class="reservation-kv-label">Durasi</div>
+                        <div class="reservation-kv-value">@Model.ReservationDurationHours jam</div>
+                    </div>
+                </div>
+
+                <div class="reservation-alert">
+                    @if (Model.Order == null)
+                    {
+                        <span>Menu belum dipilih. Silakan lanjutkan ke pemilihan menu.</span>
+                    }
+                    else if (outstandingAmount > 0)
+                    {
+                        <span>Tagihan masih tersisa <strong>Rp @outstandingAmount.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("id-ID"))</strong>.</span>
+                    }
+                    else
+                    {
+                        <span>Reservasi dan pembayaran sudah lunas.</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+@section Scripts {
+<script src="@snapJsUrl" data-client-key="@midtransClientKey"></script>
+<script>
+(function () {
+    const cards = document.querySelectorAll('.pay-option-card');
+    const dpInfo = document.getElementById('dpInfo');
+    const proceedBtn = document.getElementById('proceedBtn');
+    const reservationCode = @Html.Raw(JsonSerializer.Serialize(Model.ReservationCode));
+    const detailsUrl = '@Url.Action("DetailsByCode", "Reservation", new { code = Model.ReservationCode })';
+    const syncUrl = '@Url.Action("SyncPaymentStatus", "Reservation")';
+
+    function getSelectedValue() {
+        return document.querySelector('input[name="payOption"]:checked')?.value ?? '';
+    }
+
+    function applySelection(value) {
+        cards.forEach(c => c.classList.remove('selected'));
+        const map = { 'dp-online': 'card-dp-online', 'full-online': 'card-full-online' };
+        const card = document.getElementById(map[value]);
+        if (card) card.classList.add('selected');
+        if (dpInfo) dpInfo.classList.toggle('active', value === 'dp-online');
+    }
+
+    cards.forEach(card => {
+        card.addEventListener('click', () => {
+            const radio = card.querySelector('input[type=radio]');
+            if (radio) {
+                radio.checked = true;
+                applySelection(radio.value);
+            }
+        });
+    });
+
+    const init = document.querySelector('input[name="payOption"]:checked');
+    if (init) applySelection(init.value);
+
+    proceedBtn.addEventListener('click', async () => {
+        const selected = getSelectedValue();
+        if (!selected) {
+            window.showPublicToast?.('Pilih metode pembayaran terlebih dahulu.', 'info');
+            return;
+        }
+
+        proceedBtn.disabled = true;
+        proceedBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;display:inline-block;animation:spin 1s linear infinite">progress_activity</span>&nbsp;Memproses...';
+
+        try {
+            const csrfToken = document.querySelector('meta[name="request-verification-token"]')?.content ?? '';
+            const resp = await fetch('@Url.Action("RequestPaymentToken", "Reservation")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': csrfToken
+                },
+                body: JSON.stringify({ code: '@Html.Raw(Model.ReservationCode)', payOption: selected })
+            });
+
+            const data = await resp.json();
+            if (!data.success) {
+                window.showPublicToast?.(data.error ?? 'Gagal membuat sesi pembayaran. Coba lagi.', 'error');
+                resetBtn();
+                return;
+            }
+
+            snap.pay(data.snapToken, {
+                onSuccess: async (result) => {
+                    try {
+                        const sync = await syncPayment(result?.order_id);
+                        const paidMarker = sync?.orderStatus === 'Paid' || (typeof sync?.outstandingAmount === 'number' && sync.outstandingAmount <= 0)
+                            ? 'paid=1'
+                            : 'pending=1';
+                        location.href = `${detailsUrl}?${paidMarker}`;
+                        return;
+                    } catch (syncErr) {
+                        console.error(syncErr);
+                    }
+                    location.href = `${detailsUrl}?pending=1`;
+                },
+                onPending: async (result) => {
+                    try {
+                        await syncPayment(result?.order_id);
+                    } catch (syncErr) {
+                        console.error(syncErr);
+                    }
+                    location.href = `${detailsUrl}?pending=1`;
+                },
+                onError: () => { window.showPublicToast?.('Pembayaran gagal. Coba lagi.', 'error'); resetBtn(); },
+                onClose: () => { resetBtn(); }
+            });
+        } catch (err) {
+            console.error(err);
+            window.showPublicToast?.('Terjadi kesalahan jaringan. Silakan coba lagi.', 'error');
+            resetBtn();
+        }
+    });
+
+    function resetBtn() {
+        proceedBtn.disabled = false;
+        proceedBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">arrow_forward</span>&nbsp;Lanjutkan';
+    }
+
+    async function syncPayment(orderId) {
+        const csrfToken = document.querySelector('meta[name="request-verification-token"]')?.content ?? '';
+        const response = await fetch(syncUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': csrfToken
+            },
+            body: JSON.stringify({ code: reservationCode, orderId: orderId ?? null })
+        });
+
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload?.success) {
+            throw new Error(payload?.error ?? 'Sinkronisasi pembayaran gagal.');
+        }
+
+        return payload;
+    }
+})();
+</script>
+<style>
+    @@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+}

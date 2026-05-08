@@ -1,0 +1,633 @@
+@model WebApplication1.Models.Order?
+@using WebApplication1.Models
+@using System.Globalization
+@{
+    ViewData["Title"] = "Lacak Pesanan";
+    Layout = "~/Views/Shared/_PublicLayout.cshtml";
+    var orderNumber = (string)(ViewBag.OrderNumber ?? "");
+    var orderFound = (bool)(ViewBag.OrderFound ?? false);
+    var culture = new CultureInfo("id-ID");
+
+    string MapOrderStatusLabel(string status) => status switch
+    {
+        OrderStatuses.Submitted => "Dikirim",
+        OrderStatuses.Processing => "Diproses",
+        OrderStatuses.Completed => "Selesai",
+        OrderStatuses.Paid => "Lunas",
+        OrderStatuses.Cancelled => "Dibatalkan",
+        _ => status
+    };
+
+    string MapKitchenStatusLabel(string status) => status switch
+    {
+        KitchenStatuses.Queued => "Antrian",
+        KitchenStatuses.Cooking => "Dimasak",
+        KitchenStatuses.Ready => "Siap",
+        KitchenStatuses.Served => "Disajikan",
+        _ => status
+    };
+
+    int GetStepIndex(string status) => status switch
+    {
+        OrderStatuses.Submitted => 0,
+        OrderStatuses.Processing => 1,
+        OrderStatuses.Completed => 2,
+        OrderStatuses.Paid => 3,
+        OrderStatuses.Cancelled => -1,
+        _ => 0
+    };
+}
+
+@section Styles {
+<style>
+    .track-page {
+        padding: 42px 0 80px;
+    }
+    .track-intro {
+        max-width: 680px;
+        margin-bottom: 36px;
+    }
+    .track-eyebrow {
+        margin: 0 0 10px;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+        color: var(--forest);
+    }
+    .track-title {
+        margin: 0;
+        font-family: 'Noto Serif', serif;
+        font-size: clamp(32px, 5vw, 48px);
+        font-weight: 700;
+        line-height: 1.05;
+        letter-spacing: -.04em;
+    }
+    .track-subtitle {
+        margin: 14px 0 0;
+        color: var(--on-surface-variant);
+        font-size: 16px;
+        line-height: 1.7;
+        max-width: 560px;
+    }
+
+    /* Lookup form */
+    .track-lookup {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        max-width: 540px;
+        margin-bottom: 36px;
+    }
+    .track-input {
+        width: 100%;
+        min-height: 56px;
+        border: 1px solid var(--outline-variant);
+        border-radius: 14px;
+        padding: 0 18px;
+        font-size: 17px;
+        font-weight: 600;
+        color: var(--on-surface);
+        background: var(--surface-lowest);
+        outline-color: var(--terracotta);
+        letter-spacing: .03em;
+    }
+    .track-input:focus {
+        border-color: var(--terracotta);
+        outline: 2px solid rgba(156, 63, 0, .15);
+    }
+    .track-submit {
+        min-height: 56px;
+        border-radius: 14px;
+        padding: 0 24px;
+        font-weight: 800;
+        font-size: 15px;
+        background: var(--terracotta);
+        color: #fff;
+        border: 0;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: transform .15s, box-shadow .15s;
+    }
+    .track-submit:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(156, 63, 0, .2); }
+
+    /* Stepper */
+    .track-stepper {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0;
+        position: relative;
+        margin-bottom: 32px;
+    }
+    .track-stepper::before {
+        content: '';
+        position: absolute;
+        top: 24px;
+        left: calc(12.5%);
+        right: calc(12.5%);
+        height: 3px;
+        background: var(--surface-container);
+        border-radius: 999px;
+        z-index: 0;
+    }
+    .track-stepper-progress {
+        position: absolute;
+        top: 24px;
+        left: calc(12.5%);
+        height: 3px;
+        background: var(--terracotta);
+        border-radius: 999px;
+        z-index: 1;
+        transition: width .6s ease;
+    }
+    .track-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        position: relative;
+        z-index: 2;
+    }
+    .track-step-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: var(--surface-container);
+        color: var(--on-surface-variant);
+        border: 3px solid var(--surface-lowest);
+        box-shadow: 0 2px 8px rgba(44, 44, 44, .06);
+        transition: background .4s, color .4s, box-shadow .4s;
+    }
+    .track-step-icon .material-symbols-outlined {
+        font-size: 22px;
+    }
+    .track-step.done .track-step-icon {
+        background: var(--terracotta);
+        color: #fff;
+        box-shadow: 0 4px 16px rgba(156, 63, 0, .25);
+    }
+    .track-step.active .track-step-icon {
+        background: var(--terracotta);
+        color: #fff;
+        box-shadow: 0 4px 16px rgba(156, 63, 0, .25);
+        animation: stepPulse 2s ease infinite;
+    }
+    @@keyframes stepPulse {
+        0%, 100% { box-shadow: 0 4px 16px rgba(156, 63, 0, .25); }
+        50% { box-shadow: 0 4px 24px rgba(156, 63, 0, .45); }
+    }
+    .track-step-label {
+        font-size: 13px;
+        font-weight: 700;
+        text-align: center;
+        color: var(--on-surface-variant);
+        transition: color .3s;
+    }
+    .track-step.done .track-step-label,
+    .track-step.active .track-step-label {
+        color: var(--terracotta);
+    }
+
+    /* Cards */
+    .track-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 20px;
+        align-items: start;
+    }
+    .track-card {
+        border-radius: 22px;
+        background: var(--surface-lowest);
+        border: 1px solid rgba(219, 193, 186, .72);
+        box-shadow: 0 10px 28px rgba(44, 44, 44, .05);
+        overflow: hidden;
+    }
+    .track-card-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid rgba(219, 193, 186, .5);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .track-card-header h3 {
+        margin: 0;
+        font-family: 'Noto Serif', serif;
+        font-size: 20px;
+        font-weight: 700;
+    }
+    .track-card-header .material-symbols-outlined {
+        color: var(--terracotta);
+        font-variation-settings: 'FILL' 1;
+    }
+    .track-card-body { padding: 20px 24px; }
+
+    /* Items table */
+    .track-items { width: 100%; border-collapse: collapse; }
+    .track-items th {
+        text-align: left;
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: var(--on-surface-variant);
+        padding: 0 0 12px;
+        border-bottom: 1px solid rgba(219, 193, 186, .5);
+    }
+    .track-items td {
+        padding: 14px 0;
+        border-bottom: 1px solid rgba(219, 193, 186, .35);
+        vertical-align: middle;
+        font-size: 15px;
+    }
+    .track-items tr:last-child td { border-bottom: 0; }
+    .track-item-name { font-weight: 700; }
+    .track-item-qty { color: var(--on-surface-variant); text-align: center; }
+    .track-item-price { color: var(--terracotta); font-weight: 600; text-align: right; }
+
+    .track-kitchen-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+    }
+    .track-kitchen-badge.queued { background: rgba(156, 63, 0, .08); color: var(--terracotta); }
+    .track-kitchen-badge.cooking { background: rgba(255, 152, 0, .12); color: #e65100; }
+    .track-kitchen-badge.ready { background: rgba(76, 175, 80, .12); color: #2e7d32; }
+    .track-kitchen-badge.served { background: rgba(94, 96, 77, .12); color: var(--forest); }
+
+    /* Summary */
+    .track-summary-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 0;
+    }
+    .track-summary-row + .track-summary-row {
+        border-top: 1px solid rgba(219, 193, 186, .35);
+    }
+    .track-summary-label { color: var(--on-surface-variant); font-size: 14px; }
+    .track-summary-value { font-weight: 700; font-size: 15px; }
+    .track-summary-row.total {
+        border-top: 2px solid var(--outline-variant);
+        margin-top: 4px;
+        padding-top: 14px;
+    }
+    .track-summary-row.total .track-summary-value {
+        color: var(--terracotta);
+        font-family: 'Noto Serif', serif;
+        font-size: 24px;
+    }
+
+    /* Status badge */
+    .track-order-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 800;
+    }
+    .track-order-badge.submitted { background: rgba(156, 63, 0, .1); color: var(--terracotta); }
+    .track-order-badge.processing { background: rgba(255, 152, 0, .12); color: #e65100; }
+    .track-order-badge.completed { background: rgba(76, 175, 80, .12); color: #2e7d32; }
+    .track-order-badge.paid { background: rgba(94, 96, 77, .12); color: var(--forest); }
+    .track-order-badge.cancelled { background: rgba(186, 26, 26, .08); color: #ba1a1a; }
+
+    .track-info-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: var(--on-surface-variant);
+    }
+    .track-info-row .material-symbols-outlined { font-size: 18px; color: var(--terracotta); }
+
+    .track-refresh-note {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 16px;
+        padding: 10px 14px;
+        border-radius: 12px;
+        background: rgba(94, 96, 77, .06);
+        border: 1px solid rgba(94, 96, 77, .12);
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--forest);
+    }
+    .track-refresh-note .material-symbols-outlined { font-size: 16px; }
+
+    /* Not found */
+    .track-empty {
+        max-width: 500px;
+        padding: 48px 24px;
+        text-align: center;
+        border-radius: 24px;
+        background: var(--surface-lowest);
+        border: 1px dashed var(--outline-variant);
+    }
+    .track-empty h2 {
+        margin: 0 0 8px;
+        font-family: 'Noto Serif', serif;
+        font-size: 28px;
+        color: var(--on-surface);
+    }
+    .track-empty p { margin: 0; color: var(--on-surface-variant); line-height: 1.6; }
+
+    /* Cancelled overlay */
+    .track-cancelled-banner {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 18px;
+        border-radius: 14px;
+        background: rgba(186, 26, 26, .06);
+        border: 1px solid rgba(186, 26, 26, .15);
+        color: #ba1a1a;
+        font-weight: 700;
+        margin-bottom: 20px;
+    }
+
+    @@media (max-width: 760px) {
+        .track-grid { grid-template-columns: 1fr; }
+        .track-lookup { grid-template-columns: 1fr; }
+        .track-stepper { grid-template-columns: repeat(4, 1fr); gap: 4px; }
+        .track-step-label { font-size: 11px; }
+        .track-step-icon { width: 40px; height: 40px; }
+        .track-step-icon .material-symbols-outlined { font-size: 18px; }
+        .track-stepper::before { top: 20px; }
+        .track-stepper-progress { top: 20px; }
+        .track-card-body { padding: 16px; }
+        .track-items th:nth-child(3), .track-items td:nth-child(3) { display: none; }
+    }
+</style>
+}
+
+<main class="track-page page-shell" id="trackPage">
+    <section class="track-intro">
+        <p class="track-eyebrow">Lacak Pesanan</p>
+        <h1 class="track-title">Pantau status pesanan Anda</h1>
+        <p class="track-subtitle">Masukkan nomor pesanan untuk melihat status terbaru dari pesanan Anda secara real-time.</p>
+    </section>
+
+    <form class="track-lookup" method="get" action="/TrackOrder">
+        <input class="track-input" type="text" name="orderNumber"
+               value="@orderNumber" placeholder="Contoh: ORD-20260507-001"
+               autocomplete="off" id="trackOrderInput" />
+        <button type="submit" class="track-submit">
+            <span class="material-symbols-outlined">search</span>
+            Lacak
+        </button>
+    </form>
+
+    @if (!string.IsNullOrWhiteSpace(orderNumber) && !orderFound)
+    {
+        <div class="track-empty">
+            <h2>Pesanan tidak ditemukan</h2>
+            <p>Nomor pesanan <strong>@orderNumber</strong> tidak ditemukan. Periksa kembali nomor yang Anda masukkan.</p>
+        </div>
+    }
+
+    @if (Model != null)
+    {
+        var stepIndex = GetStepIndex(Model.Status);
+        var isCancelled = Model.Status == OrderStatuses.Cancelled;
+        var statusLower = Model.Status.ToLowerInvariant();
+
+        <div id="trackContent" data-order-number="@Model.OrderNumber">
+            @if (isCancelled)
+            {
+                <div class="track-cancelled-banner">
+                    <span class="material-symbols-outlined">cancel</span>
+                    Pesanan ini telah dibatalkan.
+                </div>
+            }
+
+            @if (!isCancelled)
+            {
+                <div class="track-stepper" id="trackStepper">
+                    <div class="track-stepper-progress" id="trackProgress" style="width: @(stepIndex >= 3 ? "100%" : stepIndex >= 2 ? "67%" : stepIndex >= 1 ? "33%" : "0%")"></div>
+                    <div class="track-step @(stepIndex >= 0 ? (stepIndex == 0 ? "active" : "done") : "")">
+                        <div class="track-step-icon"><span class="material-symbols-outlined">receipt_long</span></div>
+                        <span class="track-step-label">Dikirim</span>
+                    </div>
+                    <div class="track-step @(stepIndex >= 1 ? (stepIndex == 1 ? "active" : "done") : "")">
+                        <div class="track-step-icon"><span class="material-symbols-outlined">skillet</span></div>
+                        <span class="track-step-label">Diproses</span>
+                    </div>
+                    <div class="track-step @(stepIndex >= 2 ? (stepIndex == 2 ? "active" : "done") : "")">
+                        <div class="track-step-icon"><span class="material-symbols-outlined">check_circle</span></div>
+                        <span class="track-step-label">Selesai</span>
+                    </div>
+                    <div class="track-step @(stepIndex >= 3 ? "done" : "")">
+                        <div class="track-step-icon"><span class="material-symbols-outlined">paid</span></div>
+                        <span class="track-step-label">Lunas</span>
+                    </div>
+                </div>
+            }
+
+            <div class="track-grid">
+                <div class="track-card">
+                    <div class="track-card-header">
+                        <span class="material-symbols-outlined">restaurant_menu</span>
+                        <h3>Daftar Item</h3>
+                    </div>
+                    <div class="track-card-body">
+                        <table class="track-items" id="trackItemsTable">
+                            <thead>
+                                <tr>
+                                    <th>Menu</th>
+                                    <th style="text-align:center;">Qty</th>
+                                    <th style="text-align:right;">Harga</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.Items)
+                                {
+                                    var ksLower = item.KitchenStatus.ToLowerInvariant();
+                                    <tr>
+                                        <td class="track-item-name">@(item.Product?.Name ?? "Menu")</td>
+                                        <td class="track-item-qty">@item.Qty</td>
+                                        <td class="track-item-price">Rp @item.LineTotal.ToString("N0", culture)</td>
+                                        <td>
+                                            <span class="track-kitchen-badge @ksLower">@MapKitchenStatusLabel(item.KitchenStatus)</span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="track-card" style="margin-bottom:20px;">
+                        <div class="track-card-header">
+                            <span class="material-symbols-outlined">info</span>
+                            <h3>Informasi Pesanan</h3>
+                        </div>
+                        <div class="track-card-body">
+                            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+                                <span class="track-order-badge @statusLower" id="trackStatusBadge">@MapOrderStatusLabel(Model.Status)</span>
+                            </div>
+                            <div style="display:grid;gap:10px;">
+                                <div class="track-info-row">
+                                    <span class="material-symbols-outlined">tag</span>
+                                    @Model.OrderNumber
+                                </div>
+                                <div class="track-info-row">
+                                    <span class="material-symbols-outlined">schedule</span>
+                                    @BusinessTime.ToBusinessTime(Model.OrderDate).ToString("dd MMM yyyy, HH:mm")
+                                </div>
+                                <div class="track-info-row">
+                                    <span class="material-symbols-outlined">@(Model.OrderType == "Takeaway" ? "shopping_bag" : "table_restaurant")</span>
+                                    @(Model.OrderType == "Takeaway" ? "Dibawa Pulang" : "Makan di Tempat")
+                                </div>
+                            </div>
+                            <div class="track-refresh-note" id="trackRefreshNote">
+                                <span class="material-symbols-outlined">sync</span>
+                                Otomatis diperbarui setiap 10 detik
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="track-card">
+                        <div class="track-card-header">
+                            <span class="material-symbols-outlined">receipt</span>
+                            <h3>Ringkasan Biaya</h3>
+                        </div>
+                        <div class="track-card-body" id="trackSummaryBody">
+                            <div class="track-summary-row">
+                                <span class="track-summary-label">Subtotal</span>
+                                <span class="track-summary-value" id="trackSubtotal">Rp @Model.Subtotal.ToString("N0", culture)</span>
+                            </div>
+                            @if (Model.PpnAmount > 0)
+                            {
+                                <div class="track-summary-row">
+                                    <span class="track-summary-label">PPN</span>
+                                    <span class="track-summary-value" id="trackPpn">Rp @Model.PpnAmount.ToString("N0", culture)</span>
+                                </div>
+                            }
+                            @if (Model.ServiceAmount > 0)
+                            {
+                                <div class="track-summary-row">
+                                    <span class="track-summary-label">Service</span>
+                                    <span class="track-summary-value" id="trackService">Rp @Model.ServiceAmount.ToString("N0", culture)</span>
+                                </div>
+                            }
+                            <div class="track-summary-row total">
+                                <span class="track-summary-label">Total</span>
+                                <span class="track-summary-value" id="trackTotal">Rp @Model.Total.ToString("N0", culture)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</main>
+
+@section Scripts {
+<script>
+(function () {
+    'use strict';
+
+    var content = document.getElementById('trackContent');
+    if (!content) return;
+
+    var orderNumber = content.dataset.orderNumber;
+    if (!orderNumber) return;
+
+    var pollingInterval = 10000;
+    var statusMap = { Submitted: 'Dikirim', Processing: 'Diproses', Completed: 'Selesai', Paid: 'Lunas', Cancelled: 'Dibatalkan' };
+    var kitchenMap = { Queued: 'Antrian', Cooking: 'Dimasak', Ready: 'Siap', Served: 'Disajikan' };
+    var stepIndexMap = { Submitted: 0, Processing: 1, Completed: 2, Paid: 3, Cancelled: -1 };
+    var stepWidths = ['0%', '33%', '67%', '100%'];
+
+    function formatCurrency(value) {
+        return 'Rp ' + Math.round(Number(value) || 0).toLocaleString('id-ID');
+    }
+
+    function updateStepper(status) {
+        var idx = stepIndexMap[status] ?? 0;
+        var steps = document.querySelectorAll('.track-step');
+        steps.forEach(function (step, i) {
+            step.classList.remove('done', 'active');
+            if (i < idx) step.classList.add('done');
+            else if (i === idx) step.classList.add('active');
+        });
+        var progress = document.getElementById('trackProgress');
+        if (progress) {
+            progress.style.width = idx >= 3 ? '100%' : (stepWidths[idx] || '0%');
+        }
+    }
+
+    function updateBadge(status) {
+        var badge = document.getElementById('trackStatusBadge');
+        if (!badge) return;
+        badge.textContent = statusMap[status] || status;
+        badge.className = 'track-order-badge ' + (status || '').toLowerCase();
+    }
+
+    function updateItems(items) {
+        var tbody = document.querySelector('#trackItemsTable tbody');
+        if (!tbody || !items) return;
+        tbody.innerHTML = '';
+        items.forEach(function (item) {
+            var ksLower = (item.kitchenStatus || '').toLowerCase();
+            var ksLabel = kitchenMap[item.kitchenStatus] || item.kitchenStatus;
+            var tr = document.createElement('tr');
+            tr.innerHTML =
+                '<td class="track-item-name">' + escapeHtml(item.productName) + '</td>' +
+                '<td class="track-item-qty">' + item.qty + '</td>' +
+                '<td class="track-item-price">' + formatCurrency(item.lineTotal) + '</td>' +
+                '<td><span class="track-kitchen-badge ' + ksLower + '">' + ksLabel + '</span></td>';
+            tbody.appendChild(tr);
+        });
+    }
+
+    function escapeHtml(text) {
+        var el = document.createElement('span');
+        el.textContent = text || '';
+        return el.innerHTML;
+    }
+
+    async function poll() {
+        try {
+            var resp = await fetch('/Home/GetOrderStatus?orderNumber=' + encodeURIComponent(orderNumber));
+            if (!resp.ok) return;
+            var data = await resp.json();
+            if (!data || !data.found) return;
+
+            updateStepper(data.status);
+            updateBadge(data.status);
+            updateItems(data.items);
+
+            var subtotal = document.getElementById('trackSubtotal');
+            var total = document.getElementById('trackTotal');
+            if (subtotal) subtotal.textContent = formatCurrency(data.subtotal);
+            if (total) total.textContent = formatCurrency(data.total);
+
+            if (data.status === 'Cancelled' || data.status === 'Paid') {
+                clearInterval(timer);
+                var note = document.getElementById('trackRefreshNote');
+                if (note) note.style.display = 'none';
+            }
+        } catch (e) { /* ignore polling errors */ }
+    }
+
+    var timer = setInterval(poll, pollingInterval);
+})();
+</script>
+}

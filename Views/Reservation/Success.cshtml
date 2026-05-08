@@ -1,0 +1,110 @@
+@model WebApplication1.Models.Reservation
+@{
+    ViewData["Title"] = "Reservasi Online Berhasil";
+    Layout = "~/Views/Shared/_PublicLayout.cshtml";
+}
+
+@section Styles {
+    <partial name="_ReservationStyles" />
+}
+
+<main class="reservation-page page-shell">
+    <section class="reservation-intro">
+        <p class="reservation-eyebrow">Reservasi Online</p>
+        <h1 class="reservation-title">Reservasi online berhasil dibuat</h1>
+        <p class="reservation-subtitle">Simpan kode reservasi dan kode akses berikut. Meja akan ditetapkan staff saat konfirmasi.</p>
+    </section>
+
+    <section class="reservation-hero">
+        <div class="reservation-card reservation-card-soft">
+            <div class="reservation-card-body reservation-section" style="gap:20px;">
+                <div class="reservation-badge reservation-badge-success" style="width: fit-content;">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">check_circle</span>
+                    Berhasil
+                </div>
+
+                <div class="reservation-kv">
+                    <div class="reservation-kv-item">
+                        <div class="reservation-kv-label">Kode Reservasi</div>
+                        <div class="reservation-kv-value reservation-table-code">@Model.ReservationCode</div>
+                    </div>
+                    <div class="reservation-kv-item">
+                        <div class="reservation-kv-label">Kode Akses</div>
+                        <div class="reservation-kv-value reservation-table-code">@Model.AccessKey</div>
+                    </div>
+                </div>
+
+                <div class="reservation-alert" style="display:flex;align-items:flex-start;gap:10px;">
+                    <span class="material-symbols-outlined" style="font-size:20px;color:var(--terracotta);flex-shrink:0;margin-top:1px;">restaurant_menu</span>
+                    <span>Langkah berikutnya: staff akan menetapkan meja berdasarkan jumlah tamu sebelum proses lanjut.</span>
+                </div>
+
+                @if (Model.DpPercentage.HasValue && Model.DpPercentage > 0)
+                {
+                    <div class="reservation-alert" style="display:flex;align-items:flex-start;gap:10px;">
+                        <span class="material-symbols-outlined" style="font-size:20px;color:var(--terracotta);flex-shrink:0;margin-top:1px;">info</span>
+                        <span>Reservasi ini memerlukan DP sebesar <strong>@Model.DpPercentage%</strong>. Pembayaran dilakukan secara online.</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="reservation-alert">
+                        Tunjukkan kode ini saat datang atau buka detail reservasi kapan saja. Meja akan diinformasikan oleh staff.
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="reservation-card">
+            <div class="reservation-card-body reservation-section">
+                <div>
+                    <h2 class="reservation-section-title">Ringkasan Reservasi</h2>
+                    <p class="reservation-section-subtitle">Informasi inti reservasi Anda.</p>
+                </div>
+
+                <div class="reservation-statgrid">
+                    <div class="reservation-stat">
+                        <p class="reservation-stat-label">Nama</p>
+                        <div class="reservation-stat-value" style="font-size:18px;">@Model.CustomerName</div>
+                    </div>
+                    <div class="reservation-stat">
+                        <p class="reservation-stat-label">Telepon</p>
+                        <div class="reservation-stat-value" style="font-size:18px;">@Model.PhoneNumber</div>
+                    </div>
+                    <div class="reservation-stat">
+                        <p class="reservation-stat-label">Waktu</p>
+                        <div class="reservation-stat-value" style="font-size:18px;">@BusinessTime.ToBusinessTime(Model.ReservationTime).ToString("dd MMM yyyy HH:mm") - @BusinessTime.ToBusinessTime(Model.ReservationTime).AddHours(Model.ReservationDurationHours).ToString("HH:mm")</div>
+                    </div>
+                    <div class="reservation-stat">
+                        <p class="reservation-stat-label">Durasi</p>
+                        <div class="reservation-stat-value">@Model.ReservationDurationHours jam</div>
+                    </div>
+                    <div class="reservation-stat">
+                        <p class="reservation-stat-label">Jumlah Tamu</p>
+                        <div class="reservation-stat-value">@Model.PartySize</div>
+                    </div>
+                </div>
+
+                <div class="reservation-actions" style="justify-content:flex-start; flex-wrap:wrap; gap:12px;">
+                    <a asp-action="Menu" asp-route-code="@Model.ReservationCode" class="reservation-btn reservation-btn-primary">
+                        <span class="material-symbols-outlined" style="font-size:18px;">restaurant_menu</span>
+                        Pilih Menu
+                    </a>
+                    <a asp-action="Pay" asp-route-code="@Model.ReservationCode" class="reservation-btn reservation-btn-primary">
+                        <span class="material-symbols-outlined" style="font-size:18px;">payments</span>
+                        Bayar Sekarang
+                    </a>
+                    <a asp-action="Lookup" class="reservation-btn reservation-btn-outline">
+                        <span class="material-symbols-outlined" style="font-size:18px;">search</span>
+                        Cek Reservasi
+                    </a>
+                    <a asp-action="DetailsByCode" asp-route-code="@Model.ReservationCode" class="reservation-btn reservation-btn-outline">
+                        <span class="material-symbols-outlined" style="font-size:18px;">description</span>
+                        Lihat Detail
+                    </a>
+                    <a href="/" class="reservation-btn reservation-btn-outline">Kembali ke Menu</a>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
